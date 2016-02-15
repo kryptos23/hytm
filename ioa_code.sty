@@ -1,0 +1,151 @@
+%
+% Input/Output Automata macros for 
+% algorithmicx (algpseudocode) package
+% creation: July, 22th
+% vgramoli@irisa.fr
+%
+%\floatname{algorithm}{I/O Automaton}
+
+
+\newcommand{\partsize}{\tiny}
+\newcommand{\size}{\tiny}
+\newcommand{\smallsize}{\tiny}
+
+\algrenewcommand{\algorithmiccomment}[1]{\textsf{\size {\bf //} #1}}
+\algnewcommand{\algorithmicto}{\textbf{to}}
+\algrenewcommand{\algorithmicindent}{1em}
+
+\algblockdefx[IOASmallPart]{SmallPart}{EndSmallPart}%
+	[2]{{\bf \smallsize{#1:}}#2}{\bf Ending}
+
+\algblockdefx[IOAPart]{Part}{EndPart}%
+	[2]{{\bf \partsize{#1:}}#2}{\bf Ending}
+	    
+\algblockdefx[Precond]{Prec}{EndPrec}%
+	{\textbf{Precondition:}}{\bf Ending}
+	    
+\algblockdefx[Effect]{Eff}{EndEff}%
+	{\textbf{Effect:}}{\bf Ending}
+
+\algblockdefx[InputAction]{Input}{EndInput}%
+	[2]{\textbf{\size Input #1}%
+	    \Eff#2\EndEff}{\bf Ending}
+
+\algblockdefx[OutputAction]{Output}{EndOutput}%
+	[3]{\textbf{\size Output #1}%
+	    \Prec#2\EndPrec%
+	    \Eff#3\EndEff}{\bf Ending}
+
+\algblockdefx[InternalAction]{Internal}{EndInternal}%
+	[3]{\textbf{\size Internal #1}%
+	    \Prec#2\EndPrec%
+	    \Eff#3\EndEff}{\bf Ending}
+	   
+\algblockdefx[TimedAction]{Timed}{EndTimed}%
+	[3]{\textbf{\size #1}%
+	    \Prec#2\EndPrec%
+	    \Eff#3\EndEff}{\bf Ending}
+	    
+\algblockdefx[AlgRepeat]{Repeat}{EndRepeat}%
+	{\textbf{Repeat:}~}{\bf Ending}
+
+\algblockdefx[AlgUntil]{Until}{EndUntil}%
+	{\textbf{Until}~}{\bf Ending}
+	
+\algblockdefx[AlgWUntil]{WUntil}{EndWUntil}%
+	[1]{{\textbf{wait until}~}#1}{\bf Ending}	
+	
+\algblockdefx[AlgReturn]{Return}{EndReturn}%
+	{\textbf{Return}~}{\bf Ending}
+	
+\algblockdefx[SIf]{SmallIf}{EndSmallIf}%
+	[2]{{\textbf{if}~}(#1)~\textbf{then}~#2}{\bf Ending}	
+	
+\algblockdefx[SIf]{SmallWhile}{EndSmallWhile}%
+	[2]{{\textbf{while}~}(#1)~\textbf{do}~#2}{\bf Ending}	
+	
+\algblockdefx[SElse]{SmallElse}{EndSmallElse}%
+	[2]{{\textbf{else}~}#1}{\bf Ending}	
+	
+\algblockdefx[Atom]{Atom}{EndAtom}%
+	[1]{{\textbf{atomic \{}~}#1}{\bf \}}	
+	
+%\algblockdefx[InputAction]{Input}{EndInput}%
+%	[2]{\textbf{Input #1}%
+%	    \State\textbf{Effect:}#2}{\bf Ending}
+  	
+%\algblockdefx[OutputAction]{Output}{EndOutput}%
+%	[3]{\textbf{Output #1}%
+%	    \State\textbf{Precondition:}#2%
+%	    \State\textbf{Effect:}#3}{\bf Ending}
+
+%\algblockdefx[InternalAction]{Internal}{EndInternal}%
+%	[3]{\textbf{Internal #1}%
+%	    \State\textbf{Precondition:}#2%
+%	    \State\textbf{Effect:}\State#3}{\bf Ending}
+
+% redefining command output
+%\algrenewtext{For}{\footnotesize{for}}
+%\algrenewtext{If}{\footnotesize{if}}
+%\algrenewtext{State}	    
+	    
+% omitting block closing	  
+\algnotext{EndPart} 
+\algnotext{EndSmallPart}
+\algnotext{EndPrec}
+\algnotext{EndEff} 
+\algnotext{EndIf} 
+\algnotext{EndFor}
+\algnotext{EndInput}
+\algnotext{EndOutput}
+\algnotext{EndInternal}
+\algnotext{EndTimed}
+
+
+\algnotext{EndRepeat}
+\algnotext{EndUntil}
+\algnotext{EndWUntil}
+\algnotext{EndReturn}
+\algnotext{EndSmallIf}
+\algnotext{EndSmallWhile}
+\algnotext{EndSmallElse}
+
+%\newcommand{\ef}[2]{
+%\begin{tabbing}
+%XX\= XX\=XX\=XX\=XX\=XX\=  \kill
+%\protect #1\\
+%Effect: \+ \\
+%  #2 \-
+%\end{tabbing}}
+%
+%\newcommand{\prcef}[3]{\begin{tabbing}
+%XX\= XX\=XX\=XX\=XX\= \kill
+%\protect #1\\
+%Precondition: \+ \\
+% #2 \- \\
+%Effect: \+ \\
+% #3 \-
+%\end{tabbing}}
+%
+%
+%\newcommand{\two}[4]{
+%\parbox{\columnwidth}{%
+%\parbox[t]{#1\columnwidth}{#3}%
+%\parbox[t]{#2\columnwidth}{#4}%
+%}}
+%
+%\newcommand{\three}[6]{
+%\parbox{\columnwidth}{%
+%\parbox[t]{#1\columnwidth}{#4}%
+%\parbox[t]{#2\columnwidth}{#5}%
+%\parbox[t]{#3\columnwidth}{#6}%
+%}}
+
+%\newcommand{\TT}{\hspace*{2em}}
+%\newcommand{\TTT}{\hspace*{3em}}
+%\newcommand{\NT}{\hspace*{-1em}}
+%%\newcommand{\Item}{\vspace*{-1.5\smallskipamount}\item}
+%%\newcommand{\Item}{\vspace*{-2.5\smallskipamount}\item}
+%\newcommand{\Item}{\item}
+%%\setlength{\leftmargini}{1.5em}
+%%\setlength{\leftmarginii}{1.6em}

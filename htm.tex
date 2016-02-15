@@ -1,0 +1,227 @@
+%\documentclass[•]{•}10pt,conference,compsocconf,letterpaper]{IEEEtran}
+\documentclass[11pt,pdftex,a4paper]{article}%
+\pdfoutput=1
+%\documentclass{sig-alt-release2}
+%\documentclass{llncs}
+%\usepackage{llncsdoc}
+\usepackage{verbatim}
+\usepackage{amssymb}
+\usepackage{lipsum}
+\usepackage{multicol}
+\usepackage{amsmath}
+\usepackage{framed}
+\usepackage{float}
+\floatstyle{boxed} 
+\restylefloat{figure}
+\usepackage{subfig}
+%\usepackage{mdframed}
+\usepackage{amsthm}
+\usepackage{tikz}
+\usepackage{hyperref}
+\usepackage{color}
+%\usepackage{fullpage}
+\usepackage{enumitem}
+\setlist{nolistsep}
+%\setenumerate{itemsep=0pt}
+\usepackage{tikz}
+\usepackage[margin=0.92in]{geometry}
+\usepackage{cite}
+\usepackage[textsize=tiny]{todonotes}
+
+%\usepackage[dvips]{graphicx}
+%\ifx\pdftexversion\undefined
+%\usepackage[dvips]{graphicx}
+%\else
+%  \usepackage[pdftex]{graphicx}
+%  \DeclareGraphicsRule{*}{mps}{*}{}
+%\fi
+\newif\ifcode
+\codefalse
+%%%
+% comment this if you do not have
+% algpseudocode package for algorithms.
+\codetrue
+%%%
+\usepackage{macros}
+\ifcode
+\usepackage[ruled]{algorithm}
+\usepackage{algpseudocode}
+\usepackage{ioa_code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%=
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%pour avoir plus de place
+% \topmargin 0pt
+% \advance \topmargin by -\headheight
+% \advance \topmargin by -\headsep
+% \textheight 8.9in
+% \oddsidemargin 0pt
+% \evensidemargin \oddsidemargin
+% \marginparwidth 0.5in
+% \textwidth 6.5in
+% \setlength{\baselineskip}{13.2pt} % standard value is 13.75pt
+\def\algofont{\footnotesize} %fonte pour les algos
+%\interfootnotelinepenalty=10
+%fin de pour avoir plus de place
+%du coup il faut commenter la suite
+%\textwidth 130mm
+%\textheight 215mm
+%jusqu'ici
+%\renewcommand{\baselinestretch}{1.5}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Definitions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newtheorem{theorem}{Theorem}
+%\newtheorem{reptheorem}[]{Theorem \ref{th:sl}}
+%\newreptheorem{theorem}{Theorem}
+\newtheorem{axiom}[theorem]{Axiom}
+\newtheorem{case}[theorem]{Case}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{proposition}{Proposition}
+\newtheorem{explanation}[theorem]{Explanation}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{fact}[theorem]{Fact}
+% \newtheorem{conclusion}[theorem]{Conclusion}
+% \newtheorem{condition}[theorem]{Condition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{corollary}[theorem]{Corollary}
+% \newtheorem{criterion}[theorem]{Criterion}
+\newtheorem{definition}{Definition}
+% \newtheorem{exercise}[theorem]{Exercise}
+\newtheorem{lemma}[theorem]{Lemma}
+% \newtheorem{notation}[theorem]{Notation}
+% \newtheorem{problem}[theorem]{Problem}
+%\newtheorem{proposition}[theorem]{Proposition}
+% \newtheorem{remark}[theorem]{Remark}
+% \newtheorem{solution}[theorem]{Solution}
+% \newtheorem{summary}[theorem]{Summary}
+\newtheorem{observation}[theorem]{Observation}
+%\newenvironment{proof}[1][Proof]{\noindent\textbf{#1.} }{\hfill $\Box$\\[2mm]} %\rule{0.5em}{0.5em}\\}
+%\newenvironment{proofsketch}[1][Proof sketch]{\noindent\textbf{#1.} }{\hfill $\Box$\\[2mm]} %\rule{0.5em}{0.5em}\\}
+
+\newenvironment{reptheorem}[1][Theorem]{\noindent\textbf{#1}}{}
+\def\lf{\tiny}
+\def\rrnnll{\setcounter{linenumber}{0}}
+\def\nnll{\refstepcounter{linenumber}\lf\thelinenumber}
+\newcounter{linenumber}
+\newenvironment{algorithmfig}{\hrule\vskip 3mm}{ \vskip 3mm \hrule }
+
+\def\P{\ensuremath{\mathcal{P}}}
+\def\DP{\ensuremath{\Diamond\mathcal{P}}}
+\def\DS{\ensuremath{\Diamond\mathcal{S}}}
+%\def\T{\ensuremath{\mathcal{T}}}
+\def\Time{\mathbb{T}}
+\def\S{\ensuremath{\mathcal{S}}}
+\def\D{\ensuremath{\mathcal{D}}}
+\def\W{\ensuremath{\mathcal{W}}}
+\def\A{\ensuremath{\mathcal{A}}}
+\def\B{\ensuremath{\mathcal{B}}}
+\def\F{\ensuremath{\mathcal{F}}}
+\def\R{\ensuremath{\mathcal{R}}}
+\def\N{\ensuremath{\mathcal{N}}}
+\def\I{\ensuremath{\mathcal{I}}}
+\def\O{\ensuremath{\mathcal{O}}}
+\def\Q{\ensuremath{\mathcal{Q}}}
+\def\K{\ensuremath{\mathcal{K}}}
+\def\L{\ensuremath{\mathcal{L}}}
+\def\M{\ensuremath{\mathcal{M}}}
+\def\V{\ensuremath{\mathcal{V}}}
+\def\E{\ensuremath{\mathcal{E}}}
+\def\C{\ensuremath{\mathcal{C}}}
+\def\T{\ensuremath{\mathcal{T}}}
+\def\X{\ensuremath{\mathcal{X}}}
+\def\Y{\ensuremath{\mathcal{Y}}}
+\def\Nat{\ensuremath{\mathbb{N}}}
+\def\Om{\ensuremath{\Omega}}
+\def\ve{\varepsilon}
+\def\fd{failure detector}
+\def\cfd{\ensuremath{?\P+\DS}}
+\def\afd{timeless}
+\def\env{\ensuremath{\mathcal{E}}}
+%\def\faulty{unreliable}
+\def\bounded{one-shot}
+\def\cons{\textit{cons}}
+\def\val{\textit{val}}
+\def\code{\textit{code}}
+
+\def\HSS{\mathit{h}}
+\def\argmin{\mathit{argmin}}
+\def\proper{\mathit{proper}}
+\def\content{\mathit{content}}
+\def\Level{\mathit{L}}
+\def\Blocked{\mathit{Blocked}}
+\def\Set{\mathit{Set}}
+\def\TS{\mathit{TS}}
+\def\shared{\mathit{shared}}
+\def\exclusive{\mathit{exclusive}}
+
+\newcommand{\correct}{\mathit{correct}}
+\newcommand{\RNum}[1]{\uppercase\expandafter{\romannumeral #1\relax}}
+\newcommand	{\faulty}{\mathit{faulty}}
+\newcommand{\infi}{\mathit{inf}}
+\newcommand{\live}{\mathit{live}}
+\newcommand{\true}{\mathit{true}}
+\newcommand{\false}{\mathit{false}}
+\newcommand{\stable}{\mathit{Stable}}
+\newcommand{\setcon}{\mathit{setcon}}
+\newcommand{\remove}[1]{}
+
+\newcommand{\Wset}{\textit{Wset}}
+\newcommand{\Rset}{\textit{Rset}}
+\newcommand{\Dset}{\textit{Dset}}
+
+%\newcommand{\parts}{\textit{parts}}
+\newcommand{\txns}{\textit{txns}}
+
+\newcommand{\Read}{\textit{read}}
+\newcommand{\Write}{\textit{write}}
+\newcommand{\TryC}{\textit{tryC}}
+\newcommand{\TryA}{\textit{tryA}}
+\newcommand{\ok}{\textit{ok}}
+
+\newcommand{\trylock}{\textit{trylock}}
+\newcommand{\multitrylock}{\textit{multi-trylock}}
+\newcommand{\CAS}{\textit{CAS}}
+\newcommand{\mCAS}{\textit{mCAS}}
+
+\def\Nomega{\ensuremath{\neg\Omega}}
+\def\Vomega{\ensuremath{\overrightarrow{\Omega}}}
+
+\newcommand{\id}[1]{\mbox{\textit{#1}}}% for identifiers in code
+\newcommand{\res}[1]{\mbox{\textbf{#1}}}% reserved words
+
+\newcommand{\ignore}[1]{}
+
+
+\begin{document}
+\bibliographystyle{abbrv}
+
+\title{The Cost of Instrumentation in Hybrid Transactional Memory}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\date{}
+\maketitle
+%
+\thispagestyle{empty}
+%
+\begin{abstract}
+\end{abstract}
+
+
+
+%\newpage
+\pagenumbering{arabic}\setcounter{page}{1}
+
+\input{model_alt}
+\input{algos}
+
+\bibliography{references}
+!\end{document}
+%%% Local Variables:
+%%% mode: latex
+%%% mode: flyspell
+%%% Local IspellDict: "american"
+%%% mode: outline-minor
+%%% End:
+
