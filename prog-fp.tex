@@ -1,0 +1,77 @@
+\begin{algorithm}[!h]
+\caption{Opaque HyTM implementation with sequential slow-path and progressive fast-path TM-progress; code for $T_k$ by process $p_i$}
+\label{alg:inswrite2}
+\begin{algorithmic}[1]
+  	\begin{multicols}{2}
+  	{
+  	\footnotesize
+	\Part{Shared objects}{
+		\State $v_j \in \mathbb{D}$, for each t-object $X_j$ 
+		\Statex ~~~~~allows reads, writes
+		%\State $L[i]$, a multi-trylock object for transaction $T_i$ 
+		\State bit $L \in \mathbb{M}$
+		\Statex ~~~~~allows reads, writes 
+		%\State implemented from reads and writes
+		%\State $L$, multi-trylock
+	}\EndPart	
+	\Statex
+	\Part{Local objects}{
+		
+		\State Integer counter for ABA, $k\in \mathbb{N}$, initially $0$, 
+		\Statex ~~~~~increment at start of transaction
+	}\EndPart
+	
+	\Statex	
+	\textbf{Code for slow-path transactions}
+	
+	
+	
+	\Part{\TryC$_k$()}{\quad\Comment{slow-path}
+		\If{$\Wset(T_k)= \emptyset$}
+			\Return $C_k$  \EndReturn
+		\EndIf
+				
+		
+   		\Return $C_k$ \EndReturn
+   	 }\EndPart		
+	 
+ 	\newpage
+ 	
+	
+
+	\textbf{Code for fast-path transactions}	
+	
+	\Part{$\textit{read}_k(X_j)$}{\quad\Comment{fast-path}
+		\If{$Rset(T_k) = \emptyset$}
+			\State $l \gets \Read(\ms{L})$ \Comment{cached read} 
+		
+			\If{$\ms{l}\neq 0$}
+			    \Return $A_k$ \EndReturn
+			\EndIf
+		\EndIf
+		\State $(\textit{ov}_j,k_j) := v_j.\Read()$
+		
+		\Return $\textit{ov}_j$ \EndReturn
+		
+   	 }\EndPart
+	\Statex
+	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
+		\State $v_j.\Write(\textit{nv}_j,k)$ \Comment{cached write} 
+		\Return $\ok$ \EndReturn
+		
+   	}\EndPart
+	\Statex
+	
+	%\Statex	
+	\Part{$\textit{tryC}_k$()}{\quad\Comment{fast-path}
+		%\Return $C_k$ \EndReturn
+		\State $\ms{commit-cache}_i$ \Comment{returns $C_k$}
+		
+   		
+   	 }\EndPart		
+	
+% 	
+	}
+	\end{multicols}
+  \end{algorithmic}
+\end{algorithm}

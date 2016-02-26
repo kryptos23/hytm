@@ -1,6 +1,6 @@
 \begin{algorithm}[!h]
-\caption{Progressive opaque HyTM implementation that provides uninstrumented writes and invisible reads; code for process $p_i$
-executing transaction $T_k$}
+\caption{Progressive fast-path and slow-path opaque HyTM implementation that provides uninstrumented writes and invisible reads; code for process $p_i$
+executing slow-path transaction $T_k$}
 \label{alg:inswrite}
 \begin{algorithmic}[1]
   	\begin{multicols}{2}
@@ -8,10 +8,10 @@ executing transaction $T_k$}
   	\footnotesize
 	\Part{Shared objects}{
 		\State $v_j \in \mathbb{D}$, for each t-object $X_j$ 
-		\State ~~~~~allows reads, writes and cas
+		\Statex ~~~~~allows reads, writes and cas
 		%\State $L[i]$, a multi-trylock object for transaction $T_i$ 
 		\State $r_{j} \in \mathbb{M}$, for each t-object $X_j$
-		\State ~~~~~allows reads, writes and cas
+		\Statex ~~~~~allows reads, writes and cas
 		%\State implemented from reads and writes
 		%\State $L$, multi-trylock
 	}\EndPart	
@@ -19,6 +19,8 @@ executing transaction $T_k$}
 	\Part{Local objects}{
 		\State $\ms{Lset}(T_k) \subseteq \Wset(T_k)$, initially empty
 		\State $\ms{Oset}(T_k) \subseteq \Wset(T_k)$, initially empty
+		\State Integer counter for ABA, $k\in \mathbb{N}$, initially $0$
+		\Statex ~~~~~increment at start of transaction
 	}\EndPart
 	\Statex
 	\textbf{Code for slow-path transactions}
@@ -33,18 +35,7 @@ executing transaction $T_k$}
 		  \If{$\exists X_j \in Rset(T_k)$:$(\textit{ov}_j,k_j)\neq \Read(v_j)$} \label{line:valid}
 			\Return $A_k$ \EndReturn
 		  \EndIf
-% 		  \If{$\lit{isAbortable()}$} \label{line:valid}
-% 		    \Return $A_k$ \EndReturn \label{line:abort0}
-% 		  \EndIf
-% 		  
-% 		\If{$\lit{isAbortable}()$} \label{line:abort0}
-% 			\Return $A_k$ \EndReturn
-% 		\EndIf
-		%\If{$X_j \not\in \Rset_k$}
-		%\State $\textit{ov}_j := \Read(v_j)$ \label{line:read2}
-		%\If{$\textit{ov}_j \neq \Read(v_j)$} \label{line:eval}
-		%	\State return $A_k$
-		%\EndIf
+
 		  \Return $\textit{ov}_j$ \EndReturn
 		\Else
 		    
@@ -57,7 +48,7 @@ executing transaction $T_k$}
 		
 			\State $(\textit{ov}_j,k_j) := \Read(v_j)$
 			\State $\textit{nv}_j := v$
-			\State $\Wset(T_k) := \Wset(T_k)\cup\{X_j,[\textit{ov}_j,k_j]\}$
+			\State $\Wset(T_k) := \Wset(T_k)\cup\{X_j,[\textit{ov}_j,k]\}$
 			\Return $\ok$ \EndReturn
 		
    	}\EndPart
@@ -133,8 +124,30 @@ executing transaction $T_k$}
 		\EndIf
 		\Return $\false$ \EndReturn
 	}\EndPart
+	\Statex
+	\textbf{Code for fast-path transactions}
+	\Part{$\textit{read}_k(X_j)$}\quad\Comment{fast-path}{
+		\State $\textit{ov}_j := \Read(v_j)$ \Comment{cached read} \label{line:lin1}
+		
+		\If{$r_{j}\neq 0$}  \Comment{Uncached}		\label{line:hread}
+			\Return $A_k$ \EndReturn
+		\EndIf
+		
+		\Return $\textit{ov}_j$ \EndReturn
+		
+   	 }\EndPart
+	\Statex
+	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
+		\State $\Write(v_j,\textit{nv}_j)$ \Comment{cached write} \label{line:lin2}
+		%\State $\ms{Increment}(c_j)$ \Comment{Uncached write}
+		\Return $\ok$ \EndReturn
+		
+   	}\EndPart
+	\Statex
 	
-	
+	\Part{$\textit{tryC}_k$()}{\quad\Comment{fast-path}
+		\State $\ms{commit-cache}_i$ \label{line:lin3} \Comment{returns $C_k$ or $A_k$}
+  	 }\EndPart		
 % 	
 	}
 	\end{multicols}
