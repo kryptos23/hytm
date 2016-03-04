@@ -202,6 +202,7 @@ primitives, and \textit{tryC} consists of invoking \emph{cache-commit}.
 Furthermore, we assume that a fast-path transaction $T_k$ returns $A_k$
 as soon an underlying cached primitive or \emph{cache-commit} returns $\bot$. 
 
+\textbf{Need to extend model to accomodate non-speculative operations}
 We provide two key observations on this model regarding the interactions of non-committed fast path transactions 
 with other transactions. 
 Let $E$ be any execution of a HyTM implementation $\mathcal{M}$ in

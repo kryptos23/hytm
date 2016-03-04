@@ -8,7 +8,7 @@
 	\Part{Shared objects}{
 		\State $v_j \in \mathbb{D}$, for each t-object $X_j$ 
 		\Statex ~~~~~allows reads, writes
-		%\State $L[i]$, a multi-trylock object for transaction $T_i$ 
+		\State $r_{j} \in \mathbb{M}$, for each t-object $X_j$
 		\State bit $L \in \mathbb{M}$
 		\Statex ~~~~~allows reads, writes 
 		%\State implemented from reads and writes
@@ -24,8 +24,63 @@
 	\Statex	
 	\textbf{Code for slow-path transactions}
 	
+	\Part{\Read$_k(X_j)$}\quad\Comment{slow-path}{
+		\If{$X_j \not\in \Rset_k$}
+		  \State $[\textit{ov}_j,k_j] := \Read(v_j)$ 
+		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,[\textit{ov}_j,k_j]\}$ 
+		  \If{$r_j\neq 0$} 
+		    \Return $A_k$ \EndReturn
+		  \EndIf
+		  \If{$\exists X_j \in Rset(T_k)$:$(\textit{ov}_j,k_j)\neq \Read(v_j)$} 
+			\Return $A_k$ \EndReturn
+		  \EndIf
+
+		  \Return $\textit{ov}_j$ \EndReturn
+		\Else
+		    
+		  \State $\textit{ov}_j :=\Rset(T_k).\lit{locate}(X_j)$
+		  \Return $\textit{ov}_j$ \EndReturn
+		\EndIf
+   	 }\EndPart
+	\Statex
+	\Part{\Write$_k(X_j,v)$}\quad\Comment{slow-path}{
+		
+			\State $(\textit{ov}_j,k_j) := \Read(v_j)$
+			\State $\textit{nv}_j := v$
+			\State $\Wset(T_k) := \Wset(T_k)\cup\{X_j,[\textit{ov}_j,k]\}$
+			\Return $\ok$ \EndReturn
+		
+   	}\EndPart
+	\Statex
 	
-	
+	%\Statex	
+	\Part{\TryC$_k$()}\quad\Comment{slow-path}{
+		\If{$\Wset(T_k)= \emptyset$}
+			\Return $C_k$ \EndReturn 
+		\EndIf
+		\State locked := $\lit{acquire}(\Wset(T_k))$
+		\If{$\neg$ locked}
+	 		\Return $A_k$ \EndReturn
+	 	\EndIf
+		\If{$\lit{isAbortable}()$} 
+			\State $\lit{release}( \ms{Lset}(T_k))$ 
+			\Return $A_k$ \EndReturn
+		\EndIf
+		\State $L.\lit{write}(1)$
+		\ForAll{$X_j \in \Wset(T_k)$}
+	 		 \If{ $v_j.\lit{cas}([ov_j,k_j],[\textit{nv}_j,k])$}
+			      \State $\ms{Oset}(T_k):=\ms{Oset}(T_k)\cup \{X_j\}$
+			 \Else
+			 
+			      \State $\lit{undo}(\ms{Oset}(T_k))$
+			 
+			 \EndIf
+			 
+	 	\EndFor		
+		\State $\lit{release}(\Wset(T_k))$  
+		\State $L.\lit{write}(0)$
+   		\Return $C_k$ \EndReturn
+   	 }\EndPart		
 	\Part{\TryC$_k$()}{\quad\Comment{slow-path}
 		\If{$\Wset(T_k)= \emptyset$}
 			\Return $C_k$  \EndReturn
@@ -42,7 +97,7 @@
 	\textbf{Code for fast-path transactions}	
 	
 	\Part{$\textit{read}_k(X_j)$}{\quad\Comment{fast-path}
-		\If{$Rset(T_k) = \emptyset$}
+		\If{$Dset(T_k) = \emptyset$}
 			\State $l \gets \Read(\ms{L})$ \Comment{cached read} 
 		
 			\If{$\ms{l}\neq 0$}
@@ -56,8 +111,15 @@
    	 }\EndPart
 	\Statex
 	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
-		\State $v_j.\Write(\textit{nv}_j,k)$ \Comment{cached write} 
-		\Return $\ok$ \EndReturn
+	\If{$Dset(T_k) = \emptyset$}
+		\State $l \gets \Read(\ms{L})$ \Comment{cached read} 
+		
+		\If{$\ms{l}\neq 0$}
+		    \Return $A_k$ \EndReturn
+		\EndIf
+	\EndIf
+	\State $v_j.\Write(\textit{nv}_j,k)$ \Comment{cached write} 
+	\Return $\ok$ \EndReturn
 		
    	}\EndPart
 	\Statex
