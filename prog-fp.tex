@@ -68,13 +68,8 @@
 		\EndIf
 		\State $L.\lit{write}(1)$
 		\ForAll{$X_j \in \Wset(T_k)$}
-	 		 \If{ $v_j.\lit{cas}([ov_j,k_j],[\textit{nv}_j,k])$}
-			      \State $\ms{Oset}(T_k):=\ms{Oset}(T_k)\cup \{X_j\}$
-			 \Else
+	 		 \State  $v_j.\lit{write}([\textit{nv}_j,k])$
 			 
-			      \State $\lit{undo}(\ms{Oset}(T_k))$
-			 
-			 \EndIf
 			 
 	 	\EndFor		
 		\State $\lit{release}(\Wset(T_k))$  
@@ -104,7 +99,7 @@
 			    \Return $A_k$ \EndReturn
 			\EndIf
 		\EndIf
-		\State $(\textit{ov}_j,k_j) := v_j.\Read()$
+		\State $(\textit{ov}_j,k_j) := v_j.\Read()$ \Comment{uncached read} 
 		
 		\Return $\textit{ov}_j$ \EndReturn
 		
@@ -118,7 +113,7 @@
 		    \Return $A_k$ \EndReturn
 		\EndIf
 	\EndIf
-	\State $v_j.\Write(\textit{nv}_j,k)$ \Comment{cached write} 
+	\State $v_j.\Write(\textit{nv}_j,k)$ \Comment{uncached write} 
 	\Return $\ok$ \EndReturn
 		
    	}\EndPart
