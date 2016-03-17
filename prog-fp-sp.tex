@@ -9,7 +9,7 @@
 		\State $v_j \in \mathbb{D}$, for each t-object $X_j$ 
 		\Statex ~~~~~allows reads, writes and cas
 		%\State $L[i]$, a multi-trylock object for transaction $T_i$ 
-		\State $r_{j} \in \mathbb{M}$, for each t-object $X_j$
+		\State $r_{j} \in \mathbb{M}$, a versioned lock for each t-object $X_j$
 		\Statex ~~~~~allows reads, writes and cas
 		%\State implemented from reads and writes
 		%\State $L$, multi-trylock
@@ -115,12 +115,10 @@
 	
 	\Statex
 	 \Part{Function: $\lit{isAbortable()}$ }{
-		\If{$\exists X_j \in \Rset(T_k)$: $X_j\not\in \Wset(T_k)\wedge \Read(r_{j}) \neq 0$}
+		\If{$\exists X_j \in \Rset(T_k)$: $X_j\not\in \Wset(T_k)$: $r_j$ is locked or updated}\label{line:valid}
 			\Return $\true$ \EndReturn
 		\EndIf
-		\If{$\exists X_j \in Rset(T_k)$:$[\textit{ov}_j,k_j]\neq \Read(v_j)$} \label{line:valid}
-			\Return $\true$ \EndReturn
-		\EndIf
+		
 		\Return $\false$ \EndReturn
 	}\EndPart
 	\Statex
