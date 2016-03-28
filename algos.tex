@@ -6,36 +6,31 @@
 %
 \begin{theorem}
 \label{th:inswrite}
-There exists an opaque HyTM implementation that provides uninstrumented writes, invisible reads, progressiveness
+There exists an opaque HyTM implementation that provides invisible reads, progressiveness
 and wait-free TM-liveness such that
 in its every execution $E$, every fast-path transaction $T\in \ms{txns}(E)$
-accesses $O(|\Rset(T)|)$ distinct metadata base objects.
+accesses $m=|\Dset(T_k)|$ distinct metadata base objects.
 \end{theorem}
 %
 \subsection{Progressive fast-path}
 %
 \begin{theorem}
 \label{th:inswrite2}
-There exists an opaque HyTM implementation that provides uninstrumented writes, invisible reads, fast-path progressiveness
-and wait-free TM-liveness such that
-in its every execution $E$, every fast-path transaction $T\in \ms{txns}(E)$
-accesses $O(1)$ distinct metadata base objects.
+There exists an opaque HyTM implementation that provides invisible reads
+and wait-free TM-liveness such that 
+\begin{enumerate}
+ \item 
+in every execution $E$,
+every fast-path transaction $T\in \ms{txns}(E)$
+accesses one metadata base object,
+\item
+every execution $E$ is fast-path progressive or for
+every fast-path transaction $T\in \ms{txns}(E)$
+that returns $A_k$ in $E$, there exists an updating slow-path transaction $T_m \in \ms{txns}(E)$
+concurrent to $T_k$.
+\end{enumerate}
 \end{theorem}
 
 \input{prog-fp}
 %
-\subsection{Sequential fast-path}
 %
-\input{seq-hytm}
-%
-\subsection{Fast-path/slow-path tradeoff}
-%
-\begin{theorem}
-\label{th:write}
-There exists an opaque HyTM implementation that provides invisible reads, progressiveness (and resp. fast-path progressiveness)
-and wait-free TM-liveness such that
-in its every execution $E$, every fast-path transaction $T\in \ms{txns}(E)$
-accesses $O(|\Dset(T)|)$ (and resp. $(|\Wset(T)|)$ distinct metadata base objects.
-\end{theorem}
-%
-\input{prog-fp-sp-optimized}

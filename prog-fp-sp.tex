@@ -14,40 +14,30 @@
 		%\State implemented from reads and writes
 		%\State $L$, multi-trylock
 	}\EndPart	
-	\Statex
-	\Part{Local objects}{
-		\State $\ms{Lset}(T_k) \subseteq \Wset(T_k)$, initially empty
-		\State $\ms{Oset}(T_k) \subseteq \Wset(T_k)$, initially empty
-		\State Integer counter for ABA, $k\in \mathbb{N}$, initially $0$
-		\Statex ~~~~~increment at start of transaction
-	}\EndPart
+	
 	\Statex
 	\textbf{Code for slow-path transactions}
 	\Statex
 	\Part{\Read$_k(X_j)$}\quad\Comment{slow-path}{
-		\If{$X_j \not\in \Rset_k$}
-		  \State $[\textit{ov}_j,k_j] := \Read(v_j)$ \label{line:read2}
-		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,[\textit{ov}_j,k_j]\}$ \label{line:rset}
-		  \If{$r_j\neq 0$} \label{line:abort0}
+		
+		  \State $\textit{ov}_j := \Read(v_j)$ \label{line:read2}
+		  \State $\textit{or}_j := \Read(r_j)$ \label{line:readorec}
+		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$ \label{line:rset}
+		  \If{$r_j.\lit{isLocked}$} \label{line:abort0}
 		    \Return $A_k$ \EndReturn
 		  \EndIf
-		  \If{$\exists X_j \in Rset(T_k)$:$(\textit{ov}_j,k_j)\neq \Read(v_j)$} \label{line:valid}
+		  \If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j)$} \label{line:valid}
 			\Return $A_k$ \EndReturn
 		  \EndIf
 
 		  \Return $\textit{ov}_j$ \EndReturn
-		\Else
-		    
-		  \State $\textit{ov}_j :=\Rset(T_k).\lit{locate}(X_j)$
-		  \Return $\textit{ov}_j$ \EndReturn
-		\EndIf
+		
    	 }\EndPart
 	\Statex
 	\Part{\Write$_k(X_j,v)$}\quad\Comment{slow-path}{
 		
-			\State $(\textit{ov}_j,k_j) := \Read(v_j)$
 			\State $\textit{nv}_j := v$
-			\State $\Wset(T_k) := \Wset(T_k)\cup\{X_j,[\textit{ov}_j,k]\}$
+			\State $\Wset(T_k) := \Wset(T_k)\cup\{X_j,\textit{nv}_j\}$
 			\Return $\ok$ \EndReturn
 		
    	}\EndPart
@@ -67,15 +57,9 @@
 			\Return $A_k$ \EndReturn
 		\EndIf
 		\ForAll{$X_j \in \Wset(T_k)$}
-	 		 \If{ $v_j.\lit{cas}([ov_j,k_j],[\textit{nv}_j,k])$} \label{line:write}
-			      \State $\ms{Oset}(T_k):=\ms{Oset}(T_k)\cup \{X_j\}$
-			 \Else
+	 		\State  $v_j.\lit{write}(\textit{nv}_j)$ \label{line:write}
 			 
-			      \State $\lit{undo}(\ms{Oset}(T_k))$
-			 
-			 \EndIf
-			 
-	 	\EndFor		
+	 	\EndFor	
 		\State $\lit{release}(\Wset(T_k))$   \label{line:rel}		
    		\Return $C_k$ \EndReturn
    	 }\EndPart		
@@ -83,13 +67,8 @@
  	\newpage
  	\Part{Function: $\lit{acquire}(Q$)}{
    		\ForAll{$X_j \in Q$}	
-			\If{$r_j.\lit{cas}(0,1)$} \label{line:acq1}
-			  \State $\ms{Lset}(T_k) := \ms{Lset}(T_k)\cup \{X_j\}$
-			\Else
-			  \State $\lit{release}(\ms{Lset}(T_k))$
-			  \Return $\false$ \EndReturn
-			\EndIf
-			
+			\State $r_j.\lit{setLock}$ \label{line:acq1}
+			 		
 		\EndFor
 		
 		\Return $\true$ \EndReturn 
@@ -97,25 +76,16 @@
 	 \Statex
 	 \Part{Function: $\lit{release}(Q)$}{
   		\ForAll{$X_j \in Q$}	
- 			\State $r_j.\Write(0)$ \label{line:rel1}
+ 			\State $r_j.\Write(r_j+1)$ \label{line:rel1}
 		\EndFor
 		%\State $Rset_k:=Wset_k:=\emptyset$
 		\Return $ok$ \EndReturn
 	}\EndPart
 	
-	\Statex
-	
-	\Part{Function: $\lit{undo}(\ms{Oset}(T_k))$}{
-		\ForAll{$X_j \in \ms{Oset}(T_k)$}
-		    \State $v_j.\lit{cas}([nv_j,k],[ov_j,k_j])$
-		 \EndFor
-		\State $\lit{release}( \ms{Wset}(T_k))$ 
-		\Return $A_k$ \EndReturn
-	 }\EndPart
-	
+		
 	\Statex
 	 \Part{Function: $\lit{isAbortable()}$ }{
-		\If{$\exists X_j \in \Rset(T_k)$: $X_j\not\in \Wset(T_k)$: $r_j$ is locked or updated}\label{line:valid}
+		\If{$\exists X_j \in \Rset(T_k)$: $X_j\not\in \Wset(T_k)$: $r_j$ is updated}\label{line:valid}
 			\Return $\true$ \EndReturn
 		\EndIf
 		
@@ -135,7 +105,11 @@
    	 }\EndPart
 	\Statex
 	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
-		\State $\Write(v_j,\textit{nv}_j)$ \Comment{cached write} \label{line:lin2}
+		\If{$r_{j}\neq 0$}  \Comment{uncached}		
+			\Return $A_k$ \EndReturn
+		\EndIf
+		\State $\Write(v_j,v)$ \Comment{cached write} 
+		\State $\Write(r_j,\textit{r}_j+2)$ \Comment{uncached write}
 		%\State $\ms{Increment}(c_j)$ \Comment{Uncached write}
 		\Return $\ok$ \EndReturn
 		
