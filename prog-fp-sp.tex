@@ -19,7 +19,10 @@
 	\textbf{Code for slow-path transactions}
 	\Statex
 	\Part{\Read$_k(X_j)$}\quad\Comment{slow-path}{
-		
+		  \If{$X_j\in \Wset(T_k)$}
+		    \Return $\Wset(T_k).\lit{locate}(X_j)$ \EndReturn
+		  \Else
+		  
 		  \State $\textit{ov}_j := \Read(v_j)$ \label{line:read2}
 		  \State $\textit{or}_j := \Read(r_j)$ \label{line:readorec}
 		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$ \label{line:rset}
@@ -29,7 +32,7 @@
 		  \If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j)$} \label{line:valid}
 			\Return $A_k$ \EndReturn
 		  \EndIf
-
+		  \EndIf
 		  \Return $\textit{ov}_j$ \EndReturn
 		
    	 }\EndPart
@@ -49,11 +52,9 @@
 			\Return $C_k$ \EndReturn \label{line:return}
 		\EndIf
 		\State locked := $\lit{acquire}(\Wset(T_k))$\label{line:acq} 
-		\If{$\neg$ locked} \label{line:abort2} 
-	 		\Return $A_k$ \EndReturn
-	 	\EndIf
-		\If{$\lit{isAbortable}()$} \label{line:abort3}
-			\State $\lit{release}( \ms{Lset}(T_k))$ 
+		
+		\If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j)$} \label{line:abort3}
+			\State $\lit{release}( \ms{Wset}(T_k))$ 
 			\Return $A_k$ \EndReturn
 		\EndIf
 		\ForAll{$X_j \in \Wset(T_k)$}
@@ -67,36 +68,26 @@
  	\newpage
  	\Part{Function: $\lit{acquire}(Q$)}{
    		\ForAll{$X_j \in Q$}	
-			\State $r_j.\lit{setLock}$ \label{line:acq1}
+			\State $r_j.\lit{setLock}()$ \label{line:acq1}
 			 		
 		\EndFor
 		
-		\Return $\true$ \EndReturn 
 	}\EndPart		
 	 \Statex
 	 \Part{Function: $\lit{release}(Q)$}{
   		\ForAll{$X_j \in Q$}	
- 			\State $r_j.\Write(r_j+1)$ \label{line:rel1}
+ 			\State $r_j.\lit{unLock}()$ \label{line:rel1}
 		\EndFor
-		%\State $Rset_k:=Wset_k:=\emptyset$
-		\Return $ok$ \EndReturn
+		
 	}\EndPart
 	
 		
-	\Statex
-	 \Part{Function: $\lit{isAbortable()}$ }{
-		\If{$\exists X_j \in \Rset(T_k)$: $X_j\not\in \Wset(T_k)$: $r_j$ is updated}\label{line:valid}
-			\Return $\true$ \EndReturn
-		\EndIf
-		
-		\Return $\false$ \EndReturn
-	}\EndPart
 	\Statex
 	\textbf{Code for fast-path transactions}
 	\Part{$\textit{read}_k(X_j)$}\quad\Comment{fast-path}{
 		\State $\textit{ov}_j := \Read(v_j)$ \Comment{cached read} \label{line:lin1}
 		
-		\If{$r_{j}\neq 0$}  \Comment{Uncached}		\label{line:hread}
+		\If{$r_{j}.\lit{isLocked}()$}  \Comment{Uncached}		\label{line:hread}
 			\Return $A_k$ \EndReturn
 		\EndIf
 		
@@ -105,11 +96,11 @@
    	 }\EndPart
 	\Statex
 	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
-		\If{$r_{j}\neq 0$}  \Comment{uncached}		
+		\If{$r_{j}.\lit{isLocked}()$}  \Comment{uncached}		
 			\Return $A_k$ \EndReturn
 		\EndIf
 		\State $\Write(v_j,v)$ \Comment{cached write} 
-		\State $\Write(r_j,\textit{r}_j+2)$ \Comment{uncached write}
+		\State $\Write(r_j,\Read(r_j)+2)$ \Comment{uncached write}
 		%\State $\ms{Increment}(c_j)$ \Comment{Uncached write}
 		\Return $\ok$ \EndReturn
 		

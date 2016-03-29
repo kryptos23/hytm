@@ -18,8 +18,8 @@ or a special value $A_k\notin V$ (\emph{abort}),
 $\mathit{write}_k(X,v)$, for a value $v \in V$,
 that returns $\mathit{ok}$ or $A_k$, and
 $\mathit{tryC}_k$ that returns $C_k\notin V$ (\emph{commit}) or $A_k$.
-% Additionally, we assume that a transaction $T_k$
-% may perform a $\mathit{start_k}$ that is the first t-operation performed by $T_k$ which returns $A_k$ or $\mathit{ok}$.
+Additionally, we assume that a transaction $T_k$
+may perform a $\mathit{start_k}$ that is the first t-operation performed by $T_k$ which returns $A_k$ or $\mathit{ok}$.
 % \petrC{Is this start event necessary?}
 
 \vspace{1mm}\noindent\textbf{Configurations and executions.} 

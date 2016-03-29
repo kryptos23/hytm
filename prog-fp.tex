@@ -19,25 +19,26 @@
 	\textbf{Code for slow-path transactions}
 	
 	\Part{\Read$_k(X_j)$}\quad\Comment{slow-path}{
-		  
+		  \If{$X_j\in \Wset(T_k)$}
+		    \Return $\Wset(T_k).\lit{locate}(X_j)$ \EndReturn
+		  \Else
 		  \State $\textit{ov}_j := \Read(v_j)$ 
 		  \State $\textit{or}_j := \Read(r_j)$ 
 		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$ 
-		  \If{$r_j.\lit{isLocked}$} 
+		  \If{$r_j.\lit{isLocked}()$} 
 		    \Return $A_k$ \EndReturn
 		  \EndIf
 		  \If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j)$}
 			\Return $A_k$ \EndReturn
 		  \EndIf
-
+		  \EndIf
 		  \Return $\textit{ov}_j$ \EndReturn
 		
    	 }\EndPart
 	\Part{\Write$_k(X_j,v)$}\quad\Comment{slow-path}{
 		
-			\State $(\textit{ov}_j,k_j) := \Read(v_j)$
 			\State $\textit{nv}_j := v$
-			\State $\Wset(T_k) := \Wset(T_k)\cup\{X_j,[\textit{ov}_j,k]\}$
+			\State $\Wset(T_k) := \Wset(T_k)\cup\{X_j,nv_j\}$
 			\Return $\ok$ \EndReturn
 		
    	}\EndPart
@@ -48,15 +49,13 @@
 		\If{$\Wset(T_k)= \emptyset$}
 			\Return $C_k$ \EndReturn 
 		\EndIf
-		\State locked := $\lit{acquire}(\Wset(T_k))$
-		\If{$\neg$ locked}
-	 		\Return $A_k$ \EndReturn
-	 	\EndIf
-		\If{$\lit{isAbortable}()$} 
-			\State $\lit{release}( \ms{Lset}(T_k))$ 
+		\State $L.\lit{cas}(0,1)$
+		\State $\lit{acquire}(\Wset(T_k))$
+		\If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j)$}
+			\State $\lit{release}( \ms{Wset}(T_k))$ 
 			\Return $A_k$ \EndReturn
 		\EndIf
-		\State $L.\lit{write}(1)$
+		
 		\ForAll{$X_j \in \Wset(T_k)$}
 	 		 \State  $v_j.\lit{write}([\textit{nv}_j,k])$
 			 
@@ -94,7 +93,7 @@
 	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
 	
 	\State $v_j.\Write(v)$ \Comment{cached write}
-	\State $r_j.\Write(\textit{r}_j+2)$ \Comment{uncached write}
+	\State $r_j.\Write(\Read{r}_j+2)$ \Comment{uncached write}
 	\Return $\ok$ \EndReturn
 		
    	}\EndPart
