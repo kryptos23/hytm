@@ -15,7 +15,12 @@
 		%\State $L$, multi-trylock
 	}\EndPart	
 	\Statex
-		
+	\Part{Process local objects}{
+		\State $\Rset(T_k)$ list storing $\{X_j,r_j\}$
+		\State $\Wset(T_k)$ bloom filter storing $\{X_j, v_j\}$
+	}\EndPart
+	\Statex
+	
 	\textbf{Code for slow-path transactions}
 	
 	\Part{\Read$_k(X_j)$}\quad\Comment{slow-path}{
