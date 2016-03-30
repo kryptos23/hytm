@@ -30,10 +30,10 @@
 		  \State $\textit{ov}_j := \Read(v_j)$ 
 		  \State $\textit{or}_j := \Read(r_j)$ 
 		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$ 
-		  \If{$r_j.\lit{isLocked}()$} 
-		    \Return $A_k$ \EndReturn
+		  \If{$\textit{or}_j$ BITWISE\_AND $0000...0001$}  	
+			\Return $A_k$ \EndReturn
 		  \EndIf
-		  \If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j)$}
+		  \If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$}
 			\Return $A_k$ \EndReturn
 		  \EndIf
 		  \EndIf
@@ -56,7 +56,7 @@
 		\EndIf
 		\State $L.\lit{cas}(0,1)$
 		\State $\lit{acquire}(\Wset(T_k))$
-		\If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j)$}
+		\If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$}
 			\State $\lit{release}( \ms{Wset}(T_k))$ 
 			\Return $A_k$ \EndReturn
 		\EndIf
@@ -97,8 +97,9 @@
 	\Statex
 	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
 	
+	\State $\textit{or}_j L= \Read(r_j)$ \Comment{uncached read}
+	\State $r_j.\Write({or}_j+2)$ \Comment{uncached write}
 	\State $v_j.\Write(v)$ \Comment{cached write}
-	\State $r_j.\Write(\Read{r}_j+2)$ \Comment{uncached write}
 	\Return $\ok$ \EndReturn
 		
    	}\EndPart

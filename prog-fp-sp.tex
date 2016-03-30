@@ -31,10 +31,11 @@
 		  \State $\textit{ov}_j := \Read(v_j)$ \label{line:read2}
 		  \State $\textit{or}_j := \Read(r_j)$ \label{line:readorec}
 		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$ \label{line:rset}
-		  \If{$r_j.\lit{isLocked}$} \label{line:abort0}
-		    \Return $A_k$ \EndReturn
+		  \If{$\textit{or}_j$ BITWISE\_AND $0000...0001$} \label{line:abort0}	
+			\Return $A_k$ \EndReturn
 		  \EndIf
-		  \If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j)$} \label{line:valid}
+		 
+		  \If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$} \label{line:valid}
 			\Return $A_k$ \EndReturn
 		  \EndIf
 		  \EndIf
@@ -56,9 +57,9 @@
 		\If{$\Wset(T_k)= \emptyset$}
 			\Return $C_k$ \EndReturn \label{line:return}
 		\EndIf
-		\State locked := $\lit{acquire}(\Wset(T_k))$\label{line:acq} 
+		\State $\lit{acquire}(\Wset(T_k))$\label{line:acq} 
 		
-		\If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j)$} \label{line:abort3}
+		\If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$} \label{line:abort3}
 			\State $\lit{release}( \ms{Wset}(T_k))$ 
 			\Return $A_k$ \EndReturn
 		\EndIf
@@ -91,8 +92,8 @@
 	\textbf{Code for fast-path transactions}
 	\Part{$\textit{read}_k(X_j)$}\quad\Comment{fast-path}{
 		\State $\textit{ov}_j := \Read(v_j)$ \Comment{cached read} \label{line:lin1}
-		
-		\If{$r_{j}.\lit{isLocked}()$}  \Comment{Uncached}		\label{line:hread}
+		\State $\textit{or}_j := \Read(r_j)$
+		\If{$\textit{or}_j$ BITWISE\_AND $0000...0001$}  \Comment{Uncached}		\label{line:hread}
 			\Return $A_k$ \EndReturn
 		\EndIf
 		
@@ -101,11 +102,13 @@
    	 }\EndPart
 	\Statex
 	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
-		\If{$r_{j}.\lit{isLocked}()$}  \Comment{uncached}		
+		\State $\textit{or}_j L= \Read(r_j)$
+		\If{$\textit{or}_j$ BITWISE\_AND $0000...0001$}  \Comment{Uncached}		
 			\Return $A_k$ \EndReturn
 		\EndIf
+		
 		\State $\Write(v_j,v)$ \Comment{cached write} 
-		\State $\Write(r_j,\Read(r_j)+2)$ \Comment{uncached write}
+		\State $\Write(r_j,\textit{or}_j+2)$ \Comment{uncached write}
 		%\State $\ms{Increment}(c_j)$ \Comment{Uncached write}
 		\Return $\ok$ \EndReturn
 		
