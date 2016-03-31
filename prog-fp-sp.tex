@@ -16,11 +16,11 @@
 	}\EndPart	
 	\Statex
 	\Part{Process local objects}{
-		\State $\Rset(T_k)$ list storing $\{X_j,r_j\}$
-		\State $\Wset(T_k)$ bloom filter storing $\{X_j, v_j\}$
+		\State $\Rset(T_k)$, list storing $\{X_j,r_j\}$
+		\State $\Wset(T_k)$, bloom filter storing $\{X_j, v_j\}$
 	}\EndPart
 	\Statex
-	
+	\Statex
 	\textbf{Code for slow-path transactions}
 	\Statex
 	\Part{\Read$_k(X_j)$}\quad\Comment{slow-path}{
@@ -31,11 +31,11 @@
 		  \State $\textit{ov}_j := \Read(v_j)$ \label{line:read2}
 		  \State $\textit{or}_j := \Read(r_j)$ \label{line:readorec}
 		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$ \label{line:rset}
-		  \If{$\textit{or}_j$ BITWISE\_AND $0000...0001$} \label{line:abort0}	
+		  \If{$\textit{or}_j$ $\mathrel{\&} 0000...0001$} \label{line:abort0}	
 			\Return $A_k$ \EndReturn
 		  \EndIf
 		 
-		  \If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$} \label{line:valid}
+		  \If{$\lit{validate}()$} \label{line:valid}
 			\Return $A_k$ \EndReturn
 		  \EndIf
 		  \EndIf
@@ -59,7 +59,7 @@
 		\EndIf
 		\State $\lit{acquire}(\Wset(T_k))$\label{line:acq} 
 		
-		\If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$} \label{line:abort3}
+		\If{$\lit{validate}()$} \label{line:abort3}
 			\State $\lit{release}( \ms{Wset}(T_k))$ 
 			\Return $A_k$ \EndReturn
 		\EndIf
@@ -67,14 +67,14 @@
 	 		\State  $v_j.\lit{write}(\textit{nv}_j)$ \label{line:write}
 			 
 	 	\EndFor	
-		\State $\lit{release}(\Wset(T_k))$   \label{line:rel}		
+		\State $\lit{release}(\Wset(T_k))$   \label{line:rel}	\Comment{Simple write on Power 8}	
    		\Return $C_k$ \EndReturn
    	 }\EndPart		
 	 
  	\newpage
  	\Part{Function: $\lit{acquire}(Q$)}{
    		\ForAll{$X_j \in Q$}	
-			\State $r_j.\lit{setLock}()$ \label{line:acq1}
+			\State $r_j.\lit{setV}()$ \label{line:acq1}
 			 		
 		\EndFor
 		
@@ -82,18 +82,33 @@
 	 \Statex
 	 \Part{Function: $\lit{release}(Q)$}{
   		\ForAll{$X_j \in Q$}	
- 			\State $r_j.\lit{unLock}()$ \label{line:rel1}
+ 			\State $r_j.\lit{setV}()$ \label{line:rel1}
 		\EndFor
 		
 	}\EndPart
-	
+	\Statex
+	\Part{Function: $\lit{setV}()$}{ \Comment{spin lock on the latest version}
+		\State $\ms{success} \gets \lit{false}$
 		
+		\While{($\neg \ms{success}$)} \Comment {spin until we get the lock}
+		\State $\ms{val} \gets$ $r_j.\Read()$ $\mathrel{\&}1111...1110$
+		\State $\ms{success} \gets r_j$.CAS($val$, $val+1$)
+		\EndWhile
+	}\EndPart
+	\Statex
+	\Part{Function: $\lit{validate}()$}{
+		\If{$\exists X_j \in Rset(T_k)$;$X_j \not\in \Wset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$} \label{line:valid}
+			\Return $\true$ \EndReturn
+		  \EndIf
+		 \Return $\false$ \EndReturn
+	}\EndPart
+	\Statex
 	\Statex
 	\textbf{Code for fast-path transactions}
 	\Part{$\textit{read}_k(X_j)$}\quad\Comment{fast-path}{
 		\State $\textit{ov}_j := \Read(v_j)$ \Comment{cached read} \label{line:lin1}
-		\State $\textit{or}_j := \Read(r_j)$
-		\If{$\textit{or}_j$ BITWISE\_AND $0000...0001$}  \Comment{Uncached}		\label{line:hread}
+		\State $\textit{or}_j := \Read(r_j)$ \Comment{uncached read}
+		\If{$\textit{or}_j$ $\mathrel{\&}0000...0001$}  \label{line:hread}
 			\Return $A_k$ \EndReturn
 		\EndIf
 		
@@ -102,14 +117,13 @@
    	 }\EndPart
 	\Statex
 	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
-		\State $\textit{or}_j L= \Read(r_j)$
-		\If{$\textit{or}_j$ BITWISE\_AND $0000...0001$}  \Comment{Uncached}		
+		\State $\textit{or}_j := \Read(r_j)$ \Comment{uncached read}
+		\If{$\textit{or}_j$ $\mathrel{\&}0000...0001$}  		
 			\Return $A_k$ \EndReturn
 		\EndIf
 		
-		\State $\Write(v_j,v)$ \Comment{cached write} 
 		\State $\Write(r_j,\textit{or}_j+2)$ \Comment{uncached write}
-		%\State $\ms{Increment}(c_j)$ \Comment{Uncached write}
+		\State $\Write(v_j,v)$ \Comment{cached write} 
 		\Return $\ok$ \EndReturn
 		
    	}\EndPart

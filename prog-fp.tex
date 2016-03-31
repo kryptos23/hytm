@@ -16,9 +16,10 @@
 	}\EndPart	
 	\Statex
 	\Part{Process local objects}{
-		\State $\Rset(T_k)$ list storing $\{X_j,r_j\}$
-		\State $\Wset(T_k)$ bloom filter storing $\{X_j, v_j\}$
+		\State $\Rset(T_k)$, list storing $\{X_j,r_j\}$
+		\State $\Wset(T_k)$, bloom filter storing $\{X_j, v_j\}$
 	}\EndPart
+	\Statex
 	\Statex
 	
 	\textbf{Code for slow-path transactions}
@@ -30,16 +31,17 @@
 		  \State $\textit{ov}_j := \Read(v_j)$ 
 		  \State $\textit{or}_j := \Read(r_j)$ 
 		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$ 
-		  \If{$\textit{or}_j$ BITWISE\_AND $0000...0001$}  	
+		  \If{$\textit{or}_j$ $\mathrel{\&} 0000...0001$}  	
 			\Return $A_k$ \EndReturn
 		  \EndIf
-		  \If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$}
+		  \If{$\lit{validate}()$}
 			\Return $A_k$ \EndReturn
 		  \EndIf
 		  \EndIf
 		  \Return $\textit{ov}_j$ \EndReturn
 		
    	 }\EndPart
+   	 \Statex
 	\Part{\Write$_k(X_j,v)$}\quad\Comment{slow-path}{
 		
 			\State $\textit{nv}_j := v$
@@ -54,15 +56,17 @@
 		\If{$\Wset(T_k)= \emptyset$}
 			\Return $C_k$ \EndReturn 
 		\EndIf
-		\State $L.\lit{cas}(0,1)$
+		\While {$\neg flag$}
+		  \State $flag \gets L.\lit{cas}(0,1)$
+		\EndWhile
 		\State $\lit{acquire}(\Wset(T_k))$
-		\If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$}
+		\If{$\lit{validate}()$}
 			\State $\lit{release}( \ms{Wset}(T_k))$ 
 			\Return $A_k$ \EndReturn
 		\EndIf
 		
 		\ForAll{$X_j \in \Wset(T_k)$}
-	 		 \State  $v_j.\lit{write}([\textit{nv}_j,k])$
+	 		 \State  $v_j.\lit{write}(\textit{nv}_j)$
 			 
 			 
 	 	\EndFor		
@@ -74,11 +78,26 @@
 	 
  	\newpage
  	
-	
-
+	\Part{Function: $\lit{acquire}(Q$)}{
+   		\ForAll{$X_j \in Q$}	
+			\State $r_j.\lit{write}(1)$ 
+			 		
+		\EndFor
+		
+	}\EndPart		
+	 \Statex
+	 \Part{Function: $\lit{release}(Q)$}{
+  		\ForAll{$X_j \in Q$}	
+ 			\State $r_j.\lit{write}(0)$ 
+		\EndFor
+		
+	}\EndPart
+	\Statex
+	\Statex
 	\textbf{Code for fast-path transactions}	
 	
 	\Part{$\textit{start}_k()$}{
+		\Comment{Should this be a spin lock?}
 		\State $l \gets \Read(\ms{L})$ \Comment{cached read} 
 		\If{$\ms{l}\neq 0$}
 			    \Return $A_k$ \EndReturn
@@ -97,7 +116,7 @@
 	\Statex
 	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
 	
-	\State $\textit{or}_j L= \Read(r_j)$ \Comment{uncached read}
+	\State $\textit{or}_j := \Read(r_j)$ \Comment{uncached read}
 	\State $r_j.\Write({or}_j+2)$ \Comment{uncached write}
 	\State $v_j.\Write(v)$ \Comment{cached write}
 	\Return $\ok$ \EndReturn
