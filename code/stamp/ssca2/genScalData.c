@@ -809,9 +809,9 @@ genScalData (void* argPtr)
         long t = i + t1 % (TOT_VERTICES - i);
         if (t != i) {
             TM_BEGIN();
-            long t2 = (long)TM_SHARED_READ(permV[t]);
-            TM_SHARED_WRITE(permV[t], TM_SHARED_READ(permV[i]));
-            TM_SHARED_WRITE(permV[i], t2);
+            long t2 = (long)TM_SHARED_READ_L(permV[t]);
+            TM_SHARED_WRITE_L(permV[t], TM_SHARED_READ_L(permV[i]));
+            TM_SHARED_WRITE_L(permV[i], t2);
             TM_END();
         }
     }
@@ -1097,8 +1097,8 @@ genScalData (void* argPtr)
     }
 
     TM_BEGIN();
-    TM_SHARED_WRITE(global_edgeNum,
-                    ((long)TM_SHARED_READ(global_edgeNum) + i_edgePtr));
+    TM_SHARED_WRITE_L(global_edgeNum,
+                    ((long)TM_SHARED_READ_L(global_edgeNum) + i_edgePtr));
     TM_END();
 
     thread_barrier_wait();
@@ -1315,8 +1315,8 @@ genScalData (void* argPtr)
     }
 
     TM_BEGIN();
-    TM_SHARED_WRITE(global_edgeNum,
-                    ((long)TM_SHARED_READ(global_edgeNum) + i_edgePtr));
+    TM_SHARED_WRITE_L(global_edgeNum,
+                    ((long)TM_SHARED_READ_L(global_edgeNum) + i_edgePtr));
     TM_END();
 
 
@@ -1397,8 +1397,8 @@ genScalData (void* argPtr)
     }
 
     TM_BEGIN();
-    TM_SHARED_WRITE(global_numStrWtEdges,
-                    ((long)TM_SHARED_READ(global_numStrWtEdges) + numStrWtEdges));
+    TM_SHARED_WRITE_L(global_numStrWtEdges,
+                    ((long)TM_SHARED_READ_L(global_numStrWtEdges) + numStrWtEdges));
     TM_END();
 
     thread_barrier_wait();

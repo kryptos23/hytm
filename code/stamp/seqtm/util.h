@@ -34,79 +34,11 @@ extern "C" {
 #define IP2F(v)                         intp2float(v)
 #define F2IP(v)                         float2intp(v)
 
-#define IPP2FP(v)                       intpp2floatp(v)
+#define IPP2FP(v)                       intpp2floatpp(v)
 #define FP2IPP(v)                       floatp2intpp(v)
 
 #define IP2VP(v)                        intp2voidp(v)
 #define VP2IP(v)                        voidp2intp(v)
-
-#define LP2IPP(v)                       longp2intpp(v)
-#define IPP2LP(v)                       intpp2longp(v)
-
-#define IP2L(v)                         intp2long(v)
-#define L2IP(v)                         long2intp(v)
-
-static __inline__ volatile intptr_t*
-longp2intpp (volatile long* val)
-{
-    union {
-        volatile intptr_t* i;
-        volatile long*     l;
-    } convert;
-    convert.l = val;
-    return convert.i;
-}
-
-static __inline__ volatile long*
-intpp2longp (volatile intptr_t* val)
-{
-    union {
-        volatile intptr_t* i;
-        volatile long*     l;
-    } convert;
-    convert.i = val;
-    return convert.l;
-}
-
-static __inline__ intptr_t
-long2intp (long val)
-{
-#ifdef __LP64__
-    union {
-        intptr_t i;
-        long     l;
-    } convert;
-    convert.l = val;
-    return convert.i;
-#else
-    union {
-        intptr_t i;
-        long     l[2];
-    } convert;
-    convert.l[0] = val;
-    return convert.i;
-#endif
-}
-
-static __inline__ long
-intp2long (intptr_t val)
-{
-#ifdef __LP64__
-    union {
-        intptr_t i;
-        long     l;
-    } convert;
-    convert.i = val;
-    return convert.l;
-#else
-    union {
-        intptr_t i;
-        long     l[2];
-    } convert;
-    convert.i = val;
-    return convert.l[0];
-#endif
-}
 
 
 /* =============================================================================
@@ -163,12 +95,12 @@ float2intp (float val)
  * intpp2floatp
  * =============================================================================
  */
-static __inline__ volatile float*
-intpp2floatp (volatile intptr_t* val)
+static __inline__ float*
+intpp2floatp (intptr_t* val)
 {
     union {
-        volatile intptr_t* i;
-        volatile float*    f;
+        intptr_t* i;
+        float*    f;
     } convert;
     convert.i = val;
     return convert.f;
@@ -179,12 +111,12 @@ intpp2floatp (volatile intptr_t* val)
  * floatp2intpp
  * =============================================================================
  */
-static __inline__ volatile intptr_t*
-floatp2intpp (volatile float* val)
+static __inline__ intptr_t*
+floatp2intpp (float* val)
 {
     union {
-        volatile intptr_t* i;
-        volatile float*    f;
+        intptr_t* i;
+        float*    f;
     } convert;
     convert.f = val;
     return convert.i;

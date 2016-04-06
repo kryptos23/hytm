@@ -142,17 +142,17 @@ reservation_info_compare (reservation_info_t* aPtr, reservation_info_t* bPtr)
 static void
 checkReservation (TM_ARGDECL  reservation_t* reservationPtr)
 {
-    long numUsed = (long)TM_SHARED_READ(reservationPtr->numUsed);
+    long numUsed = (long)TM_SHARED_READ_L(reservationPtr->numUsed);
     if (numUsed < 0) {
         TM_RESTART();
     }
     
-    long numFree = (long)TM_SHARED_READ(reservationPtr->numFree);
+    long numFree = (long)TM_SHARED_READ_L(reservationPtr->numFree);
     if (numFree < 0) {
         TM_RESTART();
     }
 
-    long numTotal = (long)TM_SHARED_READ(reservationPtr->numTotal);
+    long numTotal = (long)TM_SHARED_READ_L(reservationPtr->numTotal);
     if (numTotal < 0) {
         TM_RESTART();
     }
@@ -161,7 +161,7 @@ checkReservation (TM_ARGDECL  reservation_t* reservationPtr)
         TM_RESTART();
     }
 
-    long price = (long)TM_SHARED_READ(reservationPtr->price);
+    long price = (long)TM_SHARED_READ_L(reservationPtr->price);
     if (price < 0) {
         TM_RESTART();
     }
@@ -235,15 +235,15 @@ reservation_alloc_seq (long id, long numTotal, long price)
 bool_t
 reservation_addToTotal (TM_ARGDECL  reservation_t* reservationPtr, long num)
 {
-    long numFree = (long)TM_SHARED_READ(reservationPtr->numFree);
+    long numFree = (long)TM_SHARED_READ_L(reservationPtr->numFree);
 
     if (numFree + num < 0) {
         return FALSE;
     }
 
-    TM_SHARED_WRITE(reservationPtr->numFree, (numFree + num));
-    TM_SHARED_WRITE(reservationPtr->numTotal,
-                    ((long)TM_SHARED_READ(reservationPtr->numTotal) + num));
+    TM_SHARED_WRITE_L(reservationPtr->numFree, (numFree + num));
+    TM_SHARED_WRITE_L(reservationPtr->numTotal,
+                    ((long)TM_SHARED_READ_L(reservationPtr->numTotal) + num));
 
     CHECK_RESERVATION(reservationPtr);
 
@@ -275,14 +275,14 @@ reservation_addToTotal_seq (reservation_t* reservationPtr, long num)
 bool_t
 reservation_make (TM_ARGDECL  reservation_t* reservationPtr)
 {
-    long numFree = (long)TM_SHARED_READ(reservationPtr->numFree);
+    long numFree = (long)TM_SHARED_READ_L(reservationPtr->numFree);
 
     if (numFree < 1) {
         return FALSE;
     }
-    TM_SHARED_WRITE(reservationPtr->numUsed,
-                    ((long)TM_SHARED_READ(reservationPtr->numUsed) + 1));
-    TM_SHARED_WRITE(reservationPtr->numFree, (numFree - 1));
+    TM_SHARED_WRITE_L(reservationPtr->numUsed,
+                    ((long)TM_SHARED_READ_L(reservationPtr->numUsed) + 1));
+    TM_SHARED_WRITE_L(reservationPtr->numFree, (numFree - 1));
 
     CHECK_RESERVATION(reservationPtr);
 
@@ -314,15 +314,15 @@ reservation_make_seq (reservation_t* reservationPtr)
 bool_t
 reservation_cancel (TM_ARGDECL  reservation_t* reservationPtr)
 {
-    long numUsed = (long)TM_SHARED_READ(reservationPtr->numUsed);
+    long numUsed = (long)TM_SHARED_READ_L(reservationPtr->numUsed);
 
     if (numUsed < 1) {
         return FALSE;
     }
 
-    TM_SHARED_WRITE(reservationPtr->numUsed, (numUsed - 1));
-    TM_SHARED_WRITE(reservationPtr->numFree,
-                    ((long)TM_SHARED_READ(reservationPtr->numFree) + 1));
+    TM_SHARED_WRITE_L(reservationPtr->numUsed, (numUsed - 1));
+    TM_SHARED_WRITE_L(reservationPtr->numFree,
+                    ((long)TM_SHARED_READ_L(reservationPtr->numFree) + 1));
 
     CHECK_RESERVATION(reservationPtr);
 
@@ -359,7 +359,7 @@ reservation_updatePrice (TM_ARGDECL  reservation_t* reservationPtr, long newPric
         return FALSE;
     }
 
-    TM_SHARED_WRITE(reservationPtr->price, newPrice);
+    TM_SHARED_WRITE_L(reservationPtr->price, newPrice);
 
     CHECK_RESERVATION(reservationPtr);
 

@@ -252,10 +252,10 @@ process ()
     }
 
     TM_BEGIN();
-    TM_SHARED_WRITE(global_totalNumAdded,
-                    TM_SHARED_READ(global_totalNumAdded) + totalNumAdded);
-    TM_SHARED_WRITE(global_numProcess,
-                    TM_SHARED_READ(global_numProcess) + numProcess);
+    TM_SHARED_WRITE_L(global_totalNumAdded,
+                    TM_SHARED_READ_L(global_totalNumAdded) + totalNumAdded);
+    TM_SHARED_WRITE_L(global_numProcess,
+                    TM_SHARED_READ_L(global_numProcess) + numProcess);
     TM_END();
 
     PREGION_FREE(regionPtr);

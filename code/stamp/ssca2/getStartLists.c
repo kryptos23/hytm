@@ -120,9 +120,9 @@ getStartLists (void* argPtr)
     }
 
     TM_BEGIN();
-    long tmp_maxWeight = (long)TM_SHARED_READ(global_maxWeight);
+    long tmp_maxWeight = (long)TM_SHARED_READ_L(global_maxWeight);
     if (maxWeight > tmp_maxWeight) {
-        TM_SHARED_WRITE(global_maxWeight, maxWeight);
+        TM_SHARED_WRITE_L(global_maxWeight, maxWeight);
     }
     TM_END();
 

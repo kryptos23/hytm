@@ -150,7 +150,7 @@ void
 customer_free (TM_ARGDECL  customer_t* customerPtr)
 {
     list_t* reservationInfoListPtr =
-        (list_t*)TM_SHARED_READ(customerPtr->reservationInfoListPtr);
+        (list_t*)TM_SHARED_READ_L(customerPtr->reservationInfoListPtr);
     TMLIST_FREE(reservationInfoListPtr);
     TM_FREE(customerPtr);
 }
@@ -172,7 +172,7 @@ customer_addReservationInfo (TM_ARGDECL
     assert(reservationInfoPtr != NULL);
 
     list_t* reservationInfoListPtr =
-        (list_t*)TM_SHARED_READ(customerPtr->reservationInfoListPtr);
+        (list_t*)TM_SHARED_READ_L(customerPtr->reservationInfoListPtr);
 
     return TMLIST_INSERT(reservationInfoListPtr, (void*)reservationInfoPtr);
 }
@@ -195,7 +195,7 @@ customer_removeReservationInfo (TM_ARGDECL
     /* price not used to compare reservation infos */
 
     list_t* reservationInfoListPtr =
-        (list_t*)TM_SHARED_READ(customerPtr->reservationInfoListPtr);
+        (list_t*)TM_SHARED_READ_L(customerPtr->reservationInfoListPtr);
 
     reservation_info_t* reservationInfoPtr =
         (reservation_info_t*)TMLIST_FIND(reservationInfoListPtr,
@@ -228,7 +228,7 @@ customer_getBill (TM_ARGDECL  customer_t* customerPtr)
     long bill = 0;
     list_iter_t it;
     list_t* reservationInfoListPtr =
-        (list_t*)TM_SHARED_READ(customerPtr->reservationInfoListPtr);
+        (list_t*)TM_SHARED_READ_L(customerPtr->reservationInfoListPtr);
 
     TMLIST_ITER_RESET(&it, reservationInfoListPtr);
     while (TMLIST_ITER_HASNEXT(&it, reservationInfoListPtr)) {

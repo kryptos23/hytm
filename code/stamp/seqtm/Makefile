@@ -4,7 +4,7 @@
 #
 # ==============================================================================
 
-LIBNAME=hytm1
+LIBNAME=seqtm
 
 # ==============================================================================
 # Variables
@@ -18,7 +18,7 @@ LD      := g++
 LIBHYTM := lib$(LIBNAME).a
 
 SRCS := \
-	$(LIBNAME).cpp
+	$(LIBNAME).cpp \
 #
 OBJS := ${SRCS:.cpp=.o}
 
@@ -39,7 +39,7 @@ default: lazy
 clean:
 	$(RM) $(LIBHYTM) $(OBJS)
 
-%.o: %.c
+%.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(LIBHYTM): $(OBJS)

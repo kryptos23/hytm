@@ -112,13 +112,13 @@ struct rbtree {
 #define STF(o,f,v)          ((o)->f) = (v)
 #define LDNODE(o,f)         ((node_t*)(LDF((o),f)))
 
-#define TX_LDA(a)           TM_SHARED_READ(*(a))
-#define TX_STA(a,v)         TM_SHARED_WRITE(*(a), v)
-#define TX_LDV(a)           TM_SHARED_READ(a)
+#define TX_LDA(a)           TM_SHARED_READ_L(*(a))
+#define TX_STA(a,v)         TM_SHARED_WRITE_L(*(a), v)
+#define TX_LDV(a)           TM_SHARED_READ_L(a)
 #define TX_STV(a,v)         TM_SHARED_WRITE_P(a, v)
-#define TX_LDF(o,f)         ((long)TM_SHARED_READ((o)->f))
+#define TX_LDF(o,f)         ((long)TM_SHARED_READ_L((o)->f))
 #define TX_LDF_P(o,f)       ((void*)TM_SHARED_READ_P((o)->f))
-#define TX_STF(o,f,v)       TM_SHARED_WRITE((o)->f, v)
+#define TX_STF(o,f,v)       TM_SHARED_WRITE_L((o)->f, v)
 #define TX_STF_P(o,f,v)     TM_SHARED_WRITE_P((o)->f, v)
 #define TX_LDNODE(o,f)      ((node_t*)(TX_LDF_P((o),f)))
 

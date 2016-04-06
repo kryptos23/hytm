@@ -181,9 +181,9 @@ computeGraph (void* argPtr)
     }
 
     TM_BEGIN();
-    long tmp_maxNumVertices = (long)TM_SHARED_READ(global_maxNumVertices);
+    long tmp_maxNumVertices = (long)TM_SHARED_READ_L(global_maxNumVertices);
     long new_maxNumVertices = MAX(tmp_maxNumVertices, maxNumVertices) + 1;
-    TM_SHARED_WRITE(global_maxNumVertices, new_maxNumVertices);
+    TM_SHARED_WRITE_L(global_maxNumVertices, new_maxNumVertices);
     TM_END();
 
     thread_barrier_wait();
@@ -297,9 +297,9 @@ computeGraph (void* argPtr)
     thread_barrier_wait();
 
     TM_BEGIN();
-    TM_SHARED_WRITE(
+    TM_SHARED_WRITE_L(
         global_outVertexListSize,
-        ((long)TM_SHARED_READ(global_outVertexListSize) + outVertexListSize)
+        ((long)TM_SHARED_READ_L(global_outVertexListSize) + outVertexListSize)
     );
     TM_END();
 
@@ -474,10 +474,10 @@ computeGraph (void* argPtr)
             if (k == GPtr->outVertexIndex[v]+GPtr->outDegree[v]) {
                 TM_BEGIN();
                 /* Add i to the impliedEdgeList of v */
-                long inDegree = (long)TM_SHARED_READ(GPtr->inDegree[v]);
-                TM_SHARED_WRITE(GPtr->inDegree[v], (inDegree + 1));
+                long inDegree = (long)TM_SHARED_READ_L(GPtr->inDegree[v]);
+                TM_SHARED_WRITE_L(GPtr->inDegree[v], (inDegree + 1));
                 if (inDegree < MAX_CLUSTER_SIZE) {
-                    TM_SHARED_WRITE(impliedEdgeList[v*MAX_CLUSTER_SIZE+inDegree],
+                    TM_SHARED_WRITE_L(impliedEdgeList[v*MAX_CLUSTER_SIZE+inDegree],
                                     i);
                 } else {
                     /* Use auxiliary array to store the implied edge */
@@ -491,7 +491,7 @@ computeGraph (void* argPtr)
                     } else {
                         a = auxArr[v];
                     }
-                    TM_SHARED_WRITE(a[inDegree % MAX_CLUSTER_SIZE], i);
+                    TM_SHARED_WRITE_L(a[inDegree % MAX_CLUSTER_SIZE], i);
                 }
                 TM_END();
             }

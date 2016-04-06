@@ -232,8 +232,8 @@ heap_insert (heap_t* heapPtr, void* dataPtr)
 bool_t
 TMheap_insert (TM_ARGDECL  heap_t* heapPtr, void* dataPtr)
 {
-    long size = (long)TM_SHARED_READ(heapPtr->size);
-    long capacity = (long)TM_SHARED_READ(heapPtr->capacity);
+    long size = (long)TM_SHARED_READ_L(heapPtr->size);
+    long capacity = (long)TM_SHARED_READ_L(heapPtr->capacity);
 
     if ((size + 1) >= capacity) {
         long newCapacity = capacity * 2;
@@ -241,18 +241,18 @@ TMheap_insert (TM_ARGDECL  heap_t* heapPtr, void* dataPtr)
         if (newElements == NULL) {
             return FALSE;
         }
-        TM_SHARED_WRITE(heapPtr->capacity, newCapacity);
+        TM_SHARED_WRITE_L(heapPtr->capacity, newCapacity);
         long i;
         void** elements = TM_SHARED_READ_P(heapPtr->elements);
         for (i = 0; i <= size; i++) {
             newElements[i] = (void*)TM_SHARED_READ_P(elements[i]);
         }
         TM_FREE(heapPtr->elements);
-        TM_SHARED_WRITE(heapPtr->elements, newElements);
+        TM_SHARED_WRITE_P(heapPtr->elements, newElements);
     }
 
     size++;
-    TM_SHARED_WRITE(heapPtr->size, size);
+    TM_SHARED_WRITE_L(heapPtr->size, size);
     void** elements = (void**)TM_SHARED_READ_P(heapPtr->elements);
     TM_SHARED_WRITE_P(elements[size], dataPtr);
     TMsiftUp(TM_ARG  heapPtr, size);
@@ -316,7 +316,7 @@ TMheapify (TM_ARGDECL  heap_t* heapPtr, long startIndex)
     void** elements = (void**)TM_SHARED_READ_P(heapPtr->elements);
     long (*compare)(const void*, const void*) = heapPtr->compare;
 
-    long size = (long)TM_SHARED_READ(heapPtr->size);
+    long size = (long)TM_SHARED_READ_L(heapPtr->size);
     long index = startIndex;
 
     while (1) {
@@ -346,7 +346,7 @@ TMheapify (TM_ARGDECL  heap_t* heapPtr, long startIndex)
         } else {
             void* tmpPtr = (void*)TM_SHARED_READ_P(elements[index]);
             TM_SHARED_WRITE_P(elements[index],
-                              (void*)TM_SHARED_READ(elements[maxIndex]));
+                              (void*)TM_SHARED_READ_L(elements[maxIndex]));
             TM_SHARED_WRITE_P(elements[maxIndex], tmpPtr);
             index = maxIndex;
         }
@@ -387,7 +387,7 @@ heap_remove (heap_t* heapPtr)
 void*
 TMheap_remove (TM_ARGDECL  heap_t* heapPtr)
 {
-    long size = (long)TM_SHARED_READ(heapPtr->size);
+    long size = (long)TM_SHARED_READ_L(heapPtr->size);
 
     if (size < 1) {
         return NULL;
@@ -396,7 +396,7 @@ TMheap_remove (TM_ARGDECL  heap_t* heapPtr)
     void** elements = (void**)TM_SHARED_READ_P(heapPtr->elements);
     void* dataPtr = (void*)TM_SHARED_READ_P(elements[1]);
     TM_SHARED_WRITE_P(elements[1], TM_SHARED_READ_P(elements[size]));
-    TM_SHARED_WRITE(heapPtr->size, (size - 1));
+    TM_SHARED_WRITE_L(heapPtr->size, (size - 1));
     TMheapify(TM_ARG  heapPtr, 1);
 
     return dataPtr;

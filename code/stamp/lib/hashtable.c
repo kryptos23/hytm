@@ -475,7 +475,7 @@ bool_t
 TMhashtable_isEmpty (TM_ARGDECL  hashtable_t* hashtablePtr)
 {
 #ifdef HASHTABLE_SIZE_FIELD
-    return ((TM_SHARED_READ(hashtablePtr->size) == 0) ? TRUE : FALSE);
+    return ((TM_SHARED_READ_L(hashtablePtr->size) == 0) ? TRUE : FALSE);
 #else
     long i;
 
@@ -522,7 +522,7 @@ long
 TMhashtable_getSize (TM_ARGDECL  hashtable_t* hashtablePtr)
 {
 #ifdef HASHTABLE_SIZE_FIELD
-    return (long)TM_SHARED_READ(hashtablePtr->size);
+    return (long)TM_SHARED_READ_L(hashtablePtr->size);
 #else
     long i;
     long size = 0;
@@ -745,9 +745,9 @@ TMhashtable_insert (TM_ARGDECL
     }
 
 #ifdef HASHTABLE_SIZE_FIELD
-    long newSize = TM_SHARED_READ(hashtablePtr->size) + 1;
+    long newSize = TM_SHARED_READ_L(hashtablePtr->size) + 1;
     assert(newSize > 0);
-    TM_SHARED_WRITE(hashtablePtr->size, newSize);
+    TM_SHARED_WRITE_L(hashtablePtr->size, newSize);
 #endif
 
     return TRUE;
@@ -812,8 +812,8 @@ TMhashtable_remove (TM_ARGDECL  hashtable_t* hashtablePtr, void* keyPtr)
     TMPAIR_FREE(pairPtr);
 
 #ifdef HASHTABLE_SIZE_FIELD
-    TM_SHARED_WRITE(hashtablePtr->size
-                    (long)TM_SHARED_READ(hashtablePtr->size)-1);
+    TM_SHARED_WRITE_L(hashtablePtr->size
+                    (long)TM_SHARED_READ_L(hashtablePtr->size)-1);
     assert(hashtablePtr->size >= 0);
 #endif
 

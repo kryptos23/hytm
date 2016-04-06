@@ -1286,8 +1286,8 @@ learnStructure (void* argPtr)
                                       newBaseLogLikelihood);
                     TM_END();
                     TM_BEGIN();
-                    long numTotalParent = (long)TM_SHARED_READ(learnerPtr->numTotalParent);
-                    TM_SHARED_WRITE(learnerPtr->numTotalParent, (numTotalParent + 1));
+                    long numTotalParent = (long)TM_SHARED_READ_L(learnerPtr->numTotalParent);
+                    TM_SHARED_WRITE_L(learnerPtr->numTotalParent, (numTotalParent + 1));
                     TM_END();
                     break;
                 }
@@ -1315,8 +1315,8 @@ learnStructure (void* argPtr)
                                       newBaseLogLikelihood);
                     TM_END();
                     TM_BEGIN();
-                    long numTotalParent = (long)TM_SHARED_READ(learnerPtr->numTotalParent);
-                    TM_SHARED_WRITE(learnerPtr->numTotalParent, (numTotalParent - 1));
+                    long numTotalParent = (long)TM_SHARED_READ_L(learnerPtr->numTotalParent);
+                    TM_SHARED_WRITE_L(learnerPtr->numTotalParent, (numTotalParent - 1));
                     TM_END();
                     break;
                 }
@@ -1388,7 +1388,7 @@ learnStructure (void* argPtr)
         float newBaseLogLikelihood = oldBaseLogLikelihood + deltaLogLikelihood;
         TM_SHARED_WRITE_F(learnerPtr->baseLogLikelihood, newBaseLogLikelihood);
         baseLogLikelihood = newBaseLogLikelihood;
-        numTotalParent = (long)TM_SHARED_READ(learnerPtr->numTotalParent);
+        numTotalParent = (long)TM_SHARED_READ_L(learnerPtr->numTotalParent);
         TM_END();
 
         /*

@@ -198,7 +198,7 @@ addReservation (TM_ARGDECL  MAP_T* tablePtr, long id, long num, long price)
         if (!RESERVATION_ADD_TO_TOTAL(reservationPtr, num)) {
             return FALSE;
         }
-        if ((long)TM_SHARED_READ(reservationPtr->numTotal) == 0) {
+        if ((long)TM_SHARED_READ_L(reservationPtr->numTotal) == 0) {
             bool_t status = TMMAP_REMOVE(tablePtr, id);
             if (status == FALSE) {
                 TM_RESTART();
@@ -365,14 +365,14 @@ manager_deleteFlight (TM_ARGDECL  manager_t* managerPtr, long flightId)
         return FALSE;
     }
 
-    if ((long)TM_SHARED_READ(reservationPtr->numUsed) > 0) {
+    if ((long)TM_SHARED_READ_L(reservationPtr->numUsed) > 0) {
         return FALSE; /* somebody has a reservation */
     }
 
     return addReservation(TM_ARG
                           managerPtr->flightTablePtr,
                           flightId,
-                          -1*(long)TM_SHARED_READ(reservationPtr->numTotal),
+                          -1*(long)TM_SHARED_READ_L(reservationPtr->numTotal),
                           -1 /* -1 keeps old price */);
 }
 
@@ -498,7 +498,7 @@ queryNumFree (TM_ARGDECL  MAP_T* tablePtr, long id)
 
     reservationPtr = (reservation_t*)TMMAP_FIND(tablePtr, id);
     if (reservationPtr != NULL) {
-        numFree = (long)TM_SHARED_READ(reservationPtr->numFree);
+        numFree = (long)TM_SHARED_READ_L(reservationPtr->numFree);
     }
 
     return numFree;
@@ -518,7 +518,7 @@ queryPrice (TM_ARGDECL  MAP_T* tablePtr, long id)
 
     reservationPtr = (reservation_t*)TMMAP_FIND(tablePtr, id);
     if (reservationPtr != NULL) {
-        price = (long)TM_SHARED_READ(reservationPtr->price);
+        price = (long)TM_SHARED_READ_L(reservationPtr->price);
     }
 
     return price;
@@ -663,7 +663,7 @@ reserve (TM_ARGDECL
             customerPtr,
             type,
             id,
-            (long)TM_SHARED_READ(reservationPtr->price)))
+            (long)TM_SHARED_READ_L(reservationPtr->price)))
     {
         /* Undo previous successful reservation */
         bool_t status = RESERVATION_CANCEL(reservationPtr);

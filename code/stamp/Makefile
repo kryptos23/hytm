@@ -1,2 +1,2 @@
 all:
-	cd bayes ; make -f Makefile.stm
+	./build.sh

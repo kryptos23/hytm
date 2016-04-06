@@ -695,7 +695,7 @@ element_isReferenced (element_t* elementPtr)
 bool_t
 TMelement_isReferenced (TM_ARGDECL  element_t* elementPtr)
 {
-    return (bool_t)TM_SHARED_READ(elementPtr->isReferenced);
+    return (bool_t)TM_SHARED_READ_L(elementPtr->isReferenced);
 }
 
 
@@ -717,7 +717,7 @@ element_setIsReferenced (element_t* elementPtr, bool_t status)
 void
 TMelement_setIsReferenced (TM_ARGDECL  element_t* elementPtr, bool_t status)
 {
-    TM_SHARED_WRITE(elementPtr->isReferenced, status);
+    TM_SHARED_WRITE_L(elementPtr->isReferenced, status);
 }
 
 
@@ -741,7 +741,7 @@ element_isGarbage (element_t* elementPtr)
 bool_t
 TMelement_isGarbage (TM_ARGDECL  element_t* elementPtr)
 {
-    return (bool_t)TM_SHARED_READ(elementPtr->isGarbage);
+    return (bool_t)TM_SHARED_READ_L(elementPtr->isGarbage);
 }
 
 
@@ -763,7 +763,7 @@ element_setIsGarbage (element_t* elementPtr, bool_t status)
 void
 TMelement_setIsGarbage (TM_ARGDECL  element_t* elementPtr, bool_t status)
 {
-    TM_SHARED_WRITE(elementPtr->isGarbage, status);
+    TM_SHARED_WRITE_L(elementPtr->isGarbage, status);
 }
 
 

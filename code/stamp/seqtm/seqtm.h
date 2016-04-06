@@ -2,10 +2,6 @@
 #define HYTM1_H 1
 
 #include <stdint.h>
-#include "rtm.h"
-//#include "tmalloc.h"
-
-//enum hytm1_path { FALLBACK, FAST };
 
 typedef struct _Thread Thread;
 
@@ -29,20 +25,17 @@ void     TxInitThread  (Thread*, long id);
 int      TxCommit      (Thread*);
 void     TxAbort       (Thread*);
 
-//intptr_t TxLoad(Thread* Self, volatile intptr_t* addr);
-//void TxStore(Thread* Self, volatile intptr_t* addr, intptr_t value);
-
 long TxLoadl(Thread* Self, volatile long* addr);
-//intptr_t TxLoadp(Thread* Self, volatile intptr_t* addr);
+intptr_t TxLoadp(Thread* Self, volatile intptr_t* addr);
 float TxLoadf(Thread* Self, volatile float* addr);
 
 long TxStorel(Thread* Self, volatile long* addr, long value);
-//intptr_t TxStorep(Thread* Self, volatile intptr_t* addr, intptr_t value);
+intptr_t TxStorep(Thread* Self, volatile intptr_t* addr, intptr_t value);
 float TxStoref(Thread* Self, volatile float* addr, float value);
 
-//long TxStoreLocall(Thread* Self, volatile long* addr, long value);
-//intptr_t TxStoreLocalp(Thread* Self, volatile intptr_t* addr, intptr_t value);
-//float TxStoreLocalf(Thread* Self, volatile float* addr, float value);
+long TxStoreLocall(Thread* Self, volatile long* addr, long value);
+intptr_t TxStoreLocalp(Thread* Self, volatile intptr_t* addr, intptr_t value);
+float TxStoreLocalf(Thread* Self, volatile float* addr, float value);
 
 void     TxOnce        ();
 void     TxShutdown    ();

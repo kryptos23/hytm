@@ -476,19 +476,19 @@ sequencer_run (void* argPtr)
                 TM_BEGIN();
 
                 /* Check if matches */
-                if (TM_SHARED_READ(startConstructEntryPtr->isStart) &&
+                if (TM_SHARED_READ_L(startConstructEntryPtr->isStart) &&
                     (TM_SHARED_READ_P(endConstructEntryPtr->startPtr) != startConstructEntryPtr) &&
                     (strncmp(startSegment,
                              &endSegment[segmentLength - substringLength],
                              substringLength) == 0))
                 {
-                    TM_SHARED_WRITE(startConstructEntryPtr->isStart, FALSE);
+                    TM_SHARED_WRITE_L(startConstructEntryPtr->isStart, FALSE);
 
                     constructEntry_t* startConstructEntry_endPtr;
                     constructEntry_t* endConstructEntry_startPtr;
 
                     /* Update endInfo (appended something so no longer end) */
-                    TM_LOCAL_WRITE(endInfoEntries[entryIndex].isEnd, FALSE);
+                    TM_LOCAL_WRITE_L(endInfoEntries[entryIndex].isEnd, FALSE);
 
                     /* Update segment chain construct info */
                     startConstructEntry_endPtr =
@@ -504,11 +504,11 @@ sequencer_run (void* argPtr)
                                      startConstructEntryPtr);
                     TM_SHARED_WRITE_P(endConstructEntry_startPtr->endPtr,
                                       startConstructEntry_endPtr);
-                    TM_SHARED_WRITE(endConstructEntryPtr->overlap, substringLength);
-                    newLength = (long)TM_SHARED_READ(endConstructEntry_startPtr->length) +
-                                (long)TM_SHARED_READ(startConstructEntryPtr->length) -
+                    TM_SHARED_WRITE_L(endConstructEntryPtr->overlap, substringLength);
+                    newLength = (long)TM_SHARED_READ_L(endConstructEntry_startPtr->length) +
+                                (long)TM_SHARED_READ_L(startConstructEntryPtr->length) -
                                 substringLength;
-                    TM_SHARED_WRITE(endConstructEntry_startPtr->length, newLength);
+                    TM_SHARED_WRITE_L(endConstructEntry_startPtr->length, newLength);
                 } /* if (matched) */
 
                 TM_END();

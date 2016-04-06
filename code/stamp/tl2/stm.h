@@ -75,13 +75,13 @@
 
 typedef volatile intptr_t               vintp;
 
-#define STM_READ(var)                   TxLoad(STM_SELF, (vintp*)(void*)&(var))
+#define STM_READ_L(var)                 TxLoad(STM_SELF, (vintp*)(void*)&(var))
 #define STM_READ_F(var)                 IP2F(TxLoad(STM_SELF, \
                                                     (vintp*)FP2IPP(&(var))))
 #define STM_READ_P(var)                 IP2VP(TxLoad(STM_SELF, \
                                                      (vintp*)(void*)&(var)))
 
-#define STM_WRITE(var, val)             TxStore(STM_SELF, \
+#define STM_WRITE_L(var, val)           TxStore(STM_SELF, \
                                                 (vintp*)(void*)&(var), \
                                                 (intptr_t)(val))
 #define STM_WRITE_F(var, val)           TxStore(STM_SELF, \
@@ -91,7 +91,7 @@ typedef volatile intptr_t               vintp;
                                                 (vintp*)(void*)&(var), \
                                                 VP2IP(val))
 
-#define STM_LOCAL_WRITE(var, val)       ({var = val; var;})
+#define STM_LOCAL_WRITE_L(var, val)     ({var = val; var;})
 #define STM_LOCAL_WRITE_F(var, val)     ({var = val; var;})
 #define STM_LOCAL_WRITE_P(var, val)     ({var = val; var;})
 

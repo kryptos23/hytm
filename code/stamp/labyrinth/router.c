@@ -405,7 +405,7 @@ router_solve (void* argPtr)
              */
             if (pointVectorPtr) {
                 TMGRID_ADDPATH(gridPtr, pointVectorPtr);
-                TM_LOCAL_WRITE(success, TRUE);
+                TM_LOCAL_WRITE_L(success, TRUE);
             }
         }
         TM_END();

@@ -235,9 +235,9 @@ queue_clear (queue_t* queuePtr)
 bool_t
 TMqueue_isEmpty (TM_ARGDECL  queue_t* queuePtr)
 {
-    long pop      = (long)TM_SHARED_READ(queuePtr->pop);
-    long push     = (long)TM_SHARED_READ(queuePtr->push);
-    long capacity = (long)TM_SHARED_READ(queuePtr->capacity);
+    long pop      = (long)TM_SHARED_READ_L(queuePtr->pop);
+    long push     = (long)TM_SHARED_READ_L(queuePtr->push);
+    long capacity = (long)TM_SHARED_READ_L(queuePtr->capacity);
 
     return (((pop + 1) % capacity == push) ? TRUE : FALSE);
 }
@@ -394,9 +394,9 @@ Pqueue_push (queue_t* queuePtr, void* dataPtr)
 bool_t
 TMqueue_push (TM_ARGDECL  queue_t* queuePtr, void* dataPtr)
 {
-    long pop      = (long)TM_SHARED_READ(queuePtr->pop);
-    long push     = (long)TM_SHARED_READ(queuePtr->push);
-    long capacity = (long)TM_SHARED_READ(queuePtr->capacity);
+    long pop      = (long)TM_SHARED_READ_L(queuePtr->pop);
+    long push     = (long)TM_SHARED_READ_L(queuePtr->push);
+    long capacity = (long)TM_SHARED_READ_L(queuePtr->capacity);
 
     assert(pop != push);
 
@@ -428,8 +428,8 @@ TMqueue_push (TM_ARGDECL  queue_t* queuePtr, void* dataPtr)
 
         TM_FREE(elements);
         TM_SHARED_WRITE_P(queuePtr->elements, newElements);
-        TM_SHARED_WRITE(queuePtr->pop,      newCapacity - 1);
-        TM_SHARED_WRITE(queuePtr->capacity, newCapacity);
+        TM_SHARED_WRITE_L(queuePtr->pop,      newCapacity - 1);
+        TM_SHARED_WRITE_L(queuePtr->capacity, newCapacity);
         push = dst;
         newPush = push + 1; /* no need modulo */
 
@@ -437,7 +437,7 @@ TMqueue_push (TM_ARGDECL  queue_t* queuePtr, void* dataPtr)
 
     void** elements = (void**)TM_SHARED_READ_P(queuePtr->elements);
     TM_SHARED_WRITE_P(elements[push], dataPtr);
-    TM_SHARED_WRITE(queuePtr->push, newPush);
+    TM_SHARED_WRITE_L(queuePtr->push, newPush);
 
     return TRUE;
 }
@@ -473,9 +473,9 @@ queue_pop (queue_t* queuePtr)
 void*
 TMqueue_pop (TM_ARGDECL  queue_t* queuePtr)
 {
-    long pop      = (long)TM_SHARED_READ(queuePtr->pop);
-    long push     = (long)TM_SHARED_READ(queuePtr->push);
-    long capacity = (long)TM_SHARED_READ(queuePtr->capacity);
+    long pop      = (long)TM_SHARED_READ_L(queuePtr->pop);
+    long push     = (long)TM_SHARED_READ_L(queuePtr->push);
+    long capacity = (long)TM_SHARED_READ_L(queuePtr->capacity);
 
     long newPop = (pop + 1) % capacity;
     if (newPop == push) {
@@ -484,7 +484,7 @@ TMqueue_pop (TM_ARGDECL  queue_t* queuePtr)
 
     void** elements = (void**)TM_SHARED_READ_P(queuePtr->elements);
     void* dataPtr = (void*)TM_SHARED_READ_P(elements[newPop]);
-    TM_SHARED_WRITE(queuePtr->pop, newPop);
+    TM_SHARED_WRITE_L(queuePtr->pop, newPop);
 
     return dataPtr;
 }
