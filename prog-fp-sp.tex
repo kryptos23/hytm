@@ -67,7 +67,7 @@
 	 		\State  $v_j.\lit{write}(\textit{nv}_j)$ \label{line:write}
 			 
 	 	\EndFor	
-		\State $\lit{release}(\Wset(T_k))$   \label{line:rel}	\Comment{Simple write on Power 8}	
+		\State $\lit{release}(\Wset(T_k))$   \label{line:rel}	\Comment{Simple write on Haswell, LL/SC on Power 8}	
    		\Return $C_k$ \EndReturn
    	 }\EndPart		
 	 
