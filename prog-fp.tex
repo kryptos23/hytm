@@ -59,7 +59,15 @@
 		\While {$\neg flag$}
 		  \State $flag \gets L.\lit{cas}(0,1)$
 		\EndWhile
-		\State $\lit{acquire}(\Wset(T_k))$
+		\ForAll{$X_j \in Q$}	
+			\State $or_j\gets r_j.\lit{read}()$ 
+			 		
+		\EndFor
+		\Comment{First read, then write all: single barrier}
+		\ForAll{$X_j \in Q$}	
+			\State $r_j.\lit{write}(or_j \mathrel{\&} 1)$ 
+			 		
+		\EndFor
 		\If{$\lit{validate}()$}
 			\State $\lit{release}( \ms{Wset}(T_k))$ 
 			\Return $A_k$ \EndReturn
@@ -70,7 +78,11 @@
 			 
 			 
 	 	\EndFor		
-		\State $\lit{release}(\Wset(T_k))$  
+		
+  		\ForAll{$X_j \in Q$}	
+ 			\State $r_j.\lit{write}(or_j \mathrel{\&} 0)$ 
+		\EndFor
+		
 		\State $L.\lit{write}(0)$
    		\Return $C_k$ \EndReturn
    	 }\EndPart		
@@ -78,24 +90,8 @@
 	 
  	\newpage
  	
-	\Part{Function: $\lit{acquire}(Q$)}{
-   		\ForAll{$X_j \in Q$}	
-			\State $r_j.\lit{write}(or_j \mathrel{\&} 1)$ 
-			 		
-		\EndFor
-		
-	}\EndPart		
-	 \Statex
-	 \Part{Function: $\lit{release}(Q)$}{
-  		\ForAll{$X_j \in Q$}	
- 			\State $r_j.\lit{write}(or_j \mathrel{\&} 0)$ 
-		\EndFor
-		
-	}\EndPart
-	\Statex
-	\Statex
 	\textbf{Code for fast-path transactions}	
-	
+	\Statex
 	\Part{$\textit{start}_k()$}{
 		\Comment{Should this be a spin lock?}
 		\State $l \gets \Read(\ms{L})$ \Comment{cached read} 
@@ -105,7 +101,7 @@
 		
 	}\EndPart
 	\Statex
-	
+	\Comment{In general, would it better to buffer writes in tryC?}
 	\Part{$\textit{read}_k(X_j)$}{\quad\Comment{fast-path}
 		
 		\State $\textit{ov}_j := v_j.\Read()$ \Comment{cached read} 
