@@ -6,8 +6,6 @@
 A \emph{transaction} is a sequence of \emph{transactional operations}
 (or \emph{t-operations}), reads and writes, performed on a set of \emph{transactional objects} 
 (\emph{t-objects}). 
-%Any transaction consists of \emph{transactional operations} (\emph{t-operations}) 
-%consisting of an \emph{invocation} and a matching \emph{response}.
 A TM \emph{implementation} provides a set of
 concurrent \emph{processes} with deterministic algorithms that implement reads and
 writes on t-objects using  a set of \emph{base objects}.
@@ -35,7 +33,7 @@ An \emph{execution fragment} is a (finite or infinite) sequence of events $E = e
 An \emph{execution} of a TM implementation $\mathcal{M}$ is an
 execution fragment where, informally, each event respects the
 specification of base objects and the algorithms specified by $\mathcal{M}$.
-In the next section, we define precisely how base objects should
+In the next subsection, we define precisely how base objects should
 behave in a hybrid model combining direct memory accesses with \emph{cached} accesses (hardware
 transactions).
 
@@ -48,8 +46,6 @@ omit the subscript $E$ from the notation).
 The \emph{data set} of $T_k$ is $\Dset(T_k)=\Rset(T_k)\cup\Wset(T_k)$.
 $T_k$ is called \emph{read-only} if $\Wset(T_k)=\emptyset$; \emph{write-only} if $\Rset(T_k)=\emptyset$ and
 \emph{updating} if $\Wset(T_k)\neq\emptyset$.
-% Note that we consider the conventional dynamic TM model: 
-% the data set of a transaction is identifiable only by the set of t-objects the transaction has invoked a read or write in the given execution.
 
 For any finite execution $E$ and execution fragment $E'$, $E\cdot E'$ denotes the concatenation of $E$ and $E'$
 and we say that $E\cdot E'$ is an \emph{extension}
@@ -65,25 +61,13 @@ Two executions $E$ and $E'$
 are \emph{indistinguishable} to a set $\mathcal{T}$ of transactions, if
 for each transaction $T_k \in \mathcal{T}$, $E|k=E'|k$.
 
-\vspace{1mm}\noindent\textbf{Complete and incomplete transactions.}
 A transaction $T_k\in \txns(E)$ is \emph{complete in $E$} if
 $E|k$ ends with a response event.
 The execution $E$ is \emph{complete} if all transactions in $\txns(E)$
 are complete in $E$.
 A transaction $T_k\in \txns(E)$ is \emph{t-complete} if $E|k$
 ends with $A_k$ or $C_k$; otherwise, $T_k$ is \emph{t-incomplete}.
-$T_k$ is \emph{committed} (resp.\ \emph{aborted}) in $E$
-if the last event of $T_k$ is $C_k$ (resp.\ $A_k$).
-The execution $E$ is \emph{t-complete} if all transactions in
-$\txns(E)$ are t-complete.
-A configuration $C$ after an execution $E$ is \emph{quiescent} (resp. \emph{t-quiescent}) if 
-every transaction $T_k \in \ms{txns}(E)$ is complete (resp. t-complete) in $E$.
 
-\vspace{1mm}\noindent\textbf{Contention.}
-%[[PK never used?
-%Let $E\cdot e$ be a finite execution where $e$ is an event performed by transaction $T$.
-%We then say that \emph{$T$ applies $e$ immediately after $E$}.
-%]]
 We assume that base objects are accessed with \emph{read-modify-write} (rmw) primitives. 
 A rmw primitive $\langle g,h \rangle$ applied to a base object 
 atomically updates the value of the object with a new value, which is
@@ -93,24 +77,12 @@ a function $g(v)$ of the old value $v$, and returns a response $h(v)$.
 A rmw primitive event on a base object is \emph{trivial} if, in any configuration, its application
 does not change the state of the object. 
 Otherwise, it is called \emph{nontrivial}.
-
 Events $e$ and $e'$ of an execution $E$  \emph{contend} on a base
 object $b$ if they are both primitives on $b$ in $E$ and at least 
 one of them is nontrivial.
-%We say that $e$ and $e'$ \emph{concurrently contend} on $b$ in $E$ if they contend on $b$ in the configuration $C$ after $E$.
-In a configuration $C$ after an execution $E$, every incomplete transaction $T$  
-has exactly one \emph{enabled} event in $C$, 
-which is the next event $T$ will perform according to the TM implementation.
-We say that a transaction $T$ is \emph{poised to apply an event $e$ after $E$} 
-if $e$ is the next enabled event for $T$ in $E$.
-We say that transactions $T$ and $T'$ \emph{concurrently contend on $b$ in $E$} 
-if they are each poised to apply contending events on $b$ after $E$.
-We say that an execution fragment $E$ is \emph{step contention-free} for t-operation $op_k$ if the events of $E|op_k$ 
-are contiguous in $E$.
-An execution fragment $E$ is \emph{step contention-free for $T_k$} if the events of $E|k$ are contiguous in $E$, and $E$ is \emph{step contention-free} if $E$ is step contention-free for all transactions that participate in $E$.
 
 \vspace{1mm}\noindent\textbf{Direct accesses and cached accesses.}
-We  now describe the execution model of a \emph{Hybrid Transactional Memory (HyTM)} implementation.
+We now describe the execution model of a \emph{Hybrid Transactional Memory (HyTM)} implementation.
 %, in which conventional memory accesses are combined with hardware
 %transactions modelled as \emph{cached} accesses. 
 %
@@ -123,9 +95,6 @@ the shared memory and, if necessary, modifies it.
 
 In a cached access performed by a process $i$, the rmw primitive operates on the \emph{cached}
 state recorded in process $i$'s \emph{tracking set} $\tau_i$. 
-%[[PK unclear what ``initially'' means here
-% (initially empty).  
-%]]
 One can think of $\tau_i$ as the \emph{L1 cache} of process $i$.
 A \emph{hardware transaction}  is a series of cached rmw primitives performed on $\tau_i$ followed by
 a \emph{cache-commit} primitive. 
@@ -201,43 +170,5 @@ a cached primitive on a base object, or a \emph{cache-commit}:
 primitives, and \textit{tryC} consists of invoking \emph{cache-commit}.  
 Furthermore, we assume that a fast-path transaction $T_k$ returns $A_k$
 as soon an underlying cached primitive or \emph{cache-commit} returns $\bot$. 
-
-\textbf{Need to extend model to accomodate non-speculative operations}
-We provide two key observations on this model regarding the interactions of non-committed fast path transactions 
-with other transactions. 
-Let $E$ be any execution of a HyTM implementation $\mathcal{M}$ in
-which a fast-path transaction $T_k$ is either
-t-incomplete or aborted. 
-Then the sequence of events $E'$ derived by removing all events of $E|k$
-from $E$ is an execution  $\mathcal{M}$. Moreover: 
-%Then, the following observations are implied by our model.
-\begin{observation} 
-\label{ob:one}
-To every slow-path transaction $T_m \in \ms{txns}(E)$, $E$ is indistinguishable 
-from $E'$. 
-\end{observation}
 %
-% \begin{figure*}[t]
-% \begin{center}
-% 	\subfloat[\label{sfig:ob-01}]{\scalebox{0.5}[0.5]{\input{ob01}}}
-% 	\hspace{10mm}
-% 	\subfloat[\label{sfig:ob-02}]{\scalebox{0.5}[0.5]{\input{ob11}}}
-% 	 
-% \end{center}
-% \caption{
-% %Executions illustrating
-%  %Observation~\ref{ob:one} 
-%  \label{fig:ob1}
-%  Execution $E$ in Figure~\ref{sfig:ob-01} is indistinguishable
-% to $T_1$ from the execution $E'$ in Figure~\ref{sfig:ob-02}}
-% \end{figure*}
 %
-\begin{observation} 
-\label{ob:two}
-If a fast-path transaction $T_m\in \ms{txns}(E) \setminus \{T_k\}$ does not incur a tracking set abort in $E$, 
-then $E$ is indistinguishable to $T_m$ from $E'$.
-\end{observation}
-%
-Intuitively, these observations say that fast-path transactions which are not yet committed are 
-invisible to slow-path transactions, and can communicate with other
-fast-path transactions only by incurring their tracking-set aborts.

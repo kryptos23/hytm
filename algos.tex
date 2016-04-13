@@ -1,36 +1,45 @@
-\section{Cost of concurrency in hybrid transactional memory}
+%!TEX root = htm.tex
+\section{Hybrid transactional memory algorithms}
 %
-\subsection{Progressive fast-path and slow-path}
+We provide two key observations on this model regarding the interactions of non-committed fast path transactions 
+with other transactions. 
+Let $E$ be any execution of a HyTM implementation $\mathcal{M}$ in
+which a fast-path transaction $T_k$ is either
+t-incomplete or aborted. 
+Then the sequence of events $E'$ derived by removing all events of $E|k$
+from $E$ is an execution  $\mathcal{M}$. Moreover: 
+%Then, the following observations are implied by our model.
+\begin{observation} 
+\label{ob:one}
+To every slow-path transaction $T_m \in \ms{txns}(E)$, $E$ is indistinguishable 
+from $E'$. 
+\end{observation}
 %
-\input{prog-fp-sp}
+% \begin{figure*}[t]
+% \begin{center}
+% 	\subfloat[\label{sfig:ob-01}]{\scalebox{0.5}[0.5]{\input{ob01}}}
+% 	\hspace{10mm}
+% 	\subfloat[\label{sfig:ob-02}]{\scalebox{0.5}[0.5]{\input{ob11}}}
+% 	 
+% \end{center}
+% \caption{
+% %Executions illustrating
+%  %Observation~\ref{ob:one} 
+%  \label{fig:ob1}
+%  Execution $E$ in Figure~\ref{sfig:ob-01} is indistinguishable
+% to $T_1$ from the execution $E'$ in Figure~\ref{sfig:ob-02}}
+% \end{figure*}
 %
-\begin{theorem}
-\label{th:inswrite}
-There exists an opaque HyTM implementation that provides invisible reads, progressiveness
-such that
-in its every execution $E$, every fast-path transaction $T\in \ms{txns}(E)$
-accesses $m=|\Dset(T_k)|$ distinct metadata base objects.
-\end{theorem}
+\begin{observation} 
+\label{ob:two}
+If a fast-path transaction $T_m\in \ms{txns}(E) \setminus \{T_k\}$ does not incur a tracking set abort in $E$, 
+then $E$ is indistinguishable to $T_m$ from $E'$.
+\end{observation}
 %
-\subsection{Progressive fast-path}
+Intuitively, these observations say that fast-path transactions which are not yet committed are 
+invisible to slow-path transactions, and can communicate with other
+fast-path transactions only by incurring their tracking-set aborts.
 %
-\begin{theorem}
-\label{th:inswrite2}
-There exists an opaque HyTM implementation that provides invisible reads
-such that 
-\begin{enumerate}
- \item 
-in every execution $E$,
-every fast-path transaction $T\in \ms{txns}(E)$
-accesses one metadata base object,
-\item
-every execution $E$ is fast-path progressive or for
-every fast-path transaction $T\in \ms{txns}(E)$
-that returns $A_k$ in $E$, there exists an updating slow-path transaction $T_m \in \ms{txns}(E)$
-concurrent to $T_k$.
-\end{enumerate}
-\end{theorem}
-
-\input{prog-fp}
-%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{algos1}
 %

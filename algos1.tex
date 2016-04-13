@@ -1,0 +1,36 @@
+%!TEX root = htm.tex
+\subsection{Progressive HyTM with linear}
+%
+\input{prog-fp-sp}
+%
+\begin{theorem}
+\label{th:inswrite}
+There exists an opaque HyTM implementation that provides invisible reads, progressiveness
+such that
+in its every execution $E$, every fast-path transaction $T\in \ms{txns}(E)$
+accesses $m=|\Dset(T_k)|$ distinct metadata base objects.
+\end{theorem}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Progressive HyTM}
+%
+\begin{theorem}
+\label{th:inswrite2}
+There exists an opaque HyTM implementation that provides invisible reads
+such that 
+\begin{enumerate}
+ \item 
+in every execution $E$,
+every fast-path transaction $T\in \ms{txns}(E)$
+accesses one metadata base object,
+\item
+every execution $E$ is fast-path progressive or for
+every fast-path transaction $T\in \ms{txns}(E)$
+that returns $A_k$ in $E$, there exists an updating slow-path transaction $T_m \in \ms{txns}(E)$
+concurrent to $T_k$.
+\end{enumerate}
+\end{theorem}
+
+\input{prog-fp}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{spec}
+%
