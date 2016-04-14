@@ -3,7 +3,7 @@
 \label{sec:hytm}
 %
 In this section, we extend the formal model of HyTMs originally proposed in \cite{htmdisc15} to accomodate non-speculative accesses within hardware transactions.
-The resulting model is sufficiently expressive to capture the executions of existing hardware transactions like \emph{Intel Haswell}~\cite{haswell},
+The resulting model is sufficiently expressive to capture the executions of existing hardware transactions like \emph{Intel Haswell}~\cite{Rei12},
 \emph{IBM Power8}~\cite{bluegene} and \emph{AMD ASF}~\cite{asf}.
 
 \vspace{1mm}\noindent\textbf{Transactional memory (TM).} 
@@ -87,9 +87,6 @@ one of them is nontrivial.
 
 \vspace{1mm}\noindent\textbf{Direct accesses and cached accesses.}
 We now describe the execution model of a \emph{Hybrid Transactional Memory (HyTM)} implementation.
-%, in which conventional memory accesses are combined with hardware
-%transactions modelled as \emph{cached} accesses. 
-%
 In our HyTM model, every base object can be accessed with two kinds of
 primitives, \emph{direct} and \emph{cached}.
 
@@ -100,7 +97,7 @@ the shared memory and, if necessary, modifies it.
 In a cached access performed by a process $i$, the rmw primitive operates on the \emph{cached}
 state recorded in process $i$'s \emph{tracking set} $\tau_i$. 
 One can think of $\tau_i$ as the \emph{L1 cache} of process $i$.
-A \emph{hardware transaction}  is a series of cached rmw primitives performed on $\tau_i$ followed by
+A \emph{hardware transaction} is a series of direct and (at least one) cached rmw primitive(s) performed on $\tau_i$ followed by
 a \emph{cache-commit} primitive. 
  
 More precisely, $\tau_i$ is a set of triples $(b, v, m)$ where $b$ is a base object identifier, $v$ is a value, 
@@ -108,7 +105,7 @@ and $m \in \{\shared, \exclusive\}$ is an access \emph{mode}.
 The triple $(b, v, m)$ is added to the tracking set when $i$ performs a cached
 rmw access of $b$, where $m$ is set to $\exclusive$ if the access is
 nontrivial, and to $\shared$ otherwise.  
-We assume that there exists some constant $\TS$ (representing the size of the L1 cache)
+As with \cite{htmdisc15}, we assume that there exists some constant $\TS$ (representing the size of the L1 cache)
 such that the condition $|\tau_i| \leq \TS$ must always hold; this
 condition will be enforced by our model.
 A base object $b$ is \emph{present} in $\tau_i$ with mode $m$ if $\exists v, (b,v,m) \in \tau_i$.
@@ -155,7 +152,8 @@ A slow-path transaction models a regular software transaction.
 An event of a slow-path transaction is either an invocation or response of a t-operation, or
 a direct rmw primitive on a base object. 
 
-A fast-path transaction essentially encapsulates a hardware transaction. 
+A fast-path transaction essentially encapsulates a hardware transaction. Specifically, in any execution $E$,
+we say that a transaction $T_k\in \ms{txns}(E)$ is a fast-path transaction if $E|k$ contains at least one cached event.
 An event of a fast-path transaction is either an invocation or response of a t-operation, 
 a cached primitive on a base object, or a \emph{cache-commit}:
 \textit{t-read} and \emph{t-write} are only allowed to contain cached
