@@ -1,8 +1,12 @@
 %!TEX root = htm.tex
-\section{Hybrid Transactional Memory (HyTM)}
+\section{Hybrid transactional memory (HyTM)}
 \label{sec:hytm}
 %
-\vspace{1mm}\noindent\textbf{Transactional Memory (TM).} 
+In this section, we extend the formal model of HyTMs originally proposed in \cite{htmdisc15} to accomodate non-speculative accesses within hardware transactions.
+The resulting model is sufficiently expressive to capture the executions of existing hardware transactions like \emph{Intel Haswell}~\cite{haswell},
+\emph{IBM Power8}~\cite{bluegene} and \emph{AMD ASF}~\cite{asf}.
+
+\vspace{1mm}\noindent\textbf{Transactional memory (TM).} 
 A \emph{transaction} is a sequence of \emph{transactional operations}
 (or \emph{t-operations}), reads and writes, performed on a set of \emph{transactional objects} 
 (\emph{t-objects}). 
@@ -108,11 +112,7 @@ We assume that there exists some constant $\TS$ (representing the size of the L1
 such that the condition $|\tau_i| \leq \TS$ must always hold; this
 condition will be enforced by our model.
 A base object $b$ is \emph{present} in $\tau_i$ with mode $m$ if $\exists v, (b,v,m) \in \tau_i$.
-%\petrC{Did not get what
-%  ``enforced'' means here.}
 
-%Like rmw primitives, a cached primitive is also characterized by the pair of update and response functions $\langle g,h \rangle$.
-%Given a base object $b$ with value $v$ in a configuration $C$, 
 A trivial (resp.\ nontrivial) 
 cached primitive $\langle g,h \rangle$ applied to $b$ 
 by process $i$ first checks the condition $|\tau_i|=\TS$ and if so, it
@@ -145,12 +145,6 @@ a valid $\tau_i$ does the following: for each base object $b$ such that $(b,v,\e
 Finally, $\tau_i$ is set to $\emptyset$ and the primitive 
 returns $\textit{commit}$. 
 
-Note that HTM may also abort spuriously, or because of unsupported operations~\cite{Rei12}. 
-The first cause can be modelled probabilistically in the above
-framework, which would not however significantly affect our claims and proofs, except for a more cumbersome presentation. 
-Also, our lower bounds are based exclusively on executions containing t-reads and t-writes. 
-Therefore, in the following, we only consider tracking set and capacity aborts.  
-
 \vspace{1mm}\noindent\textbf{Slow-path and fast-path transactions.}
 In the following, we partition HyTM transactions into \emph{fast-path
   transactions} and \emph{slow-path transactions}.
@@ -159,9 +153,7 @@ are provided for each t-operation.
 
 A slow-path transaction models a regular software transaction.
 An event of a slow-path transaction is either an invocation or response of a t-operation, or
-a  rmw primitive on a base object. 
-% In further examples, we annotate fast-path transactions by $F$ and
-% slow-path transactions by $S$. 
+a direct rmw primitive on a base object. 
 
 A fast-path transaction essentially encapsulates a hardware transaction. 
 An event of a fast-path transaction is either an invocation or response of a t-operation, 
