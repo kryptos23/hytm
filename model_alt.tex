@@ -156,9 +156,7 @@ A fast-path transaction essentially encapsulates a hardware transaction. Specifi
 we say that a transaction $T_k\in \ms{txns}(E)$ is a fast-path transaction if $E|k$ contains at least one cached event.
 An event of a fast-path transaction is either an invocation or response of a t-operation, 
 a cached primitive on a base object, or a \emph{cache-commit}:
-\textit{t-read} and \emph{t-write} are only allowed to contain cached
-primitives, and \textit{tryC} consists of invoking \emph{cache-commit}.  
-Furthermore, we assume that a fast-path transaction $T_k$ returns $A_k$
+We assume that a fast-path transaction $T_k$ returns $A_k$
 as soon an underlying cached primitive or \emph{cache-commit} returns $\bot$. 
 %
 %

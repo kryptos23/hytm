@@ -1,18 +1,13 @@
 \begin{algorithm}[!h]
-\caption{Progressive fast-path and slow-path opaque HyTM implementation that provides uninstrumented writes and invisible reads; code for transaction $T_k$}
+\caption{Progressive fast-path and slow-path opaque HyTM implementation; code for transaction $T_k$}
 \label{alg:inswrite}
 \begin{algorithmic}[1]
   	\begin{multicols}{2}
   	{
   	\footnotesize
 	\Part{Shared objects}{
-		\State $v_j \in \mathbb{D}$, for each t-object $X_j$ 
-		\Statex ~~~~~allows reads, writes and cas
-		%\State $L[i]$, a multi-trylock object for transaction $T_i$ 
-		\State $r_{j} \in \mathbb{M}$, a versioned lock for each t-object $X_j$
-		\Statex ~~~~~allows reads, writes and cas
-		%\State implemented from reads and writes
-		%\State $L$, multi-trylock
+		\State $v_j$, value of each t-object $X_j$ 
+		\State $r_{j}$, a versioned lock for each t-object $X_j$
 	}\EndPart	
 	\Statex
 	\Part{Process local objects}{
@@ -132,9 +127,8 @@
 	
 	\Part{$\textit{tryC}_k$()}{\quad\Comment{fast-path}
 		\State $\ms{commit-cache}_i$ \label{line:lin3} \Comment{returns $C_k$ or $A_k$}
-  	 }\EndPart		
-% 	
-	}
+  	 }\EndPart
+  	 }
 	\end{multicols}
   \end{algorithmic}
 \end{algorithm}
