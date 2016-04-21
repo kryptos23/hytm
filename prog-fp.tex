@@ -5,25 +5,25 @@
   	\begin{multicols}{2}
   	{
   	\footnotesize
-	\Part{Shared objects}{
-		\State $v_j \in \mathbb{D}$, for each t-object $X_j$ 
-		%\Statex ~~~~~allows reads, writes
-		\State $r_{j} \in \mathbb{M}$, for each t-object $X_j$
-		\State bit $L \in \mathbb{M}$
-		%\Statex ~~~~~allows reads, writes 
-		%\State implemented from reads and writes
-		%\State $L$, multi-trylock
-	}\EndPart	
-	\Statex
-	\Part{Process local objects}{
-		\State $\Rset(T_k)$, storing $\{X_j,r_j\}$
-		\State $\Wset(T_k)$, storing $\{X_j, v_j\}$
-	}\EndPart
+% 	\Part{Shared objects}{
+% 		\State $v_j \in \mathbb{D}$, for each t-object $X_j$ 
+% 		%\Statex ~~~~~allows reads, writes
+% 		\State $r_{j} \in \mathbb{M}$, for each t-object $X_j$
+% 		\State bit $L \in \mathbb{M}$
+% 		%\Statex ~~~~~allows reads, writes 
+% 		%\State implemented from reads and writes
+% 		%\State $L$, multi-trylock
+% 	}\EndPart	
+% 	\Statex
+% 	\Part{Process local objects}{
+% 		\State $\Rset(T_k)$, storing $\{X_j,r_j\}$
+% 		\State $\Wset(T_k)$, storing $\{X_j, v_j\}$
+% 	}\EndPart
 	\Statex
 	\textbf{Code for fast-path transactions}	
 	\Statex
 	\Part{$\textit{start}_k()$}{
-		\Comment{Should this be a spin lock?}
+		
 		\State $l \gets \Read(\ms{L})$ \Comment{cached read} 
 		\If{$\ms{l}\neq 0$}
 			    \Return $A_k$ \EndReturn
@@ -106,8 +106,8 @@
 			 		
 		\EndFor
 		\If{$\lit{validate}()$}
-			\State $\lit{release}( \ms{Wset}(T_k))$ 
-			\Return $A_k$ \EndReturn
+			\State \textbf{goto} Line~\ref{line:release}
+			
 		\EndIf
 		
 		\ForAll{$X_j \in \Wset(T_k)$}
@@ -116,7 +116,7 @@
 			 
 	 	\EndFor		
 		
-  		\ForAll{$X_j \in Q$}	
+  		\ForAll{$X_j \in \Wset(T_k)$}	\label{line:release}
  			\State $r_j.\lit{write}(or_j + 1)$ 
 		\EndFor
 		

@@ -16,6 +16,7 @@
 	}\EndPart
 	\Statex
 	\textbf{Code for fast-path transactions}
+	\Statex
 	\Part{$\textit{read}_k(X_j)$}\quad\Comment{fast-path}{
 		\State $\textit{ov}_j := \Read(v_j)$ \Comment{cached read} \label{line:lin1}
 		\State $\textit{or}_j := \Read(r_j)$ \Comment{uncached read}
@@ -34,8 +35,8 @@
 			\Return $A_k$ \EndReturn
 		\EndIf
 		
-		\State $\Write(r_j,\textit{or}_j+2)$ \Comment{cached write}
-		\State $\Write(v_j,v)$ \Comment{cached write} 
+		\State $\Write(r_j,\textit{or}_j+2)$ \Comment{uncached write}
+		\State $\Write(v_j,v)$ \Comment{uncached write} 
 		\Return $\ok$ \EndReturn
 		
    	}\EndPart
@@ -44,6 +45,28 @@
 	\Part{$\textit{tryC}_k$()}{\quad\Comment{fast-path}
 		\State $\ms{commit-cache}_i$ \label{line:lin3} \Comment{returns $C_k$ or $A_k$}
   	 }\EndPart
+  	 
+  	 \Statex
+  	 	
+ 	
+	\Part{Function: $\lit{release}(Q)$}{
+  		\ForAll{$X_j \in Q$}	
+ 			\State $r_j.\lit{write}(or_j+1)$ \label{line:rel1}	
+		\EndFor
+		
+	}\EndPart
+	\Statex
+	\Statex \Comment{Implement using LL/SC on Power8}
+	\Part{Function: $\lit{setV}()$}{
+% 		\State $\ms{success} \gets \lit{false}$
+% 		
+% 		\While{($\neg \ms{success}$)} \Comment {spin until we get the lock}
+		\State $\ms{or}_j \gets$ $r_j.\Read()$ $\mathrel{\&}1111...1110$
+		\If{$r_j$.CAS($or_j$, $or_j+1$)} 
+		  \Return $\false$  \EndReturn
+		\Return $\true$ \EndReturn
+	}\EndPart
+  	 
   	 \newpage
 	\textbf{Code for slow-path transactions}
 	\Statex
@@ -99,27 +122,9 @@
    		\Return $C_k$ \EndReturn
    	 }\EndPart		
 	 
- 	\Statex
  	
- 	\Statex \Comment{Simple writes on Haswell}
-	\Part{Function: $\lit{release}(Q)$}{
-  		\ForAll{$X_j \in Q$}	
- 			\State $r_j.\lit{setV}()$ \label{line:rel1}	
-		\EndFor
-		
-	}\EndPart
 	\Statex
-	\Statex \Comment{Implement using LL/SC on Power8}
-	\Part{Function: $\lit{setV}()$}{ \Comment{spin lock on the latest version}
-		\State $\ms{success} \gets \lit{false}$
-		
-		\While{($\neg \ms{success}$)} \Comment {spin until we get the lock}
-		\State $\ms{val} \gets$ $r_j.\Read()$ $\mathrel{\&}1111...1110$
-		\State $\ms{success} \gets r_j$.CAS($val$, $val+1$) 
-		\EndWhile
-	}\EndPart
-	\Statex
-	\Part{Function: $\lit{validate}()$}{
+	\Part{Function: $\lit{validate}()$}{\quad\Comment{Validate slow-path reading transactions}
 		\If{$\exists X_j \in Rset(T_k)$;$X_j \not\in \Wset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$} \label{line:valid}
 			\Return $\true$ \EndReturn
 		  \EndIf
