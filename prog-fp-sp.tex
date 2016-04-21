@@ -1,4 +1,4 @@
-\begin{algorithm}[!h]
+\begin{algorithm}[!ht]
 \caption{Progressive fast-path and slow-path opaque HyTM implementation; code for transaction $T_k$}
 \label{alg:inswrite}
 \begin{algorithmic}[1]
@@ -11,8 +11,8 @@
 	}\EndPart	
 	\Statex
 	\Part{Process local objects}{
-		\State $\Rset(T_k)$, list storing $\{X_j,r_j\}$
-		\State $\Wset(T_k)$, bloom filter storing $\{X_j, v_j\}$
+		\State $\Rset(T_k)$, storing $\{X_j,r_j\}$
+		\State $\Wset(T_k)$, storing $\{X_j, v_j\}$
 	}\EndPart
 	\Statex
 	\Statex
@@ -26,7 +26,7 @@
 		  \State $\textit{ov}_j := \Read(v_j)$ \label{line:read2}
 		  \State $\textit{or}_j := \Read(r_j)$ \label{line:readorec}
 		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$ \label{line:rset}
-		  \If{$\textit{or}_j$ $\mathrel{\&} 0000...0001$} \label{line:abort0}	
+		  \If{$\textit{or}_j$ $\mathrel{\&} 1$} \label{line:abort0}	
 			\Return $A_k$ \EndReturn
 		  \EndIf
 		 
@@ -52,7 +52,10 @@
 		\If{$\Wset(T_k)= \emptyset$}
 			\Return $C_k$ \EndReturn \label{line:return}
 		\EndIf
-		\State $\lit{acquire}(\Wset(T_k))$\label{line:acq} 
+		\ForAll{$X_j \in \Wset(T_k)$}	\label{line:acq}
+			\State $r_j.\lit{setV}()$ \label{line:acq1}
+			 		
+		\EndFor
 		
 		\If{$\lit{validate}()$} \label{line:abort3}
 			\State $\lit{release}( \ms{Wset}(T_k))$ 
@@ -62,32 +65,28 @@
 	 		\State  $v_j.\lit{write}(\textit{nv}_j)$ \label{line:write}
 			 
 	 	\EndFor	
-		\State $\lit{release}(\Wset(T_k))$   \label{line:rel}	\Comment{Simple write on Haswell, LL/SC on Power 8}	
+		  
+		\State $\lit{release}(\Wset(T_k))$   \label{line:rel}	
    		\Return $C_k$ \EndReturn
    	 }\EndPart		
 	 
  	\newpage
- 	\Part{Function: $\lit{acquire}(Q$)}{
-   		\ForAll{$X_j \in Q$}	
-			\State $r_j.\lit{setV}()$ \label{line:acq1}
-			 		
-		\EndFor
-		
-	}\EndPart		
-	 \Statex
-	 \Part{Function: $\lit{release}(Q)$}{
+ 	
+ 	\Statex \Comment{Simple writes on Haswell}
+	\Part{Function: $\lit{release}(Q)$}{
   		\ForAll{$X_j \in Q$}	
- 			\State $r_j.\lit{setV}()$ \label{line:rel1}
+ 			\State $r_j.\lit{setV}()$ \label{line:rel1}	
 		\EndFor
 		
 	}\EndPart
 	\Statex
+	\Statex \Comment{Implement using LL/SC on Power8}
 	\Part{Function: $\lit{setV}()$}{ \Comment{spin lock on the latest version}
 		\State $\ms{success} \gets \lit{false}$
 		
 		\While{($\neg \ms{success}$)} \Comment {spin until we get the lock}
 		\State $\ms{val} \gets$ $r_j.\Read()$ $\mathrel{\&}1111...1110$
-		\State $\ms{success} \gets r_j$.CAS($val$, $val+1$)
+		\State $\ms{success} \gets r_j$.CAS($val$, $val+1$) 
 		\EndWhile
 	}\EndPart
 	\Statex
@@ -103,7 +102,7 @@
 	\Part{$\textit{read}_k(X_j)$}\quad\Comment{fast-path}{
 		\State $\textit{ov}_j := \Read(v_j)$ \Comment{cached read} \label{line:lin1}
 		\State $\textit{or}_j := \Read(r_j)$ \Comment{uncached read}
-		\If{$\textit{or}_j$ $\mathrel{\&}0000...0001$}  \label{line:hread}
+		\If{$\textit{or}_j$ $\mathrel{\&}1$}  \label{line:hread}
 			\Return $A_k$ \EndReturn
 		\EndIf
 		
@@ -114,7 +113,7 @@
 	\Comment{What is the best strategy to buffer writes?}
 	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
 		\State $\textit{or}_j := \Read(r_j)$ \Comment{uncached read}
-		\If{$\textit{or}_j$ $\mathrel{\&}0000...0001$}  		
+		\If{$\textit{or}_j$ $\mathrel{\&} 1$}  		
 			\Return $A_k$ \EndReturn
 		\EndIf
 		

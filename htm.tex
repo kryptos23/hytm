@@ -100,7 +100,7 @@
 % \newtheorem{summary}[theorem]{Summary}
 \newtheorem{observation}[theorem]{Observation}
 %\newenvironment{proof}[1][Proof]{\noindent\textbf{#1.} }{\hfill $\Box$\\[2mm]} %\rule{0.5em}{0.5em}\\}
-%\newenvironment{proofsketch}[1][Proof sketch]{\noindent\textbf{#1.} }{\hfill $\Box$\\[2mm]} %\rule{0.5em}{0.5em}\\}
+\newenvironment{proofsketch}[1][Proof sketch]{\noindent\textbf{#1.} }{\hfill $\Box$\\[2mm]} %\rule{0.5em}{0.5em}\\}
 
 \newenvironment{reptheorem}[1][Theorem]{\noindent\textbf{#1}}{}
 \def\lf{\tiny}
@@ -209,7 +209,7 @@
 \begin{abstract}
 \end{abstract}
 
-
+\newpage
 
 %\newpage
 \pagenumbering{arabic}\setcounter{page}{1}
@@ -226,7 +226,11 @@
 %
 \input{conc}
 %
+\newpage
 \bibliography{references2}
+\appendix
+%
+\input{appendix-proof}
 \end{document}
 %%% Local Variables:
 %%% mode: latex

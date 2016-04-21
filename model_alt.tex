@@ -22,7 +22,6 @@ that returns $\mathit{ok}$ or $A_k$, and
 $\mathit{tryC}_k$ that returns $C_k\notin V$ (\emph{commit}) or $A_k$.
 Additionally, we assume that a transaction $T_k$
 may perform a $\mathit{start_k}$ that is the first t-operation performed by $T_k$ which returns $A_k$ or $\mathit{ok}$.
-% \petrC{Is this start event necessary?}
 
 \vspace{1mm}\noindent\textbf{Configurations and executions.} 
 A \emph{configuration} of a TM implementation specifies the state of each base object and each process. 
@@ -95,10 +94,7 @@ the direct-access event atomically reads the value of the object in
 the shared memory and, if necessary, modifies it.
 
 In a cached access performed by a process $i$, the rmw primitive operates on the \emph{cached}
-state recorded in process $i$'s \emph{tracking set} $\tau_i$. 
-One can think of $\tau_i$ as the \emph{L1 cache} of process $i$.
-A \emph{hardware transaction} is a series of direct and (at least one) cached rmw primitive(s) performed on $\tau_i$ followed by
-a \emph{cache-commit} primitive. 
+state recorded in process $i$'s \emph{tracking set} $\tau_i$ (analogous to \emph{L1 cache} of process $i$). 
  
 More precisely, $\tau_i$ is a set of triples $(b, v, m)$ where $b$ is a base object identifier, $v$ is a value, 
 and $m \in \{\shared, \exclusive\}$ is an access \emph{mode}. 
@@ -137,15 +133,15 @@ if, in a configuration $C$ where  $(b,v,\exclusive)\in\tau_i$
 \emph{invalid} and any subsequent cached primitive invoked by $i$
 sets $\tau_i$ to $\emptyset$ and returns $\bot$. We refer to this event as a \emph{tracking set abort}.
 
-Finally, the \emph{cache-commit} primitive issued by process $i$ with
+Any transaction $T_k \in \ms{txns}(E)$ that performs at least one cached access necessarily performs a \emph{cache-commit} primitive as the last event of $E|k$. 
+A \emph{cache-commit} primitive issued by process $i$ with
 a valid $\tau_i$ does the following: for each base object $b$ such that $(b,v,\exclusive) \in \tau_i$, the value of $b$ in $C$ is updated to $v$. 
 Finally, $\tau_i$ is set to $\emptyset$ and the primitive 
 returns $\textit{commit}$. 
 
 \vspace{1mm}\noindent\textbf{Slow-path and fast-path transactions.}
-In the following, we partition HyTM transactions into \emph{fast-path
-  transactions} and \emph{slow-path transactions}.
-Practically,  two separate algorithms (fast-path one and slow-path one) 
+In the following, we partition HyTM transactions into \emph{fast-path transactions} and \emph{slow-path transactions}.
+Practically, two separate algorithms (fast-path one and slow-path one) 
 are provided for each t-operation. 
 
 A slow-path transaction models a regular software transaction.
@@ -154,8 +150,10 @@ a direct rmw primitive on a base object.
 
 A fast-path transaction essentially encapsulates a hardware transaction. Specifically, in any execution $E$,
 we say that a transaction $T_k\in \ms{txns}(E)$ is a fast-path transaction if $E|k$ contains at least one cached event.
-An event of a fast-path transaction is either an invocation or response of a t-operation, 
-a cached primitive on a base object, or a \emph{cache-commit}:
+A \emph{hardware transaction} is a series of direct and (at least one) cached rmw primitive(s) performed on $\tau_i$ followed by
+a \emph{cache-commit} primitive. 
+Thus, an event of a fast-path transaction is either an invocation or response of a t-operation, 
+a cached primitive on a base object, or a \emph{cache-commit}.
 We assume that a fast-path transaction $T_k$ returns $A_k$
 as soon an underlying cached primitive or \emph{cache-commit} returns $\bot$. 
 %

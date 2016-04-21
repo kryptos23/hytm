@@ -1,4 +1,4 @@
-\begin{algorithm}[!h]
+\begin{algorithm}[!ht]
 \caption{Opaque HyTM implementation with sequential slow-path and progressive fast-path TM-progress; code for $T_k$ by process $p_i$}
 \label{alg:inswrite2}
 \begin{algorithmic}[1]
@@ -16,8 +16,8 @@
 	}\EndPart	
 	\Statex
 	\Part{Process local objects}{
-		\State $\Rset(T_k)$, list storing $\{X_j,r_j\}$
-		\State $\Wset(T_k)$, bloom filter storing $\{X_j, v_j\}$
+		\State $\Rset(T_k)$, storing $\{X_j,r_j\}$
+		\State $\Wset(T_k)$, storing $\{X_j, v_j\}$
 	}\EndPart
 	\Statex
 	\Statex
@@ -31,7 +31,7 @@
 		  \State $\textit{ov}_j := \Read(v_j)$ 
 		  \State $\textit{or}_j := \Read(r_j)$ 
 		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$ 
-		  \If{$\textit{or}_j$ $\mathrel{\&} 0000...0001$}  	
+		  \If{$\textit{or}_j$ $\mathrel{\&} 1$}  	
 			\Return $A_k$ \EndReturn
 		  \EndIf
 		  \If{$\lit{validate}()$}
@@ -65,7 +65,7 @@
 		\EndFor
 		\Comment{First read, then write all: single barrier}
 		\ForAll{$X_j \in Q$}	
-			\State $r_j.\lit{write}(or_j \mathrel{\&} 1)$ 
+			\State $r_j.\lit{write}(or_j + 1)$ 
 			 		
 		\EndFor
 		\If{$\lit{validate}()$}
@@ -80,7 +80,7 @@
 	 	\EndFor		
 		
   		\ForAll{$X_j \in Q$}	
- 			\State $r_j.\lit{write}(or_j \mathrel{\&} 0)$ 
+ 			\State $r_j.\lit{write}(or_j + 1)$ 
 		\EndFor
 		
 		\State $L.\lit{write}(0)$
