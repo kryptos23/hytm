@@ -15,7 +15,36 @@
 		\State $\Wset(T_k)$, storing $\{X_j, v_j\}$
 	}\EndPart
 	\Statex
+	\textbf{Code for fast-path transactions}
+	\Part{$\textit{read}_k(X_j)$}\quad\Comment{fast-path}{
+		\State $\textit{ov}_j := \Read(v_j)$ \Comment{cached read} \label{line:lin1}
+		\State $\textit{or}_j := \Read(r_j)$ \Comment{uncached read}
+		\If{$\textit{or}_j$ $\mathrel{\&}1$}  \label{line:hread}
+			\Return $A_k$ \EndReturn
+		\EndIf
+		
+		\Return $\textit{ov}_j$ \EndReturn
+		
+   	 }\EndPart
 	\Statex
+	%\Comment{What is the best strategy to buffer writes?}
+	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
+		\State $\textit{or}_j := \Read(r_j)$ \Comment{cached read}
+		\If{$\textit{or}_j$ $\mathrel{\&} 1$}  		
+			\Return $A_k$ \EndReturn
+		\EndIf
+		
+		\State $\Write(r_j,\textit{or}_j+2)$ \Comment{cached write}
+		\State $\Write(v_j,v)$ \Comment{cached write} 
+		\Return $\ok$ \EndReturn
+		
+   	}\EndPart
+	\Statex
+	
+	\Part{$\textit{tryC}_k$()}{\quad\Comment{fast-path}
+		\State $\ms{commit-cache}_i$ \label{line:lin3} \Comment{returns $C_k$ or $A_k$}
+  	 }\EndPart
+  	 \newpage
 	\textbf{Code for slow-path transactions}
 	\Statex
 	\Part{\Read$_k(X_j)$}\quad\Comment{slow-path}{
@@ -70,7 +99,7 @@
    		\Return $C_k$ \EndReturn
    	 }\EndPart		
 	 
- 	\newpage
+ 	\Statex
  	
  	\Statex \Comment{Simple writes on Haswell}
 	\Part{Function: $\lit{release}(Q)$}{
@@ -96,37 +125,7 @@
 		  \EndIf
 		 \Return $\false$ \EndReturn
 	}\EndPart
-	\Statex
-	\Statex
-	\textbf{Code for fast-path transactions}
-	\Part{$\textit{read}_k(X_j)$}\quad\Comment{fast-path}{
-		\State $\textit{ov}_j := \Read(v_j)$ \Comment{cached read} \label{line:lin1}
-		\State $\textit{or}_j := \Read(r_j)$ \Comment{uncached read}
-		\If{$\textit{or}_j$ $\mathrel{\&}1$}  \label{line:hread}
-			\Return $A_k$ \EndReturn
-		\EndIf
 		
-		\Return $\textit{ov}_j$ \EndReturn
-		
-   	 }\EndPart
-	\Statex
-	\Comment{What is the best strategy to buffer writes?}
-	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
-		\State $\textit{or}_j := \Read(r_j)$ \Comment{uncached read}
-		\If{$\textit{or}_j$ $\mathrel{\&} 1$}  		
-			\Return $A_k$ \EndReturn
-		\EndIf
-		
-		\State $\Write(r_j,\textit{or}_j+2)$ \Comment{uncached write}
-		\State $\Write(v_j,v)$ \Comment{cached write} 
-		\Return $\ok$ \EndReturn
-		
-   	}\EndPart
-	\Statex
-	
-	\Part{$\textit{tryC}_k$()}{\quad\Comment{fast-path}
-		\State $\ms{commit-cache}_i$ \label{line:lin3} \Comment{returns $C_k$ or $A_k$}
-  	 }\EndPart
   	 }
 	\end{multicols}
   \end{algorithmic}
