@@ -1,10 +1,10 @@
 #!/bin/bash
 
 PROGS="bayes genome intruder kmeans labyrinth ssca2 vacation yada"
-TARGETS="seq tl2 hytm1"
+#TARGETS="seq seqtm tl2 hytm1 hytm2"
 
-#PROGS="bayes kmeans"
-#TARGETS="hytm1"
+PROGS="kmeans"
+TARGETS="hytm2"
 
 mkdir bin
 
@@ -18,12 +18,15 @@ do
         if [ $? -ne 0 ]; then echo "ERROR: failed to compile TM library $t"; exit -1; fi
         cd ..
         echo "Compiled TM library: $t"
+
+        mfile="Makefile.stm"
+    else
+        mfile="Makefile.seq"
     fi
 
     # compile the benchmarks that will use the library
     for p in ${PROGS}
     do
-        if [ $t == "seq" ]; then mfile="Makefile.seq"; else mfile="Makefile.stm"; fi
         cd $p
         make -f $mfile clean TARGET=$t
         make -f $mfile TARGET=$t

@@ -21,10 +21,10 @@
 #define STM_H 1
 
 
-#include "hytm1.h"
+#include "hytm2.h"
 #include "util.h"
 
-#define STM_THREAD_T                    Thread
+#define STM_THREAD_T                    void
 #define STM_SELF                        Self
 #define STM_RO_FLAG                     ROFlag
 

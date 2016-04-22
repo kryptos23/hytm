@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include "rtm.h"
-//#include "tmalloc.h"
+#include "tmalloc.h"
 
 //enum hytm1_path { FALLBACK, FAST };
 

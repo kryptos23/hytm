@@ -157,7 +157,7 @@ MAIN(argc, argv)
     char*   line;
     int     isBinaryFile = 0;
     int     nloops;
-    int     len;
+//    int     len;
     int     nthreads;
     float   threshold = 0.001;
     int     opt;
@@ -213,8 +213,14 @@ MAIN(argc, argv)
             fprintf(stderr, "Error: no such file (%s)\n", filename);
             exit(1);
         }
-        read(infile, &numObjects, sizeof(int));
-        read(infile, &numAttributes, sizeof(int));
+        if (read(infile, &numObjects, sizeof(int)) < 0) {
+            fprintf(stderr, "Error: could not read at line %d\n", __LINE__);
+            exit(-1);
+        }
+        if (read(infile, &numAttributes, sizeof(int)) < 0) {
+            fprintf(stderr, "Error: could not read at line %d\n", __LINE__);
+            exit(-1);
+        }
 
         /* Allocate space for attributes[] and read attributes of all objects */
         buf = (float*)malloc(numObjects * numAttributes * sizeof(float));
@@ -226,7 +232,10 @@ MAIN(argc, argv)
         for (i = 1; i < numObjects; i++) {
             attributes[i] = attributes[i-1] + numAttributes;
         }
-        read(infile, buf, (numObjects * numAttributes * sizeof(float)));
+        if (read(infile, buf, (numObjects * numAttributes * sizeof(float))) < 0) {
+            fprintf(stderr, "Error: could not read at line %d\n", __LINE__);
+            exit(-1);
+        }
         close(infile);
     } else {
         FILE *infile;
@@ -284,7 +293,7 @@ MAIN(argc, argv)
     assert(cluster_assign);
 
     nloops = 1;
-    len = max_nclusters - min_nclusters + 1;
+//    len = max_nclusters - min_nclusters + 1;
 
     for (i = 0; i < nloops; i++) {
         /*

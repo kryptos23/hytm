@@ -4,7 +4,7 @@
 #
 # ==============================================================================
 
-LIBNAME=hytm1
+LIBNAME=hytm2
 
 # ==============================================================================
 # Variables
@@ -20,6 +20,11 @@ LIBHYTM := lib$(LIBNAME).a
 OBJS := \
 	$(LIBNAME).o \
 	tmalloc.o \
+	avpair.o \
+	vlock.o \
+	log.o \
+	typelogs.o \
+	thread.o \
 #
 
 AR      := ar
@@ -35,6 +40,16 @@ RM := rm -f
 .PHONY: default
 default: lazy
 
+#.PHONY: clean
+#clean: 
+#	$(RM) $(LIBHYTM)
+
+#tmalloc.o: tmalloc.c
+#	$(CC) $(CFLAGS) -c $< -o $@
+
+#$(LIBHYTM): vlock.cpp vlock.h avpair.cpp avpair.h log.cpp log.h thread.cpp thread.h typelogs.cpp typelogs.h tmalloc.o $(LIBNAME).cpp $(LIBNAME).h
+#	$(CC) $(CFLAGS) -c vlock.cpp avpair.cpp log.cpp thread.cpp typelogs.cpp $(LIBNAME).cpp
+	
 .PHONY: clean
 clean:
 	$(RM) $(LIBHYTM) $(OBJS)

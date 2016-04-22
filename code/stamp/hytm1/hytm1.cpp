@@ -2,6 +2,10 @@
  * Code for HyTM is loosely based on the code for TL2
  * (in particular, the data structures)
  * 
+ * This is essentially an implementation of TLE, but with an abort function
+ * (including on the fallback path). To implement the abort function, we log
+ * old values before writing.
+ * 
  * [ note: we cannot distribute this without inserting the appropriate
  *         copyright notices as required by TL2 and STAMP ]
  * 
@@ -17,6 +21,7 @@
 #include <signal.h>
 #include "platform.h"
 #include "hytm1.h"
+#include "tmalloc.h"
 #include "util.h"
 
 #ifndef CACHE_LINE_SIZE
@@ -101,8 +106,8 @@ struct _Thread {
     long Aborts; /* Tally of # of aborts */
     unsigned long long rng;
     unsigned long long xorrng [1];
-//    tmalloc_t* allocPtr; /* CCM: speculatively allocated */
-//    tmalloc_t* freePtr; /* CCM: speculatively free'd */
+    tmalloc_t* allocPtr; /* CCM: speculatively allocated */
+    tmalloc_t* freePtr; /* CCM: speculatively free'd */
     TypeLogs rdSet;
     TypeLogs wrSet;
     TypeLogs LocalUndo;
@@ -420,6 +425,8 @@ void TxFreeThread(Thread* t) {
     FreeTypeLogs(&t->wrSet, INIT_WRSET_NUM_ENTRY);
     FreeTypeLogs(&t->rdSet, INIT_RDSET_NUM_ENTRY);
     FreeTypeLogs(&t->LocalUndo, INIT_LOCAL_NUM_ENTRY);
+    tmalloc_free(t->allocPtr);
+    tmalloc_free(t->freePtr);
     free(t);
 }
 
@@ -433,6 +440,11 @@ void TxInitThread(Thread* t, long id) {
     MakeTypeLogs(t, &t->wrSet, INIT_WRSET_NUM_ENTRY);
     MakeTypeLogs(t, &t->rdSet, INIT_RDSET_NUM_ENTRY);
     MakeTypeLogs(t, &t->LocalUndo, INIT_LOCAL_NUM_ENTRY);
+
+    t->allocPtr = tmalloc_alloc(1);
+    assert(t->allocPtr);
+    t->freePtr = tmalloc_alloc(1);
+    assert(t->freePtr);
 }
 
 template <typename T>
@@ -532,12 +544,12 @@ software:
 int TxCommit(Thread* Self) {
     if (Self->isFallback) {
         releaseLock(&globallock);
-//        tmalloc_clear(Self->allocPtr);
-//        tmalloc_releaseAllForward(Self->freePtr, NULL);
+        tmalloc_clear(Self->allocPtr);
+        tmalloc_releaseAllForward(Self->freePtr, NULL);
     } else {
-//        tmalloc_releaseAllForward(Self->freePtr, NULL);
+        tmalloc_releaseAllForward(Self->freePtr, NULL);
         XEND();
-//        tmalloc_clear(Self->allocPtr);
+        tmalloc_clear(Self->allocPtr);
     }
     return 1;
 }
@@ -556,11 +568,39 @@ void TxAbort(Thread* Self) {
         ++Self->Aborts;
         
         // Rollback any memory allocation, and longjmp to retry the txn
-//        tmalloc_releaseAllReverse(Self->allocPtr, NULL);
-//        tmalloc_clear(Self->freePtr);
+        tmalloc_releaseAllReverse(Self->allocPtr, NULL);
+        tmalloc_clear(Self->freePtr);
         SIGLONGJMP(*Self->envPtr, 1);
         ASSERT(0);
     } else {
         XABORT(0);
     }
+}
+
+/* =============================================================================
+ * TxAlloc
+ *
+ * CCM: simple transactional memory allocation
+ * =============================================================================
+ */
+void* TxAlloc (Thread* Self, size_t size)
+{
+    void* ptr = tmalloc_reserve(size);
+    if (ptr) {
+        tmalloc_append(Self->allocPtr, ptr);
+    }
+
+    return ptr;
+}
+
+
+/* =============================================================================
+ * TxFree
+ *
+ * CCM: simple transactional memory de-allocation
+ * =============================================================================
+ */
+void TxFree (Thread* Self, void* ptr)
+{
+    tmalloc_append(Self->freePtr, ptr);
 }
