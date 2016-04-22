@@ -57,10 +57,10 @@
 		
    		
    	 }\EndPart		
-   	 \newpage
-	
+   	 \Statex
+	\Statex
 	\textbf{Code for slow-path transactions}
-	
+	\Statex
 	\Part{\Read$_k(X_j)$}\quad\Comment{slow-path}{
 		  \If{$X_j\in \Wset(T_k)$}
 		    \Return $\Wset(T_k).\lit{locate}(X_j)$ \EndReturn
@@ -78,7 +78,7 @@
 		  \Return $\textit{ov}_j$ \EndReturn
 		
    	 }\EndPart
-   	 \Statex
+   	\newpage
 	\Part{\Write$_k(X_j,v)$}\quad\Comment{slow-path}{
 		
 			\State $\textit{nv}_j := v$

@@ -47,11 +47,20 @@
   	 }\EndPart
   	 
   	 \Statex
-  	 	
- 	
-	\Part{Function: $\lit{release}(Q)$}{
+  	\Part{Function: $\lit{release}(Q)$}{
   		\ForAll{$X_j \in Q$}	
  			\State $r_j.\lit{write}(or_j+1)$ \label{line:rel1}	
+		\EndFor
+		
+	}\EndPart
+ 	
+	\Part{Function: $\lit{acquire}(Q)$}{
+  		\ForAll{$X_j \in Q$}	
+ 			\If{ $r_j.\lit{setV}()$} \label{line:acq1}
+			  \State $\ms{Lset}(T_k):=\ms{Lset}(T_k)\cup \{X_j\}$
+			  \Return $\true$ \EndReturn
+			\EndIf
+			\State $\lit{release}(\ms{Lset}(T_k))$
 		\EndFor
 		
 	}\EndPart
@@ -64,6 +73,7 @@
 		\State $\ms{or}_j \gets$ $r_j.\Read()$ $\mathrel{\&}1111...1110$
 		\If{$r_j$.CAS($or_j$, $or_j+1$)} 
 		  \Return $\false$  \EndReturn
+		\EndIf
 		\Return $\true$ \EndReturn
 	}\EndPart
   	 
@@ -75,8 +85,8 @@
 		    \Return $\Wset(T_k).\lit{locate}(X_j)$ \EndReturn
 		  \Else
 		  
-		  \State $\textit{ov}_j := \Read(v_j)$ \label{line:read2}
 		  \State $\textit{or}_j := \Read(r_j)$ \label{line:readorec}
+		  \State $\textit{ov}_j := \Read(v_j)$ \label{line:read2}
 		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$ \label{line:rset}
 		  \If{$\textit{or}_j$ $\mathrel{\&} 1$} \label{line:abort0}	
 			\Return $A_k$ \EndReturn
