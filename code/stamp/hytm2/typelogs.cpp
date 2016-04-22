@@ -46,7 +46,7 @@ __INLINE__ void TypeLogs::append(volatile T* Addr, T Valu, vLock* _LockFor, vLoc
 }
 
 template <typename T>
-__INLINE__ AVPair* TypeLogs::find(vLock* Lock) {
+__INLINE__ AVPair* TypeLogs::findFirst(vLock* Lock) {
     Log *_log = getTypedLog<T>(this);
     return _log->findFirst(Lock);
 }

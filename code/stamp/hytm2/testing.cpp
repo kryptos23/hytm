@@ -21,16 +21,16 @@ int globaln;
 
 void test0(int iters) {
     // tm metadata for this thread
-    STM_THREAD_T* STM_SELF = STM_NEW_THREAD();
     const int id = 0;
+    STM_THREAD_T* STM_SELF = STM_NEW_THREAD();
     STM_INIT_THREAD(STM_SELF, id);
     
     // work kernel
     int x = 0, y = 0;
     for (int i=0;i<iters;++i) {
         STM_BEGIN_WR();
-        STM_WRITE(x, STM_READ(x)+1);
-        STM_WRITE(y, STM_READ(y)+1);
+        STM_WRITE_L(x, STM_READ_L(x)+1);
+        STM_WRITE_L(y, STM_READ_L(y)+1);
         STM_END();
     }
     
@@ -50,8 +50,8 @@ void *ntest0_kernel(void* arg) {
     
     for (int i=0;i<globaliters;++i) {
         STM_BEGIN_WR();
-        STM_WRITE(globalx, STM_READ(globalx)+1);
-        STM_WRITE(globaly, STM_READ(globaly)+1);
+        STM_WRITE_L(globalx, STM_READ_L(globalx)+1);
+        STM_WRITE_L(globaly, STM_READ_L(globaly)+1);
         STM_END();
     }
 }

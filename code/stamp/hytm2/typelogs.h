@@ -46,7 +46,7 @@ public:
     void append(volatile T* Addr, T Valu, vLock* _LockFor, vLockSnapshot _rdv);
     
     template <typename T>
-    AVPair* find(vLock* Lock);
+    AVPair* findFirst(vLock* Lock);
     
     template <typename T>
     bool contains(vLock* Lock);

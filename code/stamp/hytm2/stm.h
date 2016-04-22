@@ -42,7 +42,7 @@
 #define STM_STARTUP()                   TxOnce()
 #define STM_SHUTDOWN()                  TxShutdown()
 
-#define STM_NEW_THREAD()                TxNewThread()
+#define STM_NEW_THREAD(id)              TxNewThread()
 #define STM_INIT_THREAD(t, id)          TxInitThread(t, id)
 #define STM_FREE_THREAD(t)              TxFreeThread(t)
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-g++ hytm1.c testing.cpp -lpthread -o testing.out
+g++ hytm2.cpp testing.cpp tmalloc.o -lpthread -o testing.out
 if [ $? -eq 0 ]; then
     ./testing.out
 else
