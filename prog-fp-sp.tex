@@ -53,7 +53,7 @@
 		\EndFor
 		
 	}\EndPart
- 	
+ 	\Statex
 	\Part{Function: $\lit{acquire}(Q)$}{
   		\ForAll{$X_j \in Q$}	
  			\If{ $r_j.\lit{setV}()$} \label{line:acq1}
@@ -61,6 +61,7 @@
 			  \Return $\true$ \EndReturn
 			\EndIf
 			\State $\lit{release}(\ms{Lset}(T_k))$
+			\Return $\false$ \EndReturn
 		\EndFor
 		
 	}\EndPart
@@ -114,10 +115,7 @@
 		\If{$\Wset(T_k)= \emptyset$}
 			\Return $C_k$ \EndReturn \label{line:return}
 		\EndIf
-		\ForAll{$X_j \in \Wset(T_k)$}	\label{line:acq}
-			\State $r_j.\lit{setV}()$ \label{line:acq1}
-			 		
-		\EndFor
+		\If{$\lit{acquire}(\Wset(T_k))$}	\label{line:acq}
 		
 		\If{$\lit{validate}()$} \label{line:abort3}
 			\State $\lit{release}( \ms{Wset}(T_k))$ 
@@ -130,6 +128,9 @@
 		  
 		\State $\lit{release}(\Wset(T_k))$   \label{line:rel}	
    		\Return $C_k$ \EndReturn
+   		\Else
+		  \Return $A_k$ \EndReturn
+		  \EndIf
    	 }\EndPart		
 	 
  	
