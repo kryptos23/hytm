@@ -24,6 +24,7 @@
 
 #define TM_NAME "HyTM2"
 #define HTM_RETRY_THRESH 5
+//#define TXNL_MEM_RECLAMATION
 
 volatile long StartTally = 0;
 volatile long AbortTally = 0;
@@ -54,10 +55,10 @@ public:
     vLockSnapshot(uintptr_t _lockstate) {
         lockstate = _lockstate;
     }
-    bool isLocked() {
+    __INLINE__ bool isLocked() {
         return lockstate & LOCKBIT;
     }
-    bool version() {
+    __INLINE__ bool version() {
         return lockstate & ~LOCKBIT;
     }
 };
@@ -72,18 +73,21 @@ public:
     vLock() {
         lock = 0;
     }
-    vLockSnapshot getSnapshot() {
+    __INLINE__ vLockSnapshot getSnapshot() {
         return vLockSnapshot(lock);
     }
-    bool tryAcquire() {
+    __INLINE__ bool tryAcquire() {
         uintptr_t val = lock & ~LOCKBIT;
         return __sync_bool_compare_and_swap(&lock, val, val+1);
     }
-    void release() {
+    __INLINE__ bool tryAcquire(vLockSnapshot& oldval) {
+        return __sync_bool_compare_and_swap(&lock, oldval.version(), oldval.version()+1);
+    }
+    __INLINE__ void release() {
         ++lock;
     }
     // can be invoked only by a hardware transaction
-    void htmIncrementVersion() {
+    __INLINE__ void htmIncrementVersion() {
         lock += LOCKBIT*2;
     }
 };
@@ -392,9 +396,12 @@ public:
         
         AVPair* const stop = put;
         for (AVPair* curr = List; curr != stop; curr = curr->Next) {
-            // if we fail to acquire a lock
-            if (!curr->LockFor->tryAcquire()) {
-                // unlock all previous entries (since we locked them) and return false
+            // try to acquire locks (and fail if their versions
+            // have changed since we first read them during
+            // invocations of TxStore())
+            if (!curr->LockFor->tryAcquire(curr->rdv)) {
+                // if we fail to acquire a lock, we must 
+                // unlock all previous locks that we acquired
                 for (AVPair* toUnlock = List; toUnlock != curr; toUnlock = toUnlock->Next) {
                     toUnlock->LockFor->release();
                 }
@@ -418,7 +425,7 @@ public:
     // writeSet must point to the write-set for this Thread that
     // contains addresses/values of type T.
     template <typename T>
-    __INLINE__ bool validate(Thread* Self) {
+    __INLINE__ bool validate(Thread* Self, bool holdingLocks) {
         assert(Self->isFallback);
         
         AVPair* const stop = put;
@@ -427,10 +434,12 @@ public:
             vLock* lock = PSLOCK(Addr);
             vLockSnapshot locksnap = lock->getSnapshot();
             if (locksnap.isLocked() || locksnap.version() != curr->rdv.version()) {
-                // if write set does not contain Addr
-                Log* wrSet = getTypedLog<T>(Self->wrSet);
-                if (!wrSet->contains(lock)) { // TODO: improve contains w/hashing or bloom filter
-                    return false;
+                // the address is locked, it its version number has changed
+                // we abort if we are not the one who holds a lock on it, or changed its version.
+                if (!holdingLocks) {
+                    return false; // abort if we are not holding any locks
+                } else if (!getTypedLog<T>(Self->wrSet)->contains(lock)) { // TODO: improve contains w/hashing or bloom filter
+                    return false; // abort if we are holding locks, but addr is not in our write-set
                 }
             }
         }
@@ -445,11 +454,9 @@ public:
     long sz;
     
     TypeLogs() {}
-    TypeLogs(Thread* Self, long _sz) {
-        sz = _sz;
-        l = Log(sz, Self);
-        f = Log(sz, Self);
-    }
+    TypeLogs(Thread* Self, long _sz)
+    : sz(_sz), l(Log(_sz, Self)), f(Log(_sz, Self)) {}
+    
     void destroy() {
         l.destroy();
         f.destroy();
@@ -461,7 +468,8 @@ public:
     }
 
     __INLINE__ bool lockAll(Thread* Self) {
-        return l.lockAll(Self) && f.lockAll(Self);
+        return l.lockAll(Self)
+            && f.lockAll(Self);
     }
     
     __INLINE__ void releaseAll(Thread* Self) {
@@ -469,8 +477,9 @@ public:
         f.releaseAll(Self);
     }
     
-    __INLINE__ bool validate(Thread* Self) {
-        return l.validate<long>(Self) && f.validate<float>(Self);
+    __INLINE__ bool validate(Thread* Self, bool holdingLocks) {
+        return l.validate<long>(Self, holdingLocks)
+            && f.validate<float>(Self, holdingLocks);
     }
 
     __INLINE__ void writeForward() {
@@ -519,8 +528,7 @@ inline Log * getTypedLog<float>(TypeLogs * typelogs) {
 
 __INLINE__ intptr_t AtomicAdd(volatile intptr_t* addr, intptr_t dx) {
     intptr_t v;
-    for (v = *addr; CAS(addr, v, v + dx) != v; v = *addr) {
-    }
+    for (v = *addr; CAS(addr, v, v + dx) != v; v = *addr) {}
     return (v + dx);
 }
 
@@ -584,22 +592,14 @@ void TxStart(void* _Self, sigjmp_buf* envPtr, int aborted_in_software, int* ROFl
     Self->envPtr = envPtr;
     
     unsigned status;
-    if (aborted_in_software) {
-        goto software;
-    }
+    if (aborted_in_software) goto software;
     Self->Starts++;
 htmretry:
     status = XBEGIN();
-    if (status == _XBEGIN_STARTED) {
-        
-    } else {
-        // if we aborted
+    if (status != _XBEGIN_STARTED) { // if we aborted
         ++Self->Aborts;
-        if (++Self->Retries < HTM_RETRY_THRESH) {
-            goto htmretry;
-        } else {
-            goto software;
-        }
+        if (++Self->Retries < HTM_RETRY_THRESH) goto htmretry;
+        else goto software;
     }
     return;
 software:
@@ -612,9 +612,7 @@ int TxCommit(void* _Self) {
     // software path
     if (Self->isFallback) {
         // return immediately if txn is read-only
-        if (Self->IsRO) {
-            return true;
-        }
+        if (Self->IsRO) goto success;
         
         // lock all addresses in the write-set
         if (!Self->wrSet->lockAll(Self)) {
@@ -623,7 +621,7 @@ int TxCommit(void* _Self) {
         }
         
         // validate reads
-        if (!Self->rdSet->validate(Self)) {
+        if (!Self->rdSet->validate(Self, true)) {
             // if we fail validation, release all locks and abort
             Self->wrSet->releaseAll(Self);
             TxAbort(Self);
@@ -635,18 +633,18 @@ int TxCommit(void* _Self) {
         // release all locks
         Self->wrSet->releaseAll(Self);
         
-        // deal with any malloc'd memory
-        tmalloc_clear(Self->allocPtr);
-        tmalloc_releaseAllForward(Self->freePtr, NULL);
-        return true;
-        
     // hardware path
     } else {
-        tmalloc_releaseAllForward(Self->freePtr, NULL);
         XEND();
-        tmalloc_clear(Self->allocPtr);
-        return true;
     }
+    
+success:
+#ifdef TXNL_MEM_RECLAMATION
+    // "commit" speculative frees and speculative allocations
+    tmalloc_releaseAllForward(Self->freePtr, NULL);
+    tmalloc_clear(Self->allocPtr);
+#endif
+    return true;
 }
 
 void TxAbort(void* _Self) {
@@ -656,10 +654,15 @@ void TxAbort(void* _Self) {
     if (Self->isFallback) {
         ++Self->Retries;
         ++Self->Aborts;
+        if (Self->Aborts > 100) { fprintf(stderr, "TOO MANY ABORTS. QUITTING.\n"); exit(-1); }
         
-        // Rollback any memory allocation, and longjmp to start of txn
+#ifdef TXNL_MEM_RECLAMATION
+        // "abort" speculative allocations and speculative frees
         tmalloc_releaseAllReverse(Self->allocPtr, NULL);
         tmalloc_clear(Self->freePtr);
+#endif
+        
+        // longjmp to start of txn
         SIGLONGJMP(*Self->envPtr, 1);
         ASSERT(0);
         
@@ -675,6 +678,8 @@ T TxLoad(void* _Self, volatile T* Addr) {
     
     // software path
     if (Self->isFallback) {
+        printf("txLoad(id=%ld, addr=0x%lX) on fallback\n", Self->UniqID, (unsigned long)(void*) Addr);
+        
         // check whether Addr is in the write-set
         vLock* lock = PSLOCK(Addr);
         AVPair* av = Self->wrSet->findLast<T>(lock); // TODO: improve find w/hashing or bloom filter
@@ -689,7 +694,9 @@ T TxLoad(void* _Self, volatile T* Addr) {
         Self->rdSet->append(Addr, val, lock, locksnap); // TODO: do we want to append EVERY time we read???
 
         // validate reads
-        if (!Self->rdSet->validate(Self)) TxAbort(Self);
+        if (!Self->rdSet->validate(Self, false)) TxAbort(Self);
+
+        printf("    txLoad(id=%ld, ...) success\n", Self->UniqID);
         return val;
         
     // hardware path
@@ -710,7 +717,9 @@ T TxStore(void* _Self, volatile T* addr, T valu) {
     
     // software path
     if (Self->isFallback) {
-        // abort if addr is locked
+        printf("txStore(id=%ld, addr=0x%lX, val=%ld) on fallback\n", Self->UniqID, (unsigned long)(void*) addr, (long) valu);
+        
+        // abort if addr is locked (since we do not hold any locks)
         vLock* lock = PSLOCK(addr);
         vLockSnapshot locksnap = lock->getSnapshot();
         if (locksnap.isLocked()) TxAbort(Self);
@@ -718,6 +727,8 @@ T TxStore(void* _Self, volatile T* addr, T valu) {
         // add addr to the write-set
         Self->wrSet->append<T>(addr, valu, lock, locksnap);
         Self->IsRO = false; // txn is not read-only
+
+        printf("    txStore(id=%ld, ...) success\n", Self->UniqID);
         return valu;
         
     // hardware path
@@ -733,6 +744,10 @@ T TxStore(void* _Self, volatile T* addr, T valu) {
         return *addr = valu;
     }
 }
+
+/**
+ * bug is likely in start/commit/abort/load/store
+ */
 
 
 
@@ -785,6 +800,7 @@ void TxInitThread(void* _t, long id) {
  * =============================================================================
  */
 void* TxAlloc(void* _Self, size_t size) {
+#ifdef TXNL_MEM_RECLAMATION
     Thread* Self = (Thread*) _Self;
     void* ptr = tmalloc_reserve(size);
     if (ptr) {
@@ -792,6 +808,9 @@ void* TxAlloc(void* _Self, size_t size) {
     }
 
     return ptr;
+#else
+    return malloc(size);
+#endif
 }
 
 /* =============================================================================
@@ -801,8 +820,12 @@ void* TxAlloc(void* _Self, size_t size) {
  * =============================================================================
  */
 void TxFree(void* _Self, void* ptr) {
+#ifdef TXNL_MEM_RECLAMATION
     Thread* Self = (Thread*) _Self;
     tmalloc_append(Self->freePtr, ptr);
+#else
+    free(ptr);
+#endif
 }
 
 long TxLoadl(void* _Self, volatile long* addr) {
