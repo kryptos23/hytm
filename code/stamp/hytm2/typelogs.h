@@ -43,7 +43,7 @@ public:
     void writeReverse();
     
     template <typename T>
-    void append(volatile T* Addr, T Valu, vLock* _LockFor, vLockSnapshot _rdv);
+    void insert(volatile T* Addr, T Valu, vLock* _LockFor, vLockSnapshot _rdv);
     
     template <typename T>
     AVPair* findFirst(vLock* Lock);

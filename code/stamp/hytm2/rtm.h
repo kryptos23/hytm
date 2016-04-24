@@ -61,7 +61,7 @@
     static __rtm_force_inline void XEND(void) {
         SOFTWARE_BARRIER;
         asm volatile(".byte 0x0f,0x01,0xd5" :: : "memory");
-    //    __sync_synchronize();
+        //__sync_synchronize();
         //SOFTWARE_BARRIER;
     }
 

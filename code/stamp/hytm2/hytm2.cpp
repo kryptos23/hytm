@@ -21,13 +21,54 @@
 #include "hytm2.h"
 #include "tmalloc.h"
 #include "util.h"
+#include "../murmurhash/MurmurHash3.h"
+#include <iostream>
+using namespace std;
 
 #define TM_NAME "HyTM2"
-#define HTM_RETRY_THRESH 5
-//#define TXNL_MEM_RECLAMATION
+#ifndef HTM_ATTEMPT_THRESH
+    #define HTM_ATTEMPT_THRESH 5
+#endif
+#define TXNL_MEM_RECLAMATION
 
-volatile long StartTally = 0;
-volatile long AbortTally = 0;
+//#define DEBUG_PRINT
+//#define DEBUG_PRINT_LOCK
+
+#ifdef DEBUG_PRINT
+    #define aout(x) { \
+        cout<<x<<endl; \
+    }
+#elif defined(DEBUG_PRINT_LOCK)
+    #define aout(x) { \
+        acquireLock(&globallock); \
+        cout<<x<<endl; \
+        releaseLock(&globallock); \
+    }
+#else
+    #define aout(x) 
+#endif
+
+// just for debugging
+volatile int globallock = 0;
+
+void acquireLock(volatile int *lock) {
+    while (1) {
+        if (*lock) {
+            __asm__ __volatile__("pause;");
+            continue;
+        }
+        if (__sync_bool_compare_and_swap(lock, 0, 1)) {
+            return;
+        }
+    }
+}
+
+void releaseLock(volatile int *lock) {
+    *lock = 0;
+}
+
+
+
 
 
 
@@ -48,36 +89,39 @@ class Thread;
 
 #define LOCKBIT 1
 class vLockSnapshot {
-private:
-    uintptr_t lockstate;
+public:
+//private:
+    uint64_t lockstate;
 public:
     vLockSnapshot() {}
-    vLockSnapshot(uintptr_t _lockstate) {
+    vLockSnapshot(uint64_t _lockstate) {
         lockstate = _lockstate;
     }
-    __INLINE__ bool isLocked() {
+    __INLINE__ bool isLocked() const {
         return lockstate & LOCKBIT;
     }
-    __INLINE__ bool version() {
-        return lockstate & ~LOCKBIT;
+    __INLINE__ uint64_t version() const {
+//        cout<<"LOCKSTATE="<<lockstate<<" ~LOCKBIT="<<(~LOCKBIT)<<" VERSION="<<(lockstate & (~LOCKBIT))<<endl;
+        return lockstate & (~LOCKBIT);
     }
+    friend std::ostream& operator<<(std::ostream &out, const vLockSnapshot &obj);
 };
 
 class vLock {
-    volatile uintptr_t lock; // (Version,LOCKBIT)
+    volatile uint64_t lock; // (Version,LOCKBIT)
 private:
-    vLock(uintptr_t lockstate) {
+    vLock(uint64_t lockstate) {
         lock = lockstate;
     }
 public:
     vLock() {
         lock = 0;
     }
-    __INLINE__ vLockSnapshot getSnapshot() {
+    __INLINE__ vLockSnapshot getSnapshot() const {
         return vLockSnapshot(lock);
     }
     __INLINE__ bool tryAcquire() {
-        uintptr_t val = lock & ~LOCKBIT;
+        uint64_t val = lock & (~LOCKBIT);
         return __sync_bool_compare_and_swap(&lock, val, val+1);
     }
     __INLINE__ bool tryAcquire(vLockSnapshot& oldval) {
@@ -88,9 +132,19 @@ public:
     }
     // can be invoked only by a hardware transaction
     __INLINE__ void htmIncrementVersion() {
-        lock += LOCKBIT*2;
+        lock += 2;
     }
 };
+
+std::ostream& operator<<(std::ostream& out, const vLockSnapshot& obj) {
+    return out<<"<ver="<<obj.version()
+                <<",locked="<<obj.isLocked()<<">"
+                ;//<<"> (raw="<<obj.lockstate<<")";
+}
+
+std::ostream& operator<<(std::ostream& out, const vLock& obj) {
+    return out<<obj.getSnapshot()<<"@"<<(uintptr_t)(long*)&obj;
+}
 
 /*
  * Consider 4M alignment for LockTab so we can use large-page support.
@@ -149,8 +203,11 @@ public:
 //    int* ROFlag; // not used by stamp
     bool IsRO;
     int isFallback;
-    long Starts;
-    long Aborts; /* Tally of # of aborts */
+//    long Starts; // how many times the user called TxBegin
+    long AbortsHW; // # of times hw txns aborted
+    long AbortsSW; // # of times sw txns aborted
+    long CommitsHW;
+    long CommitsSW;
     unsigned long long rng;
     unsigned long long xorrng [1];
     tmalloc_t* allocPtr;    /* CCM: speculatively allocated */
@@ -185,11 +242,7 @@ class AVPair {
 public:
     AVPair* Next;
     AVPair* Prev;
-    union {
-        volatile long* l;
-        volatile float* f;
-        volatile intptr_t* p;
-    } addr;
+    intptr_t addr;
     union {
         long l;
 #ifdef __LP64__
@@ -207,21 +260,21 @@ public:
     AVPair() {}
     AVPair(AVPair* _Next, AVPair* _Prev, Thread* _Owner, long _Ordinal)
         : Next(_Next), Prev(_Prev), LockFor(0), rdv(0), Owner(_Owner), Ordinal(_Ordinal) {
-        addr.l = 0;
+        addr = 0;
         value.l = 0;
     }
 };
 
 template <typename T>
-inline void assignAV(AVPair* e, volatile T* addr, T value);
+inline void assignAV(AVPair* e, volatile intptr_t addr, T value);
 template <>
-inline void assignAV<long>(AVPair* e, volatile long* addr, long value) {
-    e->addr.l = addr;
+inline void assignAV<long>(AVPair* e, volatile intptr_t addr, long value) {
+    e->addr = addr;
     e->value.l = value;
 }
 template <>
-inline void assignAV<float>(AVPair* e, volatile float* addr, float value) {
-    e->addr.f = addr;
+inline void assignAV<float>(AVPair* e, volatile intptr_t addr, float value) {
+    e->addr = addr;
     e->value.f[0] = value;
 }
 
@@ -229,22 +282,11 @@ template <typename T>
 inline void replayStore(AVPair* e);
 template <>
 inline void replayStore<long>(AVPair* e) {
-    *(e->addr.l) = e->value.l;
+    *((long*)e->addr) = e->value.l;
 }
 template <>
 inline void replayStore<float>(AVPair* e) {
-    *(e->addr.f) = e->value.f[0];
-}
-
-template <typename T>
-inline volatile T* unpackAddr(AVPair* e);
-template <>
-inline volatile long* unpackAddr<long>(AVPair* e) {
-    return e->addr.l;
-}
-template <>
-inline volatile float* unpackAddr<float>(AVPair* e) {
-    return e->addr.f;
+    *((float*)e->addr) = e->value.f[0];
 }
 
 template <typename T>
@@ -271,6 +313,7 @@ enum hytm_config {
 
 class Log {
 public:
+    // linked list (for iteration)
     AVPair* List;
     char padding[CACHE_LINE_SIZE];
     AVPair* put;    /* Insert position - cursor */
@@ -278,9 +321,20 @@ public:
     AVPair* end;    /* CCM: Pointer to last entry */
     long ovf;       /* Overflow - request to grow */
     long sz;
-
+    
+    // hash table (for fast lookups)
+    uint32_t seed;  // seed for hash function
+    AVPair** htab;
+    long htabsz;    // number of elements in the hash table
+    long htabcap;   // capacity of the hash table
+    
 private:
-    __INLINE__ AVPair* extend() {
+    __INLINE__ int hash(uintptr_t p) {
+        // assert: htabcap is a power of 2
+        return (int) MurmurHash3_x86_32_uintptr(p, seed) & (htabcap-1);
+    }
+    
+    __INLINE__ AVPair* extendList() {
         // Append at the tail. We want the front of the list,
         // which sees the most traffic, to remains contiguous.
         ovf++;
@@ -291,10 +345,54 @@ private:
         end = e;
         return e;
     }
+    
+    // TODO: fix error: if two addresses are protected by the same lock, then only one will be added to the log!
+    __INLINE__ int htabFindIx(uintptr_t addr) {
+        int ix = hash(addr);
+        while (htab[ix]) {
+            if (htab[ix]->addr == addr) {
+                return ix;
+            }
+            ix = (ix + 1) & (htabcap-1);
+        }
+        return -1;
+    }
+    
+    __INLINE__ AVPair* htabFind(uintptr_t addr) {
+        int ix = htabFindIx(addr);
+        if (ix < 0) return NULL;
+        return htab[ix];
+    }
+    
+    // assumes there is space for e
+    __INLINE__ void htabInsert(uintptr_t addr, AVPair* e) {
+        int ix = hash(addr);
+        while (htab[ix]) { // assumes hash table does NOT contain e
+            ix = (ix + 1) & (htabcap-1);
+        }
+        htab[ix] = e;
+    }
+    
+    __INLINE__ void extendHashTable() {
+        // expand table by a factor of 2
+        AVPair** old = htab;
+        htabcap *= 2;
+        htab = (AVPair**) malloc(sizeof(AVPair*) * htabcap);
+        memset(htab, 0, sizeof(AVPair*) * htabcap);
+        free(old);
+        
+        // rehash elements into new table
+        AVPair* End = put;
+        for (AVPair* e = List; e != End; e = e->Next) {
+            htabInsert(e->addr, e);
+        }
+    }
 
 public:
     Log() {}
     Log(long _sz, Thread* Self) {
+        // assert: _sz is a power of 2
+        
         // Allocate the primary list as a large chunk so we can guarantee ascending &
         // adjacent addresses through the list. This improves D$ and DTLB behavior.
         List = (AVPair*) malloc((sizeof(AVPair) * _sz) + CACHE_LINE_SIZE);
@@ -313,6 +411,13 @@ public:
         tail->Next = NULL; // fix invalid next pointer from last iteration
         sz = _sz;
         ovf = 0;
+        
+        // allocate memory for the hash table
+        seed = 0xc4d1ca82; // for hash function (drawn from atmospheric noise)
+        htab = (AVPair**) malloc(sizeof(AVPair*) * _sz);
+        htabsz = 0;
+        htabcap = _sz;
+        memset(htab, 0, sizeof(AVPair*) * _sz);
     }
 
     void destroy() {
@@ -327,25 +432,53 @@ public:
         }
         /* Free contiguous beginning */
         free(List);
+        
+        // free hash table
+        free(htab);
     }
     
     void clear() {
+        // clear hash table by nulling out slots for the AVPairs in the list
+        AVPair* End = put;
+        for (AVPair* e = List; e != End; e = e->Next) {
+            int ix = htabFindIx(e->addr);
+            if (ix < 0) continue;
+            htab[ix] = NULL;
+        }
+        
+        // clear list
         put = List;
         tail = NULL;
     }
 
     // for undo log: immediate writes -> undo on abort/restart
     template <typename T>
-    __INLINE__ void append(volatile T* Addr, T Valu, vLock* _LockFor, vLockSnapshot _rdv) {
-        AVPair* e = put;
+    __INLINE__ void insert(volatile T* Addr, T Valu, vLock* _LockFor, vLockSnapshot _rdv) {
+        AVPair* e = htabFind((uintptr_t) Addr);
+        
+        // this address is NOT in the log
         if (e == NULL) {
-            e = extend();
+            // add it to the list
+            AVPair* e = put;
+            if (e == NULL) e = extendList();
+            tail = e;
+            put = e->Next;
+            assignAV(e, (uintptr_t) Addr, Valu);
+            e->LockFor = _LockFor;
+            e->rdv = _rdv;
+            
+            // add it to the hash table
+            // (first, expand the table if it is more than half full)
+            if (2*htabsz > htabcap) extendHashTable();
+            htabInsert((uintptr_t) Addr, e);
+            
+        // this address is already in the log
+        } else {
+            // update the value associated with Addr
+            assignAV(e, (uintptr_t) Addr, Valu);
+            // note: we keep the old position in the list,
+            // and the old lock version number (and everything else).
         }
-        tail = e;
-        put = e->Next;
-        assignAV(e, Addr, Valu);
-        e->LockFor = _LockFor;
-        e->rdv = _rdv;
     }
     
     // Transfer the data in the log to its ultimate location.
@@ -365,85 +498,12 @@ public:
         }
     }
     
-    // Search for first log entry that contains lock.
-    __INLINE__ AVPair* findFirst(vLock* Lock) {
-        AVPair* const End = put;
-        for (AVPair* e = List; e != End; e = e->Next) {
-            if (e->LockFor == Lock) {
-                return e;
-            }
-        }
-        return NULL;
+    __INLINE__ AVPair* find(uintptr_t addr) {
+        return htabFind(addr);
     }
     
-    // Search for last log entry that contains lock.
-    __INLINE__ AVPair* findLast(vLock* Lock) {
-        for (AVPair* e = tail; e != NULL; e = e->Prev) {
-            if (e->LockFor == Lock) {
-                return e;
-            }
-        }
-        return NULL;
-    }
-    
-    __INLINE__ bool contains(vLock* Lock) {
-        return findFirst(Lock) != NULL;
-    }
-    
-    // can be invoked only by a transaction on the software path
-    __INLINE__ bool lockAll(Thread* Self) {
-        assert(Self->isFallback);
-        
-        AVPair* const stop = put;
-        for (AVPair* curr = List; curr != stop; curr = curr->Next) {
-            // try to acquire locks (and fail if their versions
-            // have changed since we first read them during
-            // invocations of TxStore())
-            if (!curr->LockFor->tryAcquire(curr->rdv)) {
-                // if we fail to acquire a lock, we must 
-                // unlock all previous locks that we acquired
-                for (AVPair* toUnlock = List; toUnlock != curr; toUnlock = toUnlock->Next) {
-                    toUnlock->LockFor->release();
-                }
-                return false;
-            }
-        }
-        return true;
-    }
-    
-    // can be invoked only by a transaction on the software path
-    __INLINE__ void releaseAll(Thread* Self) {
-        assert(Self->isFallback);
-        
-        AVPair* const stop = put;
-        for (AVPair* curr = List; curr != stop; curr = curr->Next) {
-            curr->LockFor->release();
-        }
-    }
-
-    // can be invoked only by a transaction on the software path.
-    // writeSet must point to the write-set for this Thread that
-    // contains addresses/values of type T.
-    template <typename T>
-    __INLINE__ bool validate(Thread* Self, bool holdingLocks) {
-        assert(Self->isFallback);
-        
-        AVPair* const stop = put;
-        for (AVPair* curr = List; curr != stop; curr = curr->Next) {
-            volatile T* Addr = unpackAddr<T>(curr);
-            vLock* lock = PSLOCK(Addr);
-            vLockSnapshot locksnap = lock->getSnapshot();
-            if (locksnap.isLocked() || locksnap.version() != curr->rdv.version()) {
-                // the address is locked, it its version number has changed
-                // we abort if we are not the one who holds a lock on it, or changed its version.
-                if (!holdingLocks) {
-                    return false; // abort if we are not holding any locks
-                } else if (!getTypedLog<T>(Self->wrSet)->contains(lock)) { // TODO: improve contains w/hashing or bloom filter
-                    return false; // abort if we are holding locks, but addr is not in our write-set
-                }
-            }
-        }
-        return true;
+    __INLINE__ bool contains(uintptr_t addr) {
+        return htabFindIx(addr) != -1;
     }
 };
 
@@ -466,22 +526,7 @@ public:
         l.clear();
         f.clear();
     }
-
-    __INLINE__ bool lockAll(Thread* Self) {
-        return l.lockAll(Self)
-            && f.lockAll(Self);
-    }
     
-    __INLINE__ void releaseAll(Thread* Self) {
-        l.releaseAll(Self);
-        f.releaseAll(Self);
-    }
-    
-    __INLINE__ bool validate(Thread* Self, bool holdingLocks) {
-        return l.validate<long>(Self, holdingLocks)
-            && f.validate<float>(Self, holdingLocks);
-    }
-
     __INLINE__ void writeForward() {
         l.writeForward<long>();
         f.writeForward<float>();
@@ -493,37 +538,156 @@ public:
     }
     
     template <typename T>
-    __INLINE__ void append(volatile T* Addr, T Valu, vLock* _LockFor, vLockSnapshot _rdv) {
+    __INLINE__ void insert(volatile T* Addr, T Valu, vLock* _LockFor, vLockSnapshot _rdv) {
         Log *_log = getTypedLog<T>(this);
-        _log->append(Addr, Valu, _LockFor, _rdv);
+        _log->insert(Addr, Valu, _LockFor, _rdv);
     }
     
     template <typename T>
-    __INLINE__ AVPair* findFirst(vLock* Lock) {
+    __INLINE__ AVPair* find(uintptr_t addr) {
         Log *_log = getTypedLog<T>(this);
-        return _log->findFirst(Lock);
+        return _log->find(addr);
     }
     
     template <typename T>
-    __INLINE__ AVPair* findLast(vLock* Lock) {
+    __INLINE__ bool contains(uintptr_t addr) {
         Log *_log = getTypedLog<T>(this);
-        return _log->findLast(Lock);
+        return _log->contains(addr);
     }
-    
-    template <typename T>
-    __INLINE__ bool contains(vLock* Lock) {
-        Log *_log = getTypedLog<T>(this);
-        return _log->contains(Lock);
-    }
+//    
+//    template <typename T>
+//    __INLINE__ vLockSnapshot* getLockSnapshot(AVPair* e) {
+//        AVPair* av = find<T>(e->LockFor);
+//        if (av) return &av->rdv;
+//        return NULL;
+//    }
 };
 
 template <>
-inline Log * getTypedLog<long>(TypeLogs * typelogs) {
+__INLINE__ Log * getTypedLog<long>(TypeLogs * typelogs) {
     return &typelogs->l;
 }
 template <>
-inline Log * getTypedLog<float>(TypeLogs * typelogs) {
+__INLINE__ Log * getTypedLog<float>(TypeLogs * typelogs) {
     return &typelogs->f;
+}
+
+__INLINE__ vLockSnapshot* minLockSnapshot(vLockSnapshot* a, vLockSnapshot* b) {
+    if (a && b) {
+        return (a->version() < b->version()) ? a : b;
+    } else {
+        return a ? a : b; // note: might return NULL
+    }
+}
+
+__INLINE__ vLockSnapshot* getMinLockSnap(AVPair* a, AVPair* b) {
+    if (a && b) {
+        return minLockSnapshot(&a->rdv, &b->rdv);
+    } else {
+        return a ? &a->rdv : (b ? &b->rdv : NULL);
+    }
+}
+
+// can be invoked only by a transaction on the software path
+template <typename T>
+__INLINE__ bool lockAll(Thread* Self, Log* log) {
+    assert(Self->isFallback);
+
+    AVPair* const stop = log->put;
+    for (AVPair* curr = log->List; curr != stop; curr = curr->Next) {
+        // determine when we first encountered curr->addr in txload or txstore.
+        // curr->rdv contains when we first encountered it in a txSTORE,
+        // so we also need to compare it with any rdv stored in the READ-set.
+        AVPair* readLogEntry = Self->rdSet->find<T>(curr->addr);
+        vLockSnapshot *encounterTime = getMinLockSnap(curr, readLogEntry);
+        assert(encounterTime);
+//        if (encounterTime->version() != readLogEntry->rdv.version()) {
+//            fprintf(stderr, "WARNING: read encounter time was not taken as the minimum\n");
+//        }
+        
+//        vLockSnapshot currsnap = curr->rdv;
+        aout("thread "<<Self->UniqID<<" trying to acquire lock "
+                    <<*curr->LockFor
+                    <<" with old-ver "<<encounterTime->version()
+                    //<<" (and curr-ver "<<currsnap.version()<<" raw="<<currsnap.lockstate<<" raw&(~1)="<<(currsnap.lockstate&(~1))<<")"
+                    <<" to protect val "<<(*((T*) curr->addr))
+                    <<" (and write new-val "<<unpackValue<T>(curr)<<")");
+
+        // try to acquire locks
+        // (and fail if their versions have changed since encounterTime)
+        if (!curr->LockFor->tryAcquire(*encounterTime)) {
+            // if we fail to acquire a lock, we must
+            // unlock all previous locks that we acquired
+            for (AVPair* toUnlock = log->List; toUnlock != curr; toUnlock = toUnlock->Next) {
+                toUnlock->LockFor->release();
+//                aout("thread "<<Self->UniqID<<" releasing lock "<<*curr->LockFor<<" in lockAll (will be ver "<<(curr->LockFor->getSnapshot().version()+2)<<")");
+            }
+//            aout("thread "<<Self->UniqID<<" failed to acquire lock "<<*curr->LockFor);
+            return false;
+        }
+//        aout("thread "<<Self->UniqID<<" acquired lock "<<*curr->LockFor);
+    }
+    return true;
+}
+
+__INLINE__ bool tryLockWriteSet(Thread* Self) {
+    return lockAll<long>(Self, &Self->wrSet->l)
+        && lockAll<float>(Self, &Self->wrSet->f);
+}
+
+// NOT TO BE INVOKED DIRECTLY
+// releases all locks on addresses in a Log
+__INLINE__ void releaseAll(Thread* Self, Log* log) {
+    AVPair* const stop = log->put;
+    for (AVPair* curr = log->List; curr != stop; curr = curr->Next) {
+        aout("thread "<<Self->UniqID<<" releasing lock "<<*curr->LockFor<<" in releaseAll (will be ver "<<(curr->LockFor->getSnapshot().version()+2)<<")");
+        curr->LockFor->release();
+    }
+}
+
+// can be invoked only by a transaction on the software path
+// releases all locks on addresses in the write-set
+__INLINE__ void releaseWriteSet(Thread* Self) {
+    assert(Self->isFallback);
+    releaseAll(Self, &Self->wrSet->l);
+    releaseAll(Self, &Self->wrSet->f);
+}
+
+// can be invoked only by a transaction on the software path.
+// writeSet must point to the write-set for this Thread that
+// contains addresses/values of type T.
+template <typename T>
+__INLINE__ bool validate(Thread* Self, Log* log, bool holdingLocks) {
+    assert(Self->isFallback);
+
+    AVPair* const stop = log->put;
+    for (AVPair* curr = log->List; curr != stop; curr = curr->Next) {
+        // determine when we first encountered curr->addr in txload or txstore.
+        // curr->rdv contains when we first encountered it in a txLOAD,
+        // so we also need to compare it with any rdv stored in the WRITE-set.
+        AVPair* writeLogEntry = Self->wrSet->find<T>(curr->addr);
+        vLockSnapshot *encounterTime = getMinLockSnap(curr, writeLogEntry);
+        assert(encounterTime);
+        
+        vLock* lock = curr->LockFor;
+        vLockSnapshot locksnap = lock->getSnapshot();
+        if (locksnap.isLocked() || locksnap.version() != encounterTime->version()) {
+            // the address is locked, it its version number has changed
+            // we abort if we are not the one who holds a lock on it, or changed its version.
+            if (!holdingLocks) {
+                return false; // abort if we are not holding any locks
+            } else if (!getTypedLog<T>(Self->wrSet)->contains(curr->addr)) {
+                return false; // abort if we are holding locks, but addr is not in our write-set
+            }
+//            return false;
+        }
+    }
+    return true;
+}
+
+__INLINE__ bool validateReadSet(Thread* Self, bool holdingLocks) {
+    return validate<long>(Self, &Self->rdSet->l, holdingLocks)
+        && validate<float>(Self, &Self->rdSet->f, holdingLocks);
 }
 
 __INLINE__ intptr_t AtomicAdd(volatile intptr_t* addr, intptr_t dx) {
@@ -531,6 +695,27 @@ __INLINE__ intptr_t AtomicAdd(volatile intptr_t* addr, intptr_t dx) {
     for (v = *addr; CAS(addr, v, v + dx) != v; v = *addr) {}
     return (v + dx);
 }
+
+
+
+
+
+
+
+
+
+
+/**
+ * 
+ * THREAD CLASS IMPLEMENTATION
+ * 
+ */
+
+volatile long StartTally = 0;
+volatile long AbortTallyHW = 0;
+volatile long AbortTallySW = 0;
+volatile long CommitTallyHW = 0;
+volatile long CommitTallySW = 0;
 
 Thread::Thread(long id) {
     memset(this, 0, sizeof (*this)); /* Default value for most members */
@@ -552,8 +737,11 @@ Thread::Thread(long id) {
 }
 
 void Thread::destroy() {
-    AtomicAdd((volatile intptr_t*)((void*) (&StartTally)), Starts);
-    AtomicAdd((volatile intptr_t*)((void*) (&AbortTally)), Aborts);
+//    AtomicAdd((volatile intptr_t*)((void*) (&StartTally)), Starts);
+    AtomicAdd((volatile intptr_t*)((void*) (&AbortTallySW)), AbortsSW);
+    AtomicAdd((volatile intptr_t*)((void*) (&AbortTallyHW)), AbortsHW);
+    AtomicAdd((volatile intptr_t*)((void*) (&CommitTallySW)), CommitsSW);
+    AtomicAdd((volatile intptr_t*)((void*) (&CommitTallyHW)), CommitsHW);
     tmalloc_free(allocPtr);
     tmalloc_free(freePtr);
     wrSet->destroy();
@@ -585,24 +773,26 @@ void TxStart(void* _Self, sigjmp_buf* envPtr, int aborted_in_software, int* ROFl
     Self->rdSet->clear();
     Self->LocalUndo->clear();
 
+    unsigned status;
+    if (aborted_in_software) goto software;
+
+//    Self->Starts++;
     Self->Retries = 0;
     Self->isFallback = 0;
 //    Self->ROFlag = ROFlag;
     Self->IsRO = true;
     Self->envPtr = envPtr;
-    
-    unsigned status;
-    if (aborted_in_software) goto software;
-    Self->Starts++;
+    if (HTM_ATTEMPT_THRESH <= 0) goto software;
 htmretry:
     status = XBEGIN();
     if (status != _XBEGIN_STARTED) { // if we aborted
-        ++Self->Aborts;
-        if (++Self->Retries < HTM_RETRY_THRESH) goto htmretry;
+        ++Self->AbortsHW;
+        if (++Self->Retries < HTM_ATTEMPT_THRESH) goto htmretry;
         else goto software;
     }
     return;
 software:
+//    aout("thread "<<Self->UniqID<<" started tx attempt "<<Self->Starts);
     Self->isFallback = 1;
 }
 
@@ -615,15 +805,16 @@ int TxCommit(void* _Self) {
         if (Self->IsRO) goto success;
         
         // lock all addresses in the write-set
-        if (!Self->wrSet->lockAll(Self)) {
+        if (!tryLockWriteSet(Self)) {
             TxAbort(Self); // abort if we fail to acquire some lock
             // (note: after lockAll we hold either all or no locks)
         }
         
         // validate reads
-        if (!Self->rdSet->validate(Self, true)) {
+        if (!validateReadSet(Self, true)) { // TODO: needs to be since first time i READ OR WROTE
             // if we fail validation, release all locks and abort
-            Self->wrSet->releaseAll(Self);
+            aout("thread "<<Self->UniqID<<" validation failed -> releasing write-set");
+            releaseWriteSet(Self);
             TxAbort(Self);
         }
         
@@ -631,11 +822,14 @@ int TxCommit(void* _Self) {
         Self->wrSet->writeForward();
         
         // release all locks
-        Self->wrSet->releaseAll(Self);
+        aout("thread "<<Self->UniqID<<" committed -> releasing write-set");
+        releaseWriteSet(Self);
+        ++Self->CommitsSW;
         
     // hardware path
     } else {
         XEND();
+        ++Self->CommitsHW;
     }
     
 success:
@@ -653,8 +847,8 @@ void TxAbort(void* _Self) {
     // software path
     if (Self->isFallback) {
         ++Self->Retries;
-        ++Self->Aborts;
-        if (Self->Aborts > 100) { fprintf(stderr, "TOO MANY ABORTS. QUITTING.\n"); exit(-1); }
+        ++Self->AbortsSW;
+//        if (Self->Aborts > 1000) { fprintf(stderr, "TOO MANY ABORTS. QUITTING.\n"); exit(-1); }
         
 #ifdef TXNL_MEM_RECLAMATION
         // "abort" speculative allocations and speculative frees
@@ -678,25 +872,25 @@ T TxLoad(void* _Self, volatile T* Addr) {
     
     // software path
     if (Self->isFallback) {
-        printf("txLoad(id=%ld, addr=0x%lX) on fallback\n", Self->UniqID, (unsigned long)(void*) Addr);
+//        printf("txLoad(id=%ld, addr=0x%lX) on fallback\n", Self->UniqID, (unsigned long)(void*) Addr);
         
         // check whether Addr is in the write-set
-        vLock* lock = PSLOCK(Addr);
-        AVPair* av = Self->wrSet->findLast<T>(lock); // TODO: improve find w/hashing or bloom filter
+        AVPair* av = Self->wrSet->find<T>((uintptr_t) Addr);
         if (av != NULL) return unpackValue<T>(av);
 
         // Addr is NOT in the write-set; abort if it is locked
+        vLock* lock = PSLOCK(Addr);
         vLockSnapshot locksnap = lock->getSnapshot();
         if (locksnap.isLocked()) TxAbort(Self);
         
         // read addr and add it to the read-set
         T val = *Addr;
-        Self->rdSet->append(Addr, val, lock, locksnap); // TODO: do we want to append EVERY time we read???
+        Self->rdSet->insert(Addr, val, lock, locksnap);
 
         // validate reads
-        if (!Self->rdSet->validate(Self, false)) TxAbort(Self);
+        if (!validateReadSet(Self, false)) TxAbort(Self);
 
-        printf("    txLoad(id=%ld, ...) success\n", Self->UniqID);
+//        printf("    txLoad(id=%ld, ...) success\n", Self->UniqID);
         return val;
         
     // hardware path
@@ -717,7 +911,7 @@ T TxStore(void* _Self, volatile T* addr, T valu) {
     
     // software path
     if (Self->isFallback) {
-        printf("txStore(id=%ld, addr=0x%lX, val=%ld) on fallback\n", Self->UniqID, (unsigned long)(void*) addr, (long) valu);
+//        printf("txStore(id=%ld, addr=0x%lX, val=%ld) on fallback\n", Self->UniqID, (unsigned long)(void*) addr, (long) valu);
         
         // abort if addr is locked (since we do not hold any locks)
         vLock* lock = PSLOCK(addr);
@@ -725,10 +919,10 @@ T TxStore(void* _Self, volatile T* addr, T valu) {
         if (locksnap.isLocked()) TxAbort(Self);
         
         // add addr to the write-set
-        Self->wrSet->append<T>(addr, valu, lock, locksnap);
+        Self->wrSet->insert<T>(addr, valu, lock, locksnap);
         Self->IsRO = false; // txn is not read-only
 
-        printf("    txStore(id=%ld, ...) success\n", Self->UniqID);
+//        printf("    txStore(id=%ld, ...) success\n", Self->UniqID);
         return valu;
         
     // hardware path
@@ -744,10 +938,6 @@ T TxStore(void* _Self, volatile T* addr, T valu) {
         return *addr = valu;
     }
 }
-
-/**
- * bug is likely in start/commit/abort/load/store
- */
 
 
 
@@ -772,8 +962,11 @@ void TxOnce() {
 }
 
 void TxShutdown() {
-    printf("%s %s:\n  Starts=%li Aborts=%li\n",
-            TM_NAME, "system shutdown", StartTally, AbortTally);
+    printf("%s system shutdown:\n  Starts=%li CommitsHW=%li AbortsHW=%li CommitsSW=%li AbortsSW=%li\n",
+                TM_NAME,
+                CommitTallyHW+CommitTallySW,
+                CommitTallyHW, AbortTallyHW,
+                CommitTallySW, AbortTallySW);
 }
 
 void* TxNewThread() {

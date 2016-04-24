@@ -20,6 +20,7 @@ LIBHYTM := lib$(LIBNAME).a
 OBJS := \
 	$(LIBNAME).o \
 	tmalloc.o \
+	../murmurhash/MurmurHash3.o \
 #
 
 AR      := ar
@@ -38,6 +39,9 @@ default: lazy
 .PHONY: clean
 clean:
 	$(RM) $(LIBHYTM) $(OBJS)
+
+../murmurhash/MurmurHash3.o: ../murmurhash/MurmurHash3.cpp
+	$(CC) $(CFLAGS) -c $< -o $@
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
