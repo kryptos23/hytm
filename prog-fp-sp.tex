@@ -140,7 +140,7 @@
  	
 	\Statex
 	\Part{Function: $\lit{validate}()$}{\quad\Comment{Validate slow-path reading transactions}
-		\If{$\exists X_j \in Rset(T_k)$;$X_j \not\in \Wset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$} \label{line:valid}
+		\If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$} \label{line:valid}
 			\Return $\false$ \EndReturn
 		  \EndIf
 		 \Return $\true$ \EndReturn
