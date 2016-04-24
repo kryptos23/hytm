@@ -121,7 +121,7 @@
 		\EndIf
 		\If{$\lit{acquire}(\Wset(T_k))$}	\label{line:acq}
 		
-		\If{$\neq \lit{validate}()$} \label{line:abort3}
+		\If{$\neg \lit{validate}()$} \label{line:abort3}
 			\State $\lit{release}( \ms{Wset}(T_k))$ 
 			\Return $A_k$ \EndReturn
 		\EndIf
