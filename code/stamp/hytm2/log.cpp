@@ -10,7 +10,7 @@
 // Append at the tail. We want the front of the list, which sees the most
 // traffic, to remains contiguous.
 
-__INLINE__ AVPair* Log::extend() {
+__INLINE__ AVPair* Log::extendList() {
     ovf++;
     AVPair* e = (AVPair*) malloc(sizeof (*e));
     assert(e);
@@ -66,10 +66,10 @@ void Log::clear() {
 // for undo log: immediate writes -> undo on abort/restart
 
 template <typename T>
-__INLINE__ void Log::append(volatile T* Addr, T Valu, vLock* _LockFor, vLockSnapshot _rdv) {
+__INLINE__ void Log::insert(volatile T* Addr, T Valu, vLock* _LockFor, vLockSnapshot _rdv) {
     AVPair* e = put;
     if (e == NULL) {
-        e = extend();
+        e = extendList();
     }
     tail = e;
     put = e->Next;

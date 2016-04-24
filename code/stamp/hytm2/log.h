@@ -25,7 +25,7 @@ public:
 private:
     // Append at the tail. We want the front of the list, which sees the most
     // traffic, to remains contiguous.
-    AVPair* extend();
+    AVPair* extendList();
 
 public:    
     Log();
@@ -39,7 +39,7 @@ public:
 
     // for undo log: immediate writes -> undo on abort/restart
     template <typename T>
-    void append(volatile T* Addr, T Valu, vLock* _LockFor, vLockSnapshot _rdv);
+    void insert(volatile T* Addr, T Valu, vLock* _LockFor, vLockSnapshot _rdv);
     
     // Transfer the data in the log to its ultimate location.
     template <typename T>

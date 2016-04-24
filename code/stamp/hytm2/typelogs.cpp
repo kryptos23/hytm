@@ -40,9 +40,9 @@ __INLINE__ void TypeLogs::writeReverse() {
 }
 
 template <typename T>
-__INLINE__ void TypeLogs::append(volatile T* Addr, T Valu, vLock* _LockFor, vLockSnapshot _rdv) {
+__INLINE__ void TypeLogs::insert(volatile T* Addr, T Valu, vLock* _LockFor, vLockSnapshot _rdv) {
     Log *_log = getTypedLog<T>(this);
-    _log->append(Addr, Valu, _LockFor, _rdv);
+    _log->insert(Addr, Valu, _LockFor, _rdv);
 }
 
 template <typename T>

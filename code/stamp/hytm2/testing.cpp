@@ -52,12 +52,15 @@ void *ntest0_kernel(void* arg) {
     for (int i=0;i<globaliters;++i) {
         long x=0, y=0;
         STM_BEGIN_WR();
+        __sync_synchronize();
         x = STM_READ_L(globalx);
         y = STM_READ_L(globaly);
         STM_WRITE_L(globalx, x+1);
         STM_WRITE_L(globaly, y+1);
         STM_END();
+#if defined(DEBUG_PRINT) || defined(DEBUG_PRINT_LOCK)
         printf("id=%ld x=%ld y=%ld\n", *((long*) arg), x, y);
+#endif
     }
 }
 
@@ -99,27 +102,27 @@ void run_test(int n, void (*validate)(void), void *(*kernel)(void*)) {
 int main(int argc, char** argv) {
     const int NPROCESSORS = 8;
     STM_STARTUP();
-    int n = 2; globaliters = 10000; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel);
-//    cout<<"Main-thread tests."<<endl;
-//    test0(0);
-//    test0(1);
-//    test0(2);
-//    test0(100);
-//    test0(1000000);
-//    test0(10000000);
-//    cout<<"Spawned-thread tests."<<endl;
-//    for (int n=1;n<=NPROCESSORS;++n) {
-//        cout<<n<<" threads"<<endl;
-//        globaliters = 0; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel);
-//        globaliters = 1; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel);
-//        globaliters = 10; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel);
-//        globaliters = 100; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel);
-//        globaliters = 1000; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel);
-//        globaliters = 10000; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel);
-//        globaliters = 100000; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel);
-//        if (n <= 8) { globaliters = 1000000/n; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel); }
-//        if (n <= 2) { globaliters = 10000000/n; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel); }
-//    }
+//    int n = 2; globaliters = 1000; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel);
+    cout<<"Main-thread tests."<<endl;
+    test0(0);
+    test0(1);
+    test0(2);
+    test0(100);
+    test0(1000000);
+    test0(10000000);
+    cout<<"Spawned-thread tests."<<endl;
+    for (int n=1;n<=NPROCESSORS;++n) {
+        cout<<n<<" threads"<<endl;
+        globaliters = 0; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel);
+        globaliters = 1; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel);
+        globaliters = 10; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel);
+        globaliters = 100; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel);
+        globaliters = 1000; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel);
+        globaliters = 10000; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel);
+        globaliters = 100000; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel);
+        if (n <= 8) { globaliters = 1000000/n; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel); }
+        if (n <= 2) { globaliters = 10000000/n; globalx = globaly = 0; run_test(n, ntest0_validate, ntest0_kernel); }
+    }
     STM_SHUTDOWN();
     return 0;
 }
