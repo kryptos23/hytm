@@ -4,13 +4,13 @@
 \input{prog-fp-sp}
 %
 %
-\vspace{1mm}\noindent\textbf{Base objects.}
+\vspace{1mm}\noindent\textbf{Shared base objects.}
 
 
 \vspace{1mm}\noindent\textbf{Fast-path transactions.}
 For a fast-path transaction $T_k$, the $\Read_k(X_j)$ implementation first reads $r_j$ 
 
-Updating fast-path transactions use uninstrumented writes:
+Updating fast-path transactions 
 $\Write (X_j,v)$ simply stores the cached state of $X_j$ along with its value $v$ and
 if the cache has not been invalidated, updates the shared memory
 during $\TryC_k$ by invoking the $\ms{commit-cache}$ primitive.

@@ -4,17 +4,12 @@
 In this section, we identify some invariants that follow from the HyTM execution model presented in the previous section.
 Let $E$ be any execution of a HyTM implementation $\mathcal{M}$ in
 which a fast-path transaction $T_k$ is either
-t-incomplete or aborted. 
+t-incomplete or aborted. Let $E'$ be the execution fragment that is a subsequence of $E$ derived by removing all cached events of $E|k$.
 %
 \begin{observation} 
 \label{ob:one}
-Then the sequence of events $E'$ derived by removing all events of $E|k$
-from $E$ is an execution of $\mathcal{M}$. Moreover: 
-To every slow-path transaction $T_m \in \ms{txns}(E)$, $E$ is indistinguishable 
-from $E'$.
-If a fast-path transaction $T_m\in \ms{txns}(E) \setminus \{T_k\}$ does not incur a tracking set abort in $E$, 
+To every slow-path transaction $T_m \in \ms{txns}(E)$, $E$ is indistinguishable from $E'$. Additionally, if a fast-path transaction $T_m\in \ms{txns}(E) \setminus \{T_k\}$ does not incur a tracking set abort in $E$, 
 then $E$ is indistinguishable to $T_m$ from $E'$.
-
 \end{observation}
 %
 \begin{figure*}[t]
@@ -25,10 +20,8 @@ then $E$ is indistinguishable to $T_m$ from $E'$.
 	 
 \end{center}
 \caption{
-%Executions illustrating
- %Observation~\ref{ob:one} 
- \label{fig:ob1}
- Execution $E$ in Figure~\ref{sfig:ob-01} is indistinguishable
+\label{fig:ob1}
+Execution $E$ in Figure~\ref{sfig:ob-01} is indistinguishable
 to $T_1$ from the execution $E'$ in Figure~\ref{sfig:ob-02}}
 \end{figure*}
 %

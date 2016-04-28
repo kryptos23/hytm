@@ -4,18 +4,17 @@
 \node (w3) at (18,-2) [] {};
 
 
-\draw (w2) node [above] {\small {$W_2(X,v)$}};
+\draw (w2) node [below] {\small {$W_2(X,v)$}};
 
-\draw (w1) node [above] {\small {$W_1(X,v)$}};
+\draw (w1) node [below] {\small {$W_1(X,v)$}};
 %\draw (w1) node [below] {\tiny {$T_1$ commits}};
 
-
-\node[draw,align=left] at (10,1) {{\large Fast-Path}};
-\node[draw,align=left] at (10,-1) {{\large Slow-Path}};
+\node[draw,align=left] at (7,0) {{\large Fast-Path}};
+\node[draw,align=left] at (6,-2) {{\large Slow-Path}};
 
 \begin{scope}   
-\draw [|-,thick] (9,0) node[left] {$T_2$} to (11,0);
-\draw [-,dashed] (11,0) to (11.7,0);
+\draw [|-,thick] (9,0) node[left] {$T_2$} to (10,0);
+\draw [-,dashed] (10,0) to (11.7,0);
 \draw [|-|,thick] (8,-2) node[left] {$T_1$} to (12,-2);
 \draw [-,dotted] (12.2,-2.5)  to (12.2,1) node[right] {$E$};
 \end{scope}
