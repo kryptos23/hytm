@@ -1,6 +1,6 @@
 #!/bin/bash
 
-g++ hytm2.cpp testing.cpp tmalloc.o -lpthread -o testing.out
+g++ -g -rdynamic hytm2.cpp testing.cpp tmalloc.o ../murmurhash/MurmurHash3.cpp -o testing.out -lpthread -ltcmalloc
 if [ $? -eq 0 ]; then
     ./testing.out
 else

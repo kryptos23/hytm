@@ -58,11 +58,12 @@
                                             int STM_RO_FLAG = isReadOnly; \
                                             int SETJMP_RETVAL = sigsetjmp(STM_JMPBUF, 1); \
                                             TxStart(STM_SELF, &STM_JMPBUF, SETJMP_RETVAL, &STM_RO_FLAG); \
+                                            SOFTWARE_BARRIER; \
                                         } while (0); /* enforce comma */
 
 #define STM_BEGIN_RD()                  STM_BEGIN(1)
 #define STM_BEGIN_WR()                  STM_BEGIN(0)
-#define STM_END()                       TxCommit(STM_SELF)
+#define STM_END()                       SOFTWARE_BARRIER; TxCommit(STM_SELF)
 
 /*
 typedef volatile intptr_t               vintp;

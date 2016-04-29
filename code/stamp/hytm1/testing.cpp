@@ -88,7 +88,7 @@ void run_test(int n, void (*validate)(void), void *(*kernel)(void*)) {
         STM_FREE_THREAD(stmthreads[i]);
     }
     
-    validate();
+    validateLockVersions();
 }
 
 int main(int argc, char** argv) {

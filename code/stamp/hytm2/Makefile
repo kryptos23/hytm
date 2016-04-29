@@ -43,6 +43,9 @@ clean:
 ../murmurhash/MurmurHash3.o: ../murmurhash/MurmurHash3.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(LIBHYTM).o: $(LIBHYTM).cpp
+	$(CC) $(CFLAGS) -c $< -o $@
+
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 

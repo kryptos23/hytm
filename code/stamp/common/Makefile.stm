@@ -9,7 +9,7 @@
 # Variables
 # ==============================================================================
 
-CFLAGS   += -DSTM -I$(STM)
+CFLAGS   += -DSTM -I$(STM) -g
 CPPFLAGS := $(CFLAGS)
 LDFLAGS  += -L$(STM)
 LIBS     += -l$(TARGET)
