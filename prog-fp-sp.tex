@@ -106,9 +106,9 @@
 			\State $\textit{or}_j := \Read(r_j)$
 			\State $\textit{nv}_j := v$
 			\If{$\textit{or}_j$ $\mathrel{\&} 1$}	
-			\Return $A_k$ \EndReturn
+			  \Return $A_k$ \EndReturn
 			\EndIf
-			\State $\Wset(T_k) := \Wset(T_k)\cup\{X_j,\textit{nv}_j\}$
+			\State $\Wset(T_k) := \Wset(T_k)\cup\{X_j,\textit{nv}_j, \textit{or}_j\}$
 			\Return $\ok$ \EndReturn
 		
    	}\EndPart
@@ -134,13 +134,14 @@
    		\Return $C_k$ \EndReturn
    		\Else
 		  \Return $A_k$ \EndReturn
-		  \EndIf
+		\EndIf
    	 }\EndPart		
 	 
  	
 	\Statex
+	\Statex \Comment{Check if read set is consistent}
 	\Part{Function: $\lit{validate}()$}{\quad\Comment{Validate slow-path reading transactions}
-		\If{$\exists X_j \in Rset(T_k)$;$X_j \not\in \Wset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$} \label{line:valid}
+		\If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$} \label{line:valid}
 			\Return $\false$ \EndReturn
 		  \EndIf
 		 \Return $\true$ \EndReturn
