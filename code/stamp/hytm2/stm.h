@@ -20,6 +20,28 @@
 #ifndef STM_H
 #define STM_H 1
 
+#  include <setjmp.h>
+
+typedef struct Thread_void {
+    long UniqID;
+    volatile long Retries;
+//    int* ROFlag; // not used by stamp
+    int IsRO;
+    int isFallback;
+//    long Starts; // how many times the user called TxBegin
+    long AbortsHW; // # of times hw txns aborted
+    long AbortsSW; // # of times sw txns aborted
+    long CommitsHW;
+    long CommitsSW;
+    unsigned long long rng;
+    unsigned long long xorrng [1];
+    void* allocPtr;    /* CCM: speculatively allocated */
+    void* freePtr;     /* CCM: speculatively free'd */
+    void* rdSet;
+    void* wrSet;
+    void* LocalUndo;
+    sigjmp_buf* envPtr;
+} Thread_void;
 
 #include "hytm2.h"
 #include "util.h"
@@ -31,7 +53,6 @@
 #define STM_MALLOC(size)                TxAlloc(STM_SELF, size) /*malloc(size)*/
 #define STM_FREE(ptr)                   TxFree(STM_SELF, ptr)
 
-#  include <setjmp.h>
 #  define STM_JMPBUF_T                  sigjmp_buf
 #  define STM_JMPBUF                    buf
 
@@ -49,10 +70,43 @@
 
 
 
+//void* _Self, sigjmp_buf* envPtr, int aborted_in_software, int* ROFlag
 
-
-
-
+#if 1
+#  define STM_BEGIN(isReadOnly)         do { \
+                                            STM_JMPBUF_T STM_JMPBUF; \
+                                            /*int STM_RO_FLAG = isReadOnly;*/ \
+                                            \
+                                            Thread_void* ___Self = (Thread_void*) STM_SELF; \
+                                            TxClearRWSets(STM_SELF); \
+                                            \
+                                            unsigned ___status; \
+                                            ___Self->Retries = 0; \
+                                            ___Self->isFallback = 0; \
+                                            ___Self->IsRO = 1; \
+                                            ___Self->envPtr = &STM_JMPBUF; \
+                                            unsigned ___htmattempts; \
+                                            for (___htmattempts = 0; ___htmattempts < HTM_ATTEMPT_THRESH; ++___htmattempts) { \
+                                                ___status = XBEGIN(); \
+                                                if (___status == _XBEGIN_STARTED) { /* if we aborted */ \
+                                                    break; \
+                                                } else { \
+                                                    ++___Self->AbortsHW; \
+                                                } \
+                                            } \
+                                            if (___htmattempts < HTM_ATTEMPT_THRESH) continue; \
+                                            /* STM attempt */ \
+                                            /*DEBUG2 aout("thread "<<___Self->UniqID<<" started s/w tx attempt "<<(___Self->AbortsSW+___Self->CommitsSW)<<"; s/w commits so far="<<___Self->CommitsSW);*/ \
+                                            /*DEBUG1 if ((___Self->CommitsSW % 50000) == 0) aout("thread "<<___Self->UniqID<<" has committed "<<___Self->CommitsSW<<" s/w txns");*/ \
+                                            ___Self->isFallback = 1; \
+                                            int SETJMP_RETVAL = sigsetjmp(STM_JMPBUF, 1); \
+                                            if (SETJMP_RETVAL) { \
+                                                TxClearRWSets(STM_SELF); \
+                                            } \
+                                            /*TxStart(STM_SELF, &STM_JMPBUF, SETJMP_RETVAL, &STM_RO_FLAG);*/ \
+                                            SOFTWARE_BARRIER; \
+                                        } while (0); /* enforce comma */
+#else
 #  define STM_BEGIN(isReadOnly)         do { \
                                             STM_JMPBUF_T STM_JMPBUF; \
                                             int STM_RO_FLAG = isReadOnly; \
@@ -60,6 +114,8 @@
                                             TxStart(STM_SELF, &STM_JMPBUF, SETJMP_RETVAL, &STM_RO_FLAG); \
                                             SOFTWARE_BARRIER; \
                                         } while (0); /* enforce comma */
+#endif
+
 
 #define STM_BEGIN_RD()                  STM_BEGIN(1)
 #define STM_BEGIN_WR()                  STM_BEGIN(0)

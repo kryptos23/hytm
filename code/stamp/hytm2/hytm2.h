@@ -5,6 +5,56 @@
 extern "C" {
 #endif
 
+#define TM_NAME "HyTM2"
+#ifndef HTM_ATTEMPT_THRESH
+    #define HTM_ATTEMPT_THRESH 5
+#endif
+#define TXNL_MEM_RECLAMATION
+
+#define MAX_SW_ABORTS 1000000
+
+//#define DEBUG_PRINT
+//#define DEBUG_PRINT_LOCK
+
+#define DEBUG0 if(0)
+#define DEBUG1 DEBUG0 if(1)
+#define DEBUG2 DEBUG1 if(0)
+#define DEBUG3 DEBUG2 if(0)
+
+#ifdef DEBUG_PRINT
+    #define aout(x) { \
+        cout<<x<<endl; \
+    }
+#elif defined(DEBUG_PRINT_LOCK)
+    #define aout(x) { \
+        acquireLock(&globallock); \
+        cout<<x<<endl; \
+        releaseLock(&globallock); \
+    }
+#else
+    #define aout(x) 
+#endif
+
+#define debug(x) (#x)<<"="<<x
+//#define LONG_VALIDATION
+#define VALIDATE_INV(x) VALIDATE (x)->validateInvariants()
+#define VALIDATE if(0)
+#define ERROR(x) { \
+    cerr<<"ERROR: "<<x<<endl; \
+    printStackTrace(); \
+    exit(-1); \
+}
+
+// just for debugging
+extern volatile int globallock;
+
+
+
+
+
+
+
+    
 #include <stdint.h>
 #include "rtm.h"
 #include "tmalloc.h"
@@ -17,6 +67,7 @@ extern "C" {
  * Prototypes
  */
 
+void     TxClearRWSets (void* _Self);
 void     TxStart       (void*, sigjmp_buf*, int, int*);
 void*    TxNewThread   ();
 

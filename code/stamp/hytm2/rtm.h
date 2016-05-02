@@ -51,7 +51,7 @@
     static __rtm_force_inline int XBEGIN(void)
     {
         int ret = _XBEGIN_STARTED;
-        SOFTWARE_BARRIER;
+//        SOFTWARE_BARRIER;
         asm volatile(".byte 0xc7,0xf8 ; .long 0" : "+a" (ret) ::"memory");
         //__sync_synchronize();
         //SOFTWARE_BARRIER;
@@ -59,14 +59,14 @@
     }
 
     static __rtm_force_inline void XEND(void) {
-        SOFTWARE_BARRIER;
+//        SOFTWARE_BARRIER;
         asm volatile(".byte 0x0f,0x01,0xd5" :: : "memory");
         //__sync_synchronize();
         //SOFTWARE_BARRIER;
     }
 
     static __rtm_force_inline void XABORT(const unsigned int status) {
-        SOFTWARE_BARRIER;
+//        SOFTWARE_BARRIER;
         asm volatile(".byte 0xc6,0xf8,%P0" ::"i" (status) : "memory");
         //__sync_synchronize();
         //SOFTWARE_BARRIER;
@@ -74,7 +74,7 @@
 
     static __rtm_force_inline int XTEST(void) {
         unsigned char out;
-        SOFTWARE_BARRIER;
+//        SOFTWARE_BARRIER;
         asm volatile(".byte 0x0f,0x01,0xd6 ; setnz %0" : "=r" (out) ::"memory");
         //SOFTWARE_BARRIER;
         return out;

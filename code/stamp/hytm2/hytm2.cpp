@@ -19,6 +19,7 @@
 #include <signal.h>
 #include "platform.h"
 #include "hytm2.h"
+#include "stm.h"
 #include "tmalloc.h"
 #include "util.h"
 #include "../murmurhash/MurmurHash3.h"
@@ -26,48 +27,11 @@
 #include <execinfo.h>
 using namespace std;
 
-#define TM_NAME "HyTM2"
-#ifndef HTM_ATTEMPT_THRESH
-    #define HTM_ATTEMPT_THRESH 5
-#endif
-#define TXNL_MEM_RECLAMATION
-
-#define MAX_SW_ABORTS 1000000
-
-//#define DEBUG_PRINT
-//#define DEBUG_PRINT_LOCK
-
-#define DEBUG0 if(0)
-#define DEBUG1 DEBUG0 if(1)
-#define DEBUG2 DEBUG1 if(0)
-#define DEBUG3 DEBUG2 if(0)
-
-#ifdef DEBUG_PRINT
-    #define aout(x) { \
-        cout<<x<<endl; \
-    }
-#elif defined(DEBUG_PRINT_LOCK)
-    #define aout(x) { \
-        acquireLock(&globallock); \
-        cout<<x<<endl; \
-        releaseLock(&globallock); \
-    }
-#else
-    #define aout(x) 
-#endif
+// todo: remove locks hashlist, and add owner field of lock instead
+// todo: optimize starting a txn by only doing initialization of d.s. for s/w txn just before the first s/w txn!
 
 // just for debugging
 volatile int globallock = 0;
-
-#define debug(x) (#x)<<"="<<x
-//#define LONG_VALIDATION
-#define VALIDATE_INV(x) VALIDATE (x)->validateInvariants()
-#define VALIDATE if(0)
-#define ERROR(x) { \
-    cerr<<"ERROR: "<<x<<endl; \
-    printStackTrace(); \
-    exit(-1); \
-}
 
 void printStackTrace() {
 
@@ -253,7 +217,7 @@ public:
     long UniqID;
     volatile long Retries;
 //    int* ROFlag; // not used by stamp
-    bool IsRO;
+    int IsRO;
     int isFallback;
 //    long Starts; // how many times the user called TxBegin
     long AbortsHW; // # of times hw txns aborted
@@ -271,7 +235,10 @@ public:
     
     Thread(long id);
     void destroy();
-} __attribute__((aligned(CACHE_LINE_SIZE)));
+    void compileTimeAsserts() {
+        CTASSERT(sizeof(*this) == sizeof(Thread_void));
+    }
+};// __attribute__((aligned(CACHE_LINE_SIZE)));
 
 
 
@@ -1212,6 +1179,13 @@ void Thread::destroy() {
  * 
  */
 
+void TxClearRWSets(void* _Self) {
+    Thread* Self = (Thread*) _Self;
+    Self->wrSet->clear();
+    Self->rdSet->clear();
+    Self->LocalUndo->clear();
+}
+
 void TxStart(void* _Self, sigjmp_buf* envPtr, int aborted_in_software, int* ROFlag) {
     Thread* Self = (Thread*) _Self;
     Self->wrSet->clear();
@@ -1362,7 +1336,7 @@ T TxLoad(void* _Self, volatile T* Addr) {
 }
 
 template <typename T>
-T TxStore(void* _Self, volatile T* addr, T valu) {
+__INLINE__ T TxStore(void* _Self, volatile T* addr, T valu) {
     Thread* Self = (Thread*) _Self;
     
     // software path
