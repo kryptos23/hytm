@@ -216,7 +216,7 @@
 \begin{document}
 \bibliographystyle{abbrv}
 
-\title{The Cost of Instrumentation in Hybrid Transactional Memory}
+\title{The Cost of Concurrency in Hybrid Transactional Memory}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \date{}
 \maketitle
@@ -232,10 +232,13 @@ or \emph{abort}, in which case its update operations do not take effect.
 
 Several TM designs implement all the functionality in software which typically incurs significant performance overheads.
 Thus, current CPUs have included instructions to mark \emph{some} memory accesses as transactional thus allowing them to executed \emph{atomically} in hardware.
-However, hardware transactions may be spuriously aborted due to several reasons: cache capacity overflows, interrupts \emph{etc}., thus, leading to
-\emph{hybrid} TMs in which the \emph{fast}, but potentially unreliable hardware
+Hardware transactions though may be spuriously aborted due to several reasons: cache capacity overflows, interrupts \emph{etc}., thus, leading to
+\emph{hybrid} TMs (\emph{HyTM}) in which the \emph{fast}, but potentially unreliable hardware
 transactions are complemented with \emph{slower}, but more reliable software transactions.
+To preclude inconsistent executions, hardware transactions must be \emph{instrumented} to perform additional metadata accesses to detect contention with pending software transactions.
 
+In this paper, we identify the \emph{cost of concurrency} in HyTMs by presenting two provably \emph{opaque} HyTM algorithms that are optimal with respect the complexity of the software and hardware transactions.
+The first algorithm is \emph{progressive}: a (software or hardware) transaction may be aborted only due to a read-write conflict with a concurrent transaction while the second algorithm
 \end{abstract}
 
 \newpage

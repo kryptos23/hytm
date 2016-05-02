@@ -51,18 +51,13 @@ We can now prove the following theorem:
 \begin{theorem}
 \label{th:inswrite2}
 There exists an opaque HyTM implementation that provides invisible reads
-such that 
-\begin{itemize}
-\item 
-in every execution $E$,
+such that (1) in every execution $E$,
 every fast-path transaction $T\in \ms{txns}(E)$
 accesses one metadata base object,
-\item
-every execution $E$ is fast-path progressive or for
+(2) every execution $E$ is fast-path progressive or for
 every fast-path transaction $T\in \ms{txns}(E)$
 that returns $A_k$ in $E$, there exists an updating slow-path transaction $T_m \in \ms{txns}(E)$
 concurrent to $T_k$.
-\end{itemize}
 \end{theorem}
 %
 \begin{proofsketch}
