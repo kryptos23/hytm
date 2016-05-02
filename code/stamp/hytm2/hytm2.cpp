@@ -1291,7 +1291,7 @@ void TxAbort(void* _Self) {
 }
 
 template <typename T>
-T TxLoad(void* _Self, volatile T* Addr) {
+__INLINE__ T TxLoad(void* _Self, volatile T* Addr) {
     Thread* Self = (Thread*) _Self;
     
     // software path
