@@ -195,6 +195,23 @@
 
 \newcommand{\ignore}[1]{}
 
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+
+\definecolor{gpcolor}{rgb}{0.6,0.2,0.3}
+\newboolean{showcomments}
+\setboolean{showcomments}{true}
+\ifthenelse{\boolean{showcomments}}
+{ \newcommand{\mynote}[3]{
+    \fbox{\bfseries\sffamily\scriptsize#1}
+    {\small$\blacktriangleright$\textsf{\emph{\color{#3}{#2}}}$\blacktriangleleft$}}
+}
+{ 
+\newcommand{\mynote}[3]{}}
+\newcommand{\sr}[1]{\mynote{SR}{#1}{magenta}}
+
 
 \begin{document}
 \bibliographystyle{abbrv}
@@ -207,6 +224,18 @@
 \thispagestyle{empty}
 %
 \begin{abstract}
+The \emph{Transactional Memory (TM)} abstraction is a synchronization mechanism 
+that allows the programmer to \emph{speculatively} execute sequences of shared-memory
+operations as \emph{atomic transactions} with \emph{all-or-nothing} semantics: 
+the transaction can either \emph{commit}, in which case it appears as executed sequentially,
+or \emph{abort}, in which case its update operations do not take effect.
+
+Several TM designs implement all the functionality in software which typically incurs significant performance overheads.
+Thus, current CPUs have included instructions to mark \emph{some} memory accesses as transactional thus allowing them to executed \emph{atomically} in hardware.
+However, hardware transactions may be spuriously aborted due to several reasons: cache capacity overflows, interrupts \emph{etc}., thus, leading to
+\emph{hybrid} TMs in which the \emph{fast}, but potentially unreliable hardware
+transactions are complemented with \emph{slower}, but more reliable software transactions.
+
 \end{abstract}
 
 \newpage
