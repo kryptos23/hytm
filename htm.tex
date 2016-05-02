@@ -227,14 +227,13 @@
 The \emph{Transactional Memory (TM)} abstraction is a synchronization mechanism 
 that allows the programmer to \emph{speculatively} execute sequences of shared-memory
 operations as \emph{atomic transactions} with \emph{all-or-nothing} semantics: 
-the transaction can either \emph{commit}, in which case it appears as executed sequentially,
+the transaction can either \emph{commit}, in which case it appears to have executed sequentially,
 or \emph{abort}, in which case its update operations do not take effect.
 
-Several TM designs implement all the functionality in software which typically incurs significant performance overheads.
-Thus, current CPUs have included instructions to mark \emph{some} memory accesses as transactional thus allowing them to executed \emph{atomically} in hardware.
-Hardware transactions though may be spuriously aborted due to several reasons: cache capacity overflows, interrupts \emph{etc}., thus, leading to
-\emph{hybrid} TMs (\emph{HyTM}) in which the \emph{fast}, but potentially unreliable hardware
-transactions are complemented with \emph{slower}, but more reliable software transactions.
+Several TM designs are implemented entirely in software which typically incurs significant performance overhead.
+Thus, current CPUs have included instructions to mark a block of memory accesses as transactional, allowing them to be executed \emph{atomically} in hardware.
+However, hardware transactions may be spuriously aborted due to several reasons: cache capacity overflows, interrupts etc., thus leading to \emph{hybrid} TMs 
+in which the \emph{fast} hardware transactions are complemented with \emph{slower} software transactions that do not experience spurious aborts.
 To preclude inconsistent executions, hardware transactions must be \emph{instrumented} to perform additional metadata accesses to detect contention with pending software transactions.
 
 In this paper, we identify the \emph{cost of concurrency} in HyTMs by presenting two provably \emph{opaque} HyTM algorithms that are optimal with respect the complexity of the software and hardware transactions.
