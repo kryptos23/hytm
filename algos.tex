@@ -1,7 +1,9 @@
 %!TEX root = htm.tex
 \section{Hybrid transactional memory algorithms}\label{sec:hytmalgos}
 %
-In this section, we identify some invariants that follow from the HyTM execution model presented in the previous section.
+In this section, we first identify some invariants that follow from the HyTM execution model presented in the previous section.
+We then describe two HyTM implementations: \cref{sec:hytm1} describes a progressive opaque TM while \cref{sec:hytm2} describes an opaque HyTM that is progressive only for read-only slow-path transactions.
+
 Let $E$ be any execution of a HyTM implementation $\mathcal{M}$ in
 which a fast-path transaction $T_k$ is either
 t-incomplete or aborted. Let $E'$ be the execution fragment that is a subsequence of $E$ derived by removing all cached events of $E|k$.

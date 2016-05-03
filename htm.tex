@@ -28,7 +28,7 @@
 \usepackage[margin=0.96in]{geometry}
 \usepackage{cite}
 \usepackage[textsize=tiny]{todonotes}
-
+\usepackage{cleveref}
 %\usepackage[dvips]{graphicx}
 %\ifx\pdftexversion\undefined
 %\usepackage[dvips]{graphicx}
@@ -234,10 +234,14 @@ Several TM designs are implemented entirely in software which typically incurs s
 Thus, current CPUs have included instructions to mark a block of memory accesses as transactional, allowing them to be executed \emph{atomically} in hardware.
 However, hardware transactions may be spuriously aborted due to several reasons: cache capacity overflows, interrupts etc., thus leading to \emph{hybrid} TMs 
 in which the \emph{fast} hardware transactions are complemented with \emph{slower} software transactions that do not experience spurious aborts.
-To preclude inconsistent executions, hardware transactions must be \emph{instrumented} to perform additional metadata accesses to detect contention with pending software transactions.
+To preclude inconsistent executions, hardware transactions in a HyTM must be \emph{instrumented} to perform additional metadata accesses to detect contention with pending software transactions.
 
-In this paper, we identify the \emph{cost of concurrency} in HyTMs by presenting two provably \emph{opaque} HyTM algorithms that are optimal with respect the complexity of the software and hardware transactions.
+In this paper, we identify the \emph{cost of concurrency} in HyTMs by presenting two provably \emph{opaque} HyTM algorithms that are optimal with respect to the complexity of both software and hardware transactions.
 The first algorithm is \emph{progressive}: a (software or hardware) transaction may be aborted only due to a read-write conflict with a concurrent transaction while the second algorithm
+is progressive only for \emph{read-only} software transactions.
+We show how these algorithms can support performing some subset of metadata memory accesses \emph{nonspeculatively} without violating opacity, thus, potentially reducing the number of aborts in hardware transactions.
+We evaluate implementations of these algorithms on Intel Haswell, which does not support non-speculative accesses within hardware, and IBM Power8 processor, which does.
+Viewed collectively, our results highlight the subtle performance tradeoffs between concurrency, instrumentation cost on hardware and complexity of software transactions in the design space of a HyTM.
 \end{abstract}
 
 \newpage
