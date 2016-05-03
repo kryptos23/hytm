@@ -21,6 +21,9 @@
 #define STM_H 1
 
 #  include <setjmp.h>
+#include <stdio.h>
+
+extern volatile long CommitTallySW;
 
 typedef struct Thread_void {
     long UniqID;
@@ -98,6 +101,7 @@ typedef struct Thread_void {
                                             /* STM attempt */ \
                                             /*DEBUG2 aout("thread "<<___Self->UniqID<<" started s/w tx attempt "<<(___Self->AbortsSW+___Self->CommitsSW)<<"; s/w commits so far="<<___Self->CommitsSW);*/ \
                                             /*DEBUG1 if ((___Self->CommitsSW % 50000) == 0) aout("thread "<<___Self->UniqID<<" has committed "<<___Self->CommitsSW<<" s/w txns");*/ \
+                                            DEBUG1 if ((___Self->CommitsSW % 25000) == 0) printf("thread %ld has committed %ld s/w txns (over all threads so far=%ld)\n", ___Self->UniqID, ___Self->CommitsSW, CommitTallySW); \
                                             ___Self->isFallback = 1; \
                                             int SETJMP_RETVAL = sigsetjmp(STM_JMPBUF, 1); \
                                             if (SETJMP_RETVAL) { \

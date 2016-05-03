@@ -513,12 +513,12 @@ void TxStart(Thread* Self, sigjmp_buf* envPtr, int aborted_in_software, int* ROF
     Self->ROFlag = ROFlag;
     Self->envPtr = envPtr;
     
-    int status = -1;
+    unsigned status = -1;
     if (aborted_in_software) {
         goto software;
     }
     Self->Starts++;
-htmretry: (0);
+htmretry: ;
     status = XBEGIN();
     if (status == _XBEGIN_STARTED) {
         if (globallock) XABORT(1);

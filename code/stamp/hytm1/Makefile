@@ -10,23 +10,18 @@ LIBNAME=hytm1
 # Variables
 # ==============================================================================
 
-CC      := g++
-CFLAGS  := -g -Wall -Winline -O3
-#CFLAGS  += -m32
-LD      := g++
+CC       := g++
+CFLAGS   := -g -Wall -Winline -O3
+CPP      := g++
+CPPFLAGS := -g -Wall -Winline -O3
+LD       := g++
 
-LIBHYTM := lib$(LIBNAME).a
+LIBHYTM  := lib$(LIBNAME).a
 
-OBJS := \
-	$(LIBNAME).o \
-	tmalloc.o \
-#
-
-AR      := ar
-RANLIB  := ranlib
+AR       := ar
+RANLIB   := ranlib
 
 RM := rm -f
-
 
 # ==============================================================================
 # Rules
@@ -37,12 +32,15 @@ default: lazy
 
 .PHONY: clean
 clean:
-	$(RM) $(LIBHYTM) $(OBJS)
+	$(RM) $(LIBHYTM) $(LIBNAME).o tmalloc.o
 
-%.o: %.c
+$(LIBHYTM).o: $(LIBHYTM).cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(LIBHYTM): $(OBJS)
+tmalloc.o: tmalloc.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(LIBHYTM): $(LIBNAME).o tmalloc.o
 	$(AR) cru $@ $^
 	$(RANLIB) $@
 

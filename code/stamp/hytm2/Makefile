@@ -10,24 +10,22 @@ LIBNAME=hytm2
 # Variables
 # ==============================================================================
 
-CC      := g++
-CFLAGS  := -g -Wall -Winline -O3
-#CFLAGS  += -m32
-LD      := g++
+CC       := g++
+CFLAGS   := -g -Wall -Winline -O3
+CPP      := g++
+CPPFLAGS := -g -Wall -Winline -O3
+LD       := g++
 
-LIBHYTM := lib$(LIBNAME).a
+LIBHYTM  := lib$(LIBNAME).a
 
-OBJS := \
-	$(LIBNAME).o \
-	tmalloc.o \
-	../murmurhash/MurmurHash3.o \
-#
-
-AR      := ar
-RANLIB  := ranlib
+AR       := ar
+RANLIB   := ranlib
 
 RM := rm -f
 
+# ADD GPROF INSTRUMENTATION
+CPPFLAGS += -pg
+CFLAGS += -pg
 
 # ==============================================================================
 # Rules
@@ -38,18 +36,15 @@ default: lazy
 
 .PHONY: clean
 clean:
-	$(RM) $(LIBHYTM) $(OBJS)
-
-../murmurhash/MurmurHash3.o: ../murmurhash/MurmurHash3.cpp
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(RM) $(LIBHYTM) $(LIBNAME).o tmalloc.o
 
 $(LIBHYTM).o: $(LIBHYTM).cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
-%.o: %.c
+tmalloc.o: tmalloc.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(LIBHYTM): $(OBJS)
+$(LIBHYTM): $(LIBNAME).o tmalloc.o
 	$(AR) cru $@ $^
 	$(RANLIB) $@
 

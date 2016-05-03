@@ -22,7 +22,7 @@
 #include "stm.h"
 #include "tmalloc.h"
 #include "util.h"
-#include "../murmurhash/MurmurHash3.h"
+#include "../murmurhash/MurmurHash3_impl.h"
 #include <iostream>
 #include <execinfo.h>
 using namespace std;
@@ -47,9 +47,10 @@ void printStackTrace() {
   {
     printf("    [bt] #%d %s\n", i, messages[i]);
 
-    /* find first occurence of '(' or ' ' in message[i] and assume
-     * everything before that is the file name. (Don't go beyond 0 though
-     * (string terminator)*/
+    /**
+     * find first occurrence of '(' or ' ' in message[i] and assume
+     * everything before that is the file name.
+     */
     int p = 0; //size_t p = 0;
     while(messages[i][p] != '(' && messages[i][p] != ' '
             && messages[i][p] != 0)
@@ -109,8 +110,8 @@ public:
 //private:
     uint64_t lockstate;
 public:
-    vLockSnapshot() {}
-    vLockSnapshot(uint64_t _lockstate) {
+    __INLINE__ vLockSnapshot() {}
+    __INLINE__ vLockSnapshot(uint64_t _lockstate) {
         lockstate = _lockstate;
     }
     __INLINE__ bool isLocked() const {
@@ -125,30 +126,45 @@ public:
 
 class vLock {
     volatile uint64_t lock; // (Version,LOCKBIT)
+    void* owner;
 private:
-    vLock(uint64_t lockstate) {
+    __INLINE__ vLock(uint64_t lockstate) {
         lock = lockstate;
+        owner = 0;
     }
 public:
-    vLock() {
+    __INLINE__ vLock() {
         lock = 0;
+        owner = 0;
     }
     __INLINE__ vLockSnapshot getSnapshot() const {
         return vLockSnapshot(lock);
     }
-    __INLINE__ bool tryAcquire() {
+    __INLINE__ bool tryAcquire(void* thread) {
+        if (thread == owner) return true; // reentrant acquire
         uint64_t val = lock & (~LOCKBIT);
-        return __sync_bool_compare_and_swap(&lock, val, val+1);
+        bool retval = __sync_bool_compare_and_swap(&lock, val, val+1);
+        owner = thread;
+        return retval;
     }
-    __INLINE__ bool tryAcquire(vLockSnapshot& oldval) {
-        return __sync_bool_compare_and_swap(&lock, oldval.version(), oldval.version()+1);
+    __INLINE__ bool tryAcquire(void* thread, vLockSnapshot& oldval) {
+        if (thread == owner) return true; // reentrant acquire
+        bool retval = __sync_bool_compare_and_swap(&lock, oldval.version(), oldval.version()+1);
+        owner = thread;
+        return retval;
     }
-    __INLINE__ void release() {
-        ++lock;
+    __INLINE__ void release(void* thread) {
+        if (owner == thread) { // reentrant release (assuming the lock should be released on the innermost release() call)
+            owner = 0;
+            ++lock;
+        }
     }
     // can be invoked only by a hardware transaction
     __INLINE__ void htmIncrementVersion() {
         lock += 2;
+    }
+    __INLINE__ bool isOwnedBy(void* thread) {
+        return (thread == owner);
     }
 };
 
@@ -166,7 +182,7 @@ std::ostream& operator<<(std::ostream& out, const vLock& obj) {
  * Consider 4M alignment for LockTab so we can use large-page support.
  * Alternately, we could mmap() the region with anonymous DZF pages.
  */
-#define _TABSZ  (1<< 20)
+#define _TABSZ  (1<<20)
 static vLock LockTab[_TABSZ];
 
 /*
@@ -274,25 +290,17 @@ public:
     } value;
     vLock* LockFor;     /* points to the vLock covering Addr */
     vLockSnapshot rdv;  /* read-version @ time of 1st read - observed */
-    Thread* Owner;
+//    Thread* LockOwner;
     long Ordinal;
     
     AVPair() {}
-    AVPair(AVPair* _Next, AVPair* _Prev, Thread* _Owner, long _Ordinal)
-        : keyToHash(0), Next(_Next), Prev(_Prev), addr(0), LockFor(0), rdv(0), Owner(_Owner), Ordinal(_Ordinal) {
+    AVPair(AVPair* _Next, AVPair* _Prev, long _Ordinal)
+        : keyToHash(0), Next(_Next), Prev(_Prev), addr(0), LockFor(0), rdv(0), /*LockOwner(0),*/ Ordinal(_Ordinal) {
         value.l = 0;
     }
     
     void validateInvariants() {
-//        if (Next || Prev) {
-//            if (!LockFor || !Owner || !addr) { // THIS CASE IS WRONG: it's not a problem!
-//                ERROR("AVPair invalid; fields are zero when they shouldn't be "<<debug(this));
-//            }
-//        } else {
-//            if (LockFor || Owner || addr || value.l || rdv.lockstate || Ordinal) {
-//                ERROR("AVPair invalid; next and prev are null, but some fields are initialized"<<debug(this));
-//            }
-//        }
+        
     }
 };
 
@@ -515,7 +523,7 @@ private:
         AVPair* e = (AVPair*) malloc(sizeof(*e));
         assert(e);
         tail->Next = e;
-        *e = AVPair(NULL, tail, tail->Owner, tail->Ordinal+1);
+        *e = AVPair(NULL, tail, tail->Ordinal+1);
         end = e;
         VALIDATE_INV(this);
         return e;
@@ -565,11 +573,10 @@ public:
         tail = NULL;
         for (int i = 0; i < _initcap; i++) {
             AVPair* e = curr++;
-            *e = AVPair(curr, tail, Self, i); // note: curr is invalid in the last iteration
+            *e = AVPair(curr, tail, i); // note: curr is invalid in the last iteration
             tail = e;
         }
         tail->Next = NULL; // fix invalid next pointer from last iteration
-        // TODO: validate list has correct forward + back pointers, and has _sz AVPairs, the last of which points to NULL
         initcap = _initcap;
         ovf = 0;
         currsz = 0;
@@ -591,7 +598,7 @@ public:
         free(head);
     }
     
-    void clear() {
+    __INLINE__ void clear() {
         DEBUG3 aout("list "<<this<<" clear");
         VALIDATE_INV(this);
         put = head;
@@ -680,7 +687,7 @@ public:
         tab.destroy();
     }
     
-    void clear() {
+    __INLINE__ void clear() {
         DEBUG3 aout("hashlist "<<this<<" clear");
         VALIDATE_INV(this);
         
@@ -827,7 +834,7 @@ public:
 //        locks.destroy();
     }
     
-    void clear() {
+    __INLINE__ void clear() {
         DEBUG3 aout("log "<<this<<" clear");
         addresses.clear();
 //        locks.clear();
@@ -886,7 +893,6 @@ class TypeLogs {
 public:
     Log l;
     Log f;
-    HashList locks;
     // need lock hashlist HERE so we have only one list of locks for both log types!!! this way, we won't be blocked by trying to acquire the same lock in f and l...
     long sz;
     
@@ -896,21 +902,18 @@ public:
         sz = _sz;
         l.init(Self, _sz, hashFuncSeed);
         f.init(Self, _sz, hashFuncSeed);
-        locks.init(Self, _sz, hashFuncSeed);
     }
     
     void destroy() {
         DEBUG3 aout("typelogs "<<this<<" destroy");
         l.destroy();
         f.destroy();
-        locks.destroy();
     }
 
     __INLINE__ void clear() {
         DEBUG3 aout("typelogs "<<this<<" clear");
         l.clear();
         f.clear();
-        locks.clear();
     }
     
     __INLINE__ void writeForward() {
@@ -930,7 +933,6 @@ public:
         DEBUG3 aout("typelogs "<<this<<" insert("<<debug(addr)<<","<<debug(value)<<","<<debug(_LockFor)<<","<<debug(_rdv)<<")");
         Log *_log = getTypedLog<T>(this);
         _log->insert(addr, value, _LockFor, _rdv);
-        locks.insert((uintptr_t) _LockFor, addr, value, _LockFor, _rdv);
     }
     
     template <typename T>
@@ -944,23 +946,6 @@ public:
         Log *_log = getTypedLog<T>(this);
         return _log->contains(addr);
     }
-    
-//    template <typename T>
-    __INLINE__ AVPair* findLock(vLock* lock) {
-        return locks.find((uintptr_t) lock);
-    }
-    
-//    template <typename T>
-    __INLINE__ bool containsLock(vLock* lock) {
-        return locks.contains((uintptr_t) lock);
-    }
-//    
-//    template <typename T>
-//    __INLINE__ vLockSnapshot* getLockSnapshot(AVPair* e) {
-//        AVPair* av = find<T>(e->LockFor);
-//        if (av) return &av->rdv;
-//        return NULL;
-//    }
 };
 
 std::ostream& operator<<(std::ostream& out, const TypeLogs& obj) {
@@ -993,7 +978,7 @@ __INLINE__ vLockSnapshot* getMinLockSnap(AVPair* a, AVPair* b) {
 }
 
 // can be invoked only by a transaction on the software path
-//template <typename T>
+template <typename T>
 /*__INLINE__*/ bool lockAll(Thread* Self, List* lockAVPairs) {
     DEBUG3 aout("lockAll "<<*lockAVPairs);
     assert(Self->isFallback);
@@ -1003,7 +988,7 @@ __INLINE__ vLockSnapshot* getMinLockSnap(AVPair* a, AVPair* b) {
         // determine when we first encountered curr->addr in txload or txstore.
         // curr->rdv contains when we first encountered it in a txSTORE,
         // so we also need to compare it with any rdv stored in the READ-set.
-        AVPair* readLogEntry = Self->rdSet->findLock(curr->LockFor);
+        AVPair* readLogEntry = Self->rdSet->findAddr<T>((uintptr_t) curr);
         vLockSnapshot *encounterTime = getMinLockSnap(curr, readLogEntry);
         assert(encounterTime);
 //        if (encounterTime->version() != readLogEntry->rdv.version()) {
@@ -1021,12 +1006,12 @@ __INLINE__ vLockSnapshot* getMinLockSnap(AVPair* a, AVPair* b) {
 
         // try to acquire locks
         // (and fail if their versions have changed since encounterTime)
-        if (!curr->LockFor->tryAcquire(*encounterTime)) {
+        if (!curr->LockFor->tryAcquire(Self, *encounterTime)) {
             DEBUG2 aout("thread "<<Self->UniqID<<" failed to acquire lock "<<*curr->LockFor);
             // if we fail to acquire a lock, we must
             // unlock all previous locks that we acquired
             for (AVPair* toUnlock = lockAVPairs->head; toUnlock != curr; toUnlock = toUnlock->Next) {
-                toUnlock->LockFor->release();
+                toUnlock->LockFor->release(Self);
                 DEBUG2 aout("thread "<<Self->UniqID<<" releasing lock "<<*curr->LockFor<<" in lockAll (will be ver "<<(curr->LockFor->getSnapshot().version()+2)<<")");
             }
             return false;
@@ -1037,9 +1022,9 @@ __INLINE__ vLockSnapshot* getMinLockSnap(AVPair* a, AVPair* b) {
 }
 
 __INLINE__ bool tryLockWriteSet(Thread* Self) {
-    return lockAll(Self, &Self->wrSet->locks.list);
-//    return lockAll<long>(Self, &Self->wrSet->l.locks.list)
-//        && lockAll<float>(Self, &Self->wrSet->f.locks.list);
+//    return lockAll(Self, &Self->wrSet->locks.list);
+    return lockAll<long>(Self, &Self->wrSet->l.addresses.list)
+        && lockAll<float>(Self, &Self->wrSet->f.addresses.list);
 }
 
 // NOT TO BE INVOKED DIRECTLY
@@ -1049,7 +1034,7 @@ __INLINE__ bool tryLockWriteSet(Thread* Self) {
     AVPair* const stop = lockAVPairs->put;
     for (AVPair* curr = lockAVPairs->head; curr != stop; curr = curr->Next) {
         DEBUG2 aout("thread "<<Self->UniqID<<" releasing lock "<<*curr->LockFor<<" in releaseAll (will be ver "<<(curr->LockFor->getSnapshot().version()+2)<<")");
-        curr->LockFor->release();
+        curr->LockFor->release(Self);
     }
 }
 
@@ -1057,17 +1042,17 @@ __INLINE__ bool tryLockWriteSet(Thread* Self) {
 // releases all locks on addresses in the write-set
 __INLINE__ void releaseWriteSet(Thread* Self) {
     assert(Self->isFallback);
-    releaseAll(Self, &Self->wrSet->locks.list);
-//    releaseAll(Self, &Self->wrSet->l.locks.list);
-//    releaseAll(Self, &Self->wrSet->f.locks.list);
+//    releaseAll(Self, &Self->wrSet->locks.list);
+    releaseAll(Self, &Self->wrSet->l.addresses.list);
+    releaseAll(Self, &Self->wrSet->f.addresses.list);
 }
 
 // can be invoked only by a transaction on the software path.
 // writeSet must point to the write-set for this Thread that
 // contains addresses/values of type T.
-//template <typename T>
-__INLINE__ bool validateLockVersions(Thread* Self, List* lockAVPairs, bool holdingLocks) {
-    DEBUG3 aout("validateLockVersions "<<*lockAVPairs<<" "<<debug(holdingLocks));
+template <typename T>
+__INLINE__ bool validateLockVersions(Thread* Self, List* lockAVPairs/*, bool holdingLocks*/) {
+    DEBUG3 aout("validateLockVersions "<<*lockAVPairs);//<<" "<<debug(holdingLocks));
     assert(Self->isFallback);
 
     AVPair* const stop = lockAVPairs->put;
@@ -1075,30 +1060,31 @@ __INLINE__ bool validateLockVersions(Thread* Self, List* lockAVPairs, bool holdi
         // determine when we first encountered curr->addr in txload or txstore.
         // curr->rdv contains when we first encountered it in a txLOAD,
         // so we also need to compare it with any rdv stored in the WRITE-set.
-        AVPair* writeLogEntry = Self->wrSet->findLock(curr->LockFor);
+        AVPair* writeLogEntry = Self->wrSet->findAddr<T>((uintptr_t) curr);
         vLockSnapshot *encounterTime = getMinLockSnap(curr, writeLogEntry);
         assert(encounterTime);
         
         vLock* lock = curr->LockFor;
         vLockSnapshot locksnap = lock->getSnapshot();
-        if (locksnap.isLocked() || locksnap.version() != encounterTime->version()) {
-            // the address is locked, it its version number has changed
-            // we abort if we are not the one who holds a lock on it, or changed its version.
-            if (!holdingLocks) {
-                return false; // abort if we are not holding any locks
-            } else if (!Self->wrSet->containsLock(lock)) {
-                return false; // abort if we are holding locks, but not this lock
+        if (locksnap.isLocked()) {
+            if (lock->isOwnedBy(Self)) {
+                continue; // we own it
+            } else {
+                return false; // someone else locked it
             }
-//            return false;
+        } else if (locksnap.version() != encounterTime->version()) {
+            // the address is locked, it its version number has changed
+            // (and we didn't change it, since we don't hold the lock)
+            return false; // abort if we are not holding any locks
         }
     }
     return true;
 }
 
-__INLINE__ bool validateReadSet(Thread* Self, bool holdingLocks) {
-    return validateLockVersions(Self, &Self->rdSet->locks.list, holdingLocks);
-//    return validate<long>(Self, &Self->rdSet->l.locks.list, holdingLocks)
-//        && validate<float>(Self, &Self->rdSet->f.locks.list, holdingLocks);
+__INLINE__ bool validateReadSet(Thread* Self/*, bool holdingLocks*/) {
+//    return validateLockVersions(Self, &Self->rdSet->locks.list, holdingLocks);
+    return validateLockVersions<long>(Self, &Self->rdSet->l.addresses.list)
+        && validateLockVersions<float>(Self, &Self->rdSet->f.addresses.list);
 }
 
 __INLINE__ intptr_t AtomicAdd(volatile intptr_t* addr, intptr_t dx) {
@@ -1235,7 +1221,7 @@ int TxCommit(void* _Self) {
         }
         
         // validate reads
-        if (!validateReadSet(Self, true)) { // TODO: needs to be since first time i READ OR WROTE
+        if (!validateReadSet(Self)) {
             // if we fail validation, release all locks and abort
             DEBUG2 aout("thread "<<Self->UniqID<<" TxCommit failed validation -> release locks & abort");
             releaseWriteSet(Self);
@@ -1305,7 +1291,7 @@ __INLINE__ T TxLoad(void* _Self, volatile T* Addr) {
         // Addr is NOT in the write-set; abort if it is locked
         vLock* lock = PSLOCK(Addr);
         vLockSnapshot locksnap = lock->getSnapshot();
-        if (locksnap.isLocked()) {
+        if (locksnap.isLocked() && !lock->isOwnedBy(Self)) {
             DEBUG2 aout("thread "<<Self->UniqID<<" TxRead saw lock "<<lock<<" was held (not by us) -> aborting");
             TxAbort(Self);
         }
@@ -1315,7 +1301,7 @@ __INLINE__ T TxLoad(void* _Self, volatile T* Addr) {
         Self->rdSet->insert(Addr, val, lock, locksnap);
 
         // validate reads
-        if (!validateReadSet(Self, false)) {
+        if (!validateReadSet(Self)) {
             DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting");
             TxAbort(Self);
         }
@@ -1346,7 +1332,7 @@ __INLINE__ T TxStore(void* _Self, volatile T* addr, T valu) {
         // abort if addr is locked (since we do not hold any locks)
         vLock* lock = PSLOCK(addr);
         vLockSnapshot locksnap = lock->getSnapshot();
-        if (locksnap.isLocked()) {
+        if (locksnap.isLocked() && !lock->isOwnedBy(Self)) {
             DEBUG2 aout("thread "<<Self->UniqID<<" TxStore saw lock "<<lock<<" was held (not by us) -> aborting");
             TxAbort(Self);
         }

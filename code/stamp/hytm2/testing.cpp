@@ -206,7 +206,10 @@ void bt_sighandler(int sig, struct sigcontext ctx) {
         char syscom[256];
         sprintf(syscom, "addr2line %p -e %.*s", trace[i], p, messages[i]);
         //last parameter is the file name of the symbol
-        system(syscom);
+        if (system(syscom) < 0) {
+            printf("ERROR: could not run necessary command to build stack trace\n");
+            exit(-1);
+        }
     }
 
     exit(0);
@@ -233,8 +236,9 @@ int main(int argc, char** argv) {
 //    test0(1);
 //    test0(2);
 //    test0(100);
-//    test0(1000000);
-//    test0(10000000);
+    test0(1000000);
+//    test0(5000000);
+    test0(10000000);
 //    cout<<"Spawned-thread test 0."<<endl;
 //    for (int n=1;n<=NPROCESSORS;++n) {
 //        cout<<n<<" threads"<<endl;
@@ -248,19 +252,19 @@ int main(int argc, char** argv) {
 //        if (n <= 8) { ntest0_init(n, 1000000/n); run_test(n, ntest0_validate, ntest0_kernel); }
 //        if (n <= 2) { ntest0_init(n, 10000000/n); run_test(n, ntest0_validate, ntest0_kernel); }
 //    }
-    cout<<"Spawned-thread test 1."<<endl;
-    for (int n=1;n<=NPROCESSORS;++n) {
-        cout<<n<<" threads"<<endl;
-        ntest1_init(n, 0); run_test(n, ntest1_validate, ntest1_kernel);
-        ntest1_init(n, 1); run_test(n, ntest1_validate, ntest1_kernel);
-        ntest1_init(n, 10); run_test(n, ntest1_validate, ntest1_kernel);
-        ntest1_init(n, 100); run_test(n, ntest1_validate, ntest1_kernel);
-        ntest1_init(n, 1000); run_test(n, ntest1_validate, ntest1_kernel);
-        ntest1_init(n, 10000); run_test(n, ntest1_validate, ntest1_kernel);
-        ntest1_init(n, 100000); run_test(n, ntest1_validate, ntest1_kernel);
-//        if (n <= 8) { ntest1_init(n, 1000000/n); run_test(n, ntest1_validate, ntest1_kernel); }
-//        if (n <= 2) { ntest1_init(n, 10000000/n); run_test(n, ntest1_validate, ntest1_kernel); }
-    }
+//    cout<<"Spawned-thread test 1."<<endl;
+//    for (int n=1;n<=NPROCESSORS;++n) {
+//        cout<<n<<" threads"<<endl;
+//        ntest1_init(n, 0); run_test(n, ntest1_validate, ntest1_kernel);
+//        ntest1_init(n, 1); run_test(n, ntest1_validate, ntest1_kernel);
+//        ntest1_init(n, 10); run_test(n, ntest1_validate, ntest1_kernel);
+//        ntest1_init(n, 100); run_test(n, ntest1_validate, ntest1_kernel);
+//        ntest1_init(n, 1000); run_test(n, ntest1_validate, ntest1_kernel);
+//        ntest1_init(n, 10000); run_test(n, ntest1_validate, ntest1_kernel);
+//        ntest1_init(n, 100000); run_test(n, ntest1_validate, ntest1_kernel);
+////        if (n <= 8) { ntest1_init(n, 1000000/n); run_test(n, ntest1_validate, ntest1_kernel); }
+////        if (n <= 2) { ntest1_init(n, 10000000/n); run_test(n, ntest1_validate, ntest1_kernel); }
+//    }
 
     STM_SHUTDOWN();
     return 0;

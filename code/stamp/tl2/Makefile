@@ -29,6 +29,9 @@ RANLIB  := ranlib
 
 RM := rm -f
 
+# ADD GPROF INSTRUMENTATION
+CFLAGS += -pg
+LDFLAGS += -pg
 
 # ==============================================================================
 # Rules

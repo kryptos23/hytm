@@ -6,20 +6,21 @@ extern "C" {
 #endif
 
 #define TM_NAME "HyTM2"
+#define HTM_ATTEMPT_THRESH 0
 #ifndef HTM_ATTEMPT_THRESH
     #define HTM_ATTEMPT_THRESH 5
 #endif
 #define TXNL_MEM_RECLAMATION
 
-#define MAX_SW_ABORTS 1000000
+#define MAX_SW_ABORTS 100//000
 
 //#define DEBUG_PRINT
-//#define DEBUG_PRINT_LOCK
+#define DEBUG_PRINT_LOCK
 
-#define DEBUG0 if(0)
+#define DEBUG0 if(1)
 #define DEBUG1 DEBUG0 if(1)
 #define DEBUG2 DEBUG1 if(0)
-#define DEBUG3 DEBUG2 if(0)
+#define DEBUG3 DEBUG2 if(1)
 
 #ifdef DEBUG_PRINT
     #define aout(x) { \

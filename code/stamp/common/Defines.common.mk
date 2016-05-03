@@ -26,6 +26,10 @@ LOSTM := ../../OpenTM/lostm
 
 STM=../$(TARGET)
 
+# ADD GPROF INSTRUMENTATION
+CPPFLAGS += -pg
+CFLAGS += -pg
+
 # ==============================================================================
 #
 # End of Defines.common.mk

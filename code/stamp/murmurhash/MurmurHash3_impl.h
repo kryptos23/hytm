@@ -12,6 +12,9 @@
 //-----------------------------------------------------------------------------
 // Platform-specific functions and macros
 
+#ifndef MURMURHASH3_IMPL_H
+#define MURMURHASH3_IMPL_H
+
 // Microsoft Visual Studio
 
 #if defined(_MSC_VER)
@@ -145,7 +148,7 @@ void MurmurHash3_x86_32 ( const void * key, int len,
   *(uint32_t*)out = h1;
 }
 
-uint32_t MurmurHash3_x86_32_uintptr(const uintptr_t key, uint32_t seed) {
+inline uint32_t MurmurHash3_x86_32_uintptr(const uintptr_t key, uint32_t seed) {
   const uint8_t * data = (const uint8_t*) &key;
   const int nblocks = sizeof(key) / 4;
 
@@ -383,3 +386,4 @@ void MurmurHash3_x64_128 ( const void * key, const int len,
 
 //-----------------------------------------------------------------------------
 
+#endif
