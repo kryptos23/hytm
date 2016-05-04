@@ -9,7 +9,7 @@
 		\State $v_j \in \mathbb{D}$, for each t-object $X_j$ 
 		%\Statex ~~~~~allows reads, writes
 		\State $r_{j}$, sequence lock for each t-object $X_j$
-		\State $L$, global sequence lock
+		\State $L$, global single-bit lock
 		%\Statex ~~~~~allows reads, writes 
 		%\State implemented from reads and writes
 		%\State $L$, multi-trylock
@@ -99,12 +99,9 @@
 		\If{$\Wset(T_k)= \emptyset$}
 			\Return $C_k$ \EndReturn 
 		\EndIf
-		\If{$l \mathrel{\&}1$}
-		  \Return $A_k$ \EndReturn
-		\EndIf
-		
+				
 		\While {$\neg flag$}
-		  \State $flag \gets L.\lit{cas}(l,l+1)$
+		  \State $flag \gets L.\lit{cas}(0,1)$
 		\EndWhile
 		\ForAll{$X_j \in Q$}	
 			\State $or_j\gets r_j.\lit{read}()$ 
@@ -130,16 +127,16 @@
  			\State $r_j.\lit{write}(or_j + 1)$ 
 		\EndFor
 		
-		\State $L.\lit{write}(l+2)$
+		\State $L.\lit{write}(1)$
    		\Return $C_k$ \EndReturn
    	 }\EndPart		
 	\Statex
 	\Part{Function: $\lit{validate}()$}{
-		\If{$l\neq \Read(L)$}
+		
 		\If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$}
 			\Return $\false$ \EndReturn
 		  \EndIf
-		 \EndIf
+		
 		 \Return $\true$ \EndReturn
 	}\EndPart
 	

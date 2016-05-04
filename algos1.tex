@@ -4,17 +4,20 @@
 %
 \input{prog-fp-sp}
 %
-%
-\vspace{1mm}\noindent\textbf{Shared base objects.}
+For every t-object $X_j$, our implementation maintains a base object $v_j\in \mathbb{D}$ that stores the value of $X_j$
+and a \emph{sequence lock} $r_{j}$. The sequence lock is an unsigned integer whose LSB bit stores the \emph{locked} state.
+Specifically, we say that process $p_i$ \emph{holds a lock on $X_j$ after an execution $\pi$} if
+$\textit{or}_j$ $\mathrel{\&} 1=1$, where $\textit{or}_j$ is the value of $r_j$ after $\pi$.
 
 
 \vspace{1mm}\noindent\textbf{Fast-path transactions.}
 For a fast-path transaction $T_k$, the $\Read_k(X_j)$ implementation first reads $r_j$ 
-
 Updating fast-path transactions 
 $\Write (X_j,v)$ simply stores the cached state of $X_j$ along with its value $v$ and
 if the cache has not been invalidated, updates the shared memory
 during $\TryC_k$ by invoking the $\ms{commit-cache}$ primitive.
+
+\vspace{1mm}\noindent\textbf{Direct access inside fast-path transactions.}
 
 \vspace{1mm}\noindent\textbf{Slow-path read-only transactions.}
 A read-only transaction simply returns $C_k$ during the tryCommit.

@@ -9,17 +9,20 @@
 \draw (w1) node [below] {\small {$W_1(X,v)$}};
 %\draw (w1) node [below] {\tiny {$T_1$ commits}};
 
-\node[draw,align=left] at (7,0) {{\large Fast-Path}};
+\node[draw,align=left] at (6,0) {{\large Fast-Path}};
 \node[draw,align=left] at (6,-2) {{\large Slow-Path}};
 
 \begin{scope}   
-\draw [|-,thick] (9,0) node[left] {$T_2$} to (10,0);
-\draw [-,dashed] (10,0) to (11.7,0);
+\draw [|-,thick] (8,0) node[left] {$T_2$} to (10,0);
+\draw [-,dashed] (10,0) to (11.8,0);
 \draw [|-|,thick] (8,-2) node[left] {$T_1$} to (12,-2);
 \draw [-,dotted] (12.2,-2.5)  to (12.2,1) node[right] {$E$};
 \end{scope}
 %
-\node[draw,align=right] at (15,.5) {\large {Aborted or incomplete}\\ {\large fast-path transaction $T_2$}};
+\node[draw,align=right] at (17,.5) {\large {Aborted or incomplete}\\ {\large fast-path transaction $T_2$}};
+%
+\node[draw,align=right] at (3,1.8) {\rule{6mm}{1pt} \large {direct accesses}};
+\node[draw,align=right] at (3,1) {\rule{2mm}{1pt} \rule{2mm}{1pt} \large{cached accesses}};
 
 %
 \end{tikzpicture}
