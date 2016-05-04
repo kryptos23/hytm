@@ -12,7 +12,7 @@ extern "C" {
 #endif
 #define TXNL_MEM_RECLAMATION
 
-#define MAX_SW_ABORTS 100//000
+#define MAX_SW_ABORTS 1000000
 
 //#define DEBUG_PRINT
 #define DEBUG_PRINT_LOCK
@@ -49,7 +49,7 @@ extern "C" {
 // just for debugging
 extern volatile int globallock;
 
-
+#define BIG_CONSTANT(x) (x##LLU)
 
 
 

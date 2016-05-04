@@ -27,8 +27,7 @@
 #include <execinfo.h>
 using namespace std;
 
-// todo: remove locks hashlist, and add owner field of lock instead
-// todo: optimize starting a txn by only doing initialization of d.s. for s/w txn just before the first s/w txn!
+#define USE_FULL_HASHTABLE
 
 // just for debugging
 volatile int globallock = 0;
@@ -66,6 +65,18 @@ void printStackTrace() {
   }
 
   exit(-1);
+}
+
+void initSighandler() {
+    /* Install our signal handler */
+    struct sigaction sa;
+
+    sa.sa_handler = (sighandler_t) /*(void *)*/ printStackTrace;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART;
+
+    sigaction(SIGSEGV, &sa, NULL);
+    sigaction(SIGUSR1, &sa, NULL);
 }
 
 void acquireLock(volatile int *lock) {
@@ -154,7 +165,7 @@ public:
         return retval;
     }
     __INLINE__ void release(void* thread) {
-        if (owner == thread) { // reentrant release (assuming the lock should be released on the innermost release() call)
+        if (thread == owner) { // reentrant release (assuming the lock should be released on the innermost release() call)
             owner = 0;
             ++lock;
         }
@@ -359,148 +370,209 @@ enum hytm_config {
     INIT_LOCAL_NUM_ENTRY = 1024,
 };
 
-class HashTable {
-public:
-    uint32_t seed;  // seed for hash function
-//    uintptr_t* keys;
-    AVPair** data;
-    long sz;        // number of elements in the hash table
-    long cap;       // capacity of the hash table
-private:
-    void validateInvariants() {
-        // hash table capacity is a power of 2
-        long htc = cap;
-        while (htc > 0) {
-            if ((htc & 1) && (htc != 1)) {
-                ERROR(debug(cap)<<" is not a power of 2");
+#ifdef USE_FULL_HASHTABLE
+    class HashTable {
+    public:
+        uint32_t seed;  // seed for hash function
+        AVPair** data;
+        long sz;        // number of elements in the hash table
+        long cap;       // capacity of the hash table
+    private:
+        void validateInvariants() {
+            // hash table capacity is a power of 2
+            long htc = cap;
+            while (htc > 0) {
+                if ((htc & 1) && (htc != 1)) {
+                    ERROR(debug(cap)<<" is not a power of 2");
+                }
+                htc /= 2;
             }
-            htc /= 2;
-        }
-        // htabcap >= 2*htabsz
-        if (requiresExpansion()) {
-            ERROR("hash table capacity too small: "<<debug(cap)<<" "<<debug(sz));
-        }
-    #ifdef LONG_VALIDATION
-        // htabsz = size of hash table
-        long _htabsz = 0;
-        for (int i=0;i<cap;++i) {
-            if (data[i]) {
-                ++_htabsz; // # non-null entries of htab
+            // htabcap >= 2*htabsz
+            if (requiresExpansion()) {
+                ERROR("hash table capacity too small: "<<debug(cap)<<" "<<debug(sz));
             }
-        }
-        if (sz != _htabsz) {
-            ERROR("hash table size incorrect: "<<debug(sz)<<" "<<debug(_htabsz));
-        }
-    #endif
-    }
-    
-public:
-    __INLINE__ void init(const uint32_t _seed, const long _sz) {
-        // assert: _sz is a power of 2!
-        DEBUG3 aout("hash table "<<this<<" init");
-        sz = 0;
-        seed = _seed;
-        cap = 2 * _sz;
-//        keys = (uintptr_t*) malloc(sizeof(uintptr_t) * cap);
-//        memset(keys, 0, sizeof(uintptr_t) * cap);
-        data = (AVPair**) malloc(sizeof(AVPair*) * cap);
-        memset(data, 0, sizeof(AVPair*) * cap);
-        VALIDATE_INV(this);
-    }
-    
-    __INLINE__ void destroy() {
-        DEBUG3 aout("hash table "<<this<<" destroy");
-        free(data);
-//        free(keys);
-    }
-    
-    __INLINE__ int hash(uintptr_t p) {
-        // assert: htabcap is a power of 2
-        return (int) MurmurHash3_x86_32_uintptr(p, seed) & (cap-1);
-    }
-    
-    __INLINE__ int findIx(uintptr_t p) {
-        int ix = hash(p);
-        while (data[ix]) {
-//            if (keys[ix] == p) {
-            if (data[ix]->keyToHash == p) {
-                return ix;
+        #ifdef LONG_VALIDATION
+            // htabsz = size of hash table
+            long _htabsz = 0;
+            for (int i=0;i<cap;++i) {
+                if (data[i]) {
+                    ++_htabsz; // # non-null entries of htab
+                }
             }
-            ix = (ix + 1) & (cap-1);
-        }
-        return -1;
-    }
-    
-    __INLINE__ AVPair* find(uintptr_t p) {
-        int ix = findIx(p);
-        if (ix < 0) return NULL;
-        return data[ix];
-    }
-    
-    // assumes there is space for e, and e is not in the hash table
-    __INLINE__ void insertFresh(uintptr_t p, AVPair* e) {
-        DEBUG3 aout("hash table "<<this<<" insertFresh("<<debug(p)<<", "<<debug(e)<<")");
-        assert(p == e->keyToHash);
-        VALIDATE_INV(this);
-        int ix = hash(p);
-        while (data[ix]) { // assumes hash table does NOT contain e
-            ix = (ix + 1) & (cap-1);
-        }
-        data[ix] = e;
-        ++sz;
-        VALIDATE_INV(this);
-    }
-    
-    __INLINE__ int requiresExpansion() {
-        return 2*sz > cap;
-    }
-   
-private:
-    // expand table by a factor of 2
-    __INLINE__ void expandAndClear() {
-//        uintptr_t* oldkeys = keys;
-        AVPair** olddata = data;
-        init(seed, cap); // note: cap will be doubled by init())
-        free(olddata);
-//        free(keys);
-    }
-    
-public:
-    __INLINE__ void expandAndRehashFromList(AVPair* head, AVPair* stop) {
-        DEBUG3 aout("hash table "<<this<<" expandAndRehashFromList");
-        VALIDATE_INV(this);
-        expandAndClear();
-        for (AVPair* e = head; e != stop; e = e->Next) {
-            insertFresh(e->keyToHash, e);
-        }
-        VALIDATE_INV(this);
-    }
-    
-    void validateContainsAllAndSameSize(AVPair* head, AVPair* stop, const int listsz) {
-//        if (head == NULL && listsz == 0 && sz == 0) {
-//            return;
-//        }
-//        DEBUG3 aout("hash table "<<this<<" validateContainsAllAndSameSize");
-        // each element of list appears in hash table
-        for (AVPair* e = head; e != stop; e = e->Next) {
-//            aout("  "<<debug(e));
-//            if (e) {aout("  "<<debug(*e));}
-            
-            if (find(e->keyToHash) != e) {
-                ERROR("element "<<debug(*e)<<" of list was not in "<<(e->keyToHash == (uintptr_t) e->LockFor ? "lock" : "addr")<<" hash table");
+            if (sz != _htabsz) {
+                ERROR("hash table size incorrect: "<<debug(sz)<<" "<<debug(_htabsz));
             }
+        #endif
         }
-        if (listsz != sz) {
-            ERROR("list and hash table sizes differ: "<<debug(listsz)<<" "<<debug(sz));
-        }
-    }
-};
 
-// TODO: try shrinking the initial list sizes to a small manageable amount, then printing the list up to capacity...
-// TODO: remove lock hashlist, and replace it with an owner field inside a lock
-//   (a void* that is initially NULL, and is set to NULL on every release,
-//   and set to Self on every acquire (NOT atomic with acquisition;
-//   just need it to manage the question "do I hold the lock?"))
+    public:
+        __INLINE__ void init(const uint32_t _seed, const long _sz) {
+            // assert: _sz is a power of 2!
+            DEBUG3 aout("hash table "<<this<<" init");
+            sz = 0;
+            seed = _seed;
+            cap = 2 * _sz;
+            data = (AVPair**) malloc(sizeof(AVPair*) * cap);
+            memset(data, 0, sizeof(AVPair*) * cap);
+            VALIDATE_INV(this);
+        }
+
+        __INLINE__ void destroy() {
+            DEBUG3 aout("hash table "<<this<<" destroy");
+            free(data);
+        }
+
+        __INLINE__ int hash(uintptr_t p) {
+            // assert: htabcap is a power of 2
+    #ifdef __LP64__
+            p ^= p >> 33;
+            p *= BIG_CONSTANT(0xff51afd7ed558ccd);
+            p ^= p >> 33;
+            p *= BIG_CONSTANT(0xc4ceb9fe1a85ec53);
+            p ^= p >> 33;
+    #else
+            p ^= p >> 16;
+            p *= 0x85ebca6b;
+            p ^= p >> 13;
+            p *= 0xc2b2ae35;
+            p ^= p >> 16;
+    #endif
+            return p & (cap-1);
+            //return (int) MurmurHash3_x86_32_uintptr(p, seed) & (cap-1);
+        }
+
+        __INLINE__ int findIx(uintptr_t p) {
+            int ix = hash(p);
+            while (data[ix]) {
+                if (data[ix]->keyToHash == p) {
+                    return ix;
+                }
+                ix = (ix + 1) & (cap-1);
+            }
+            return -1;
+        }
+
+        __INLINE__ AVPair* find(uintptr_t p) {
+            int ix = findIx(p);
+            if (ix < 0) return NULL;
+            return data[ix];
+        }
+
+        // assumes there is space for e, and e is not in the hash table
+        __INLINE__ void insertFresh(uintptr_t p, AVPair* e) {
+            DEBUG3 aout("hash table "<<this<<" insertFresh("<<debug(p)<<", "<<debug(e)<<")");
+            assert(p == e->keyToHash);
+            VALIDATE_INV(this);
+            int ix = hash(p);
+            while (data[ix]) { // assumes hash table does NOT contain e
+                ix = (ix + 1) & (cap-1);
+            }
+            data[ix] = e;
+            ++sz;
+            VALIDATE_INV(this);
+        }
+
+        __INLINE__ int requiresExpansion() {
+            return 2*sz > cap;
+        }
+
+    private:
+        // expand table by a factor of 2
+        __INLINE__ void expandAndClear() {
+            AVPair** olddata = data;
+            init(seed, cap); // note: cap will be doubled by init())
+            free(olddata);
+        }
+
+    public:
+        __INLINE__ void expandAndRehashFromList(AVPair* head, AVPair* stop) {
+            DEBUG3 aout("hash table "<<this<<" expandAndRehashFromList");
+            VALIDATE_INV(this);
+            expandAndClear();
+            for (AVPair* e = head; e != stop; e = e->Next) {
+                insertFresh(e->keyToHash, e);
+            }
+            VALIDATE_INV(this);
+        }
+
+        void validateContainsAllAndSameSize(AVPair* head, AVPair* stop, const int listsz) {
+    //        DEBUG3 aout("hash table "<<this<<" validateContainsAllAndSameSize");
+            // each element of list appears in hash table
+            for (AVPair* e = head; e != stop; e = e->Next) {
+    //            aout("  "<<debug(e));
+    //            if (e) {aout("  "<<debug(*e));}
+
+                if (find(e->keyToHash) != e) {
+                    ERROR("element "<<debug(*e)<<" of list was not in "<<(e->keyToHash == (uintptr_t) e->LockFor ? "lock" : "addr")<<" hash table");
+                }
+            }
+            if (listsz != sz) {
+                ERROR("list and hash table sizes differ: "<<debug(listsz)<<" "<<debug(sz));
+            }
+        }
+    };
+#else
+    typedef unsigned long bloom_filter_data_t;
+    #define BLOOM_FILTER_DATA_T_BITS (sizeof(bloom_filter_data_t)*8)
+    #define BLOOM_FILTER_BITS 512
+    #define BLOOM_FILTER_WORDS (BLOOM_FILTER_BITS/sizeof(bloom_filter_data_t))
+    class HashTable {
+    public:
+        bloom_filter_data_t filter[BLOOM_FILTER_WORDS]; // bloom filter data
+    private:
+        void validateInvariants() {
+
+        }
+
+    public:
+        __INLINE__ void init() {
+            for (unsigned i=0;i<BLOOM_FILTER_WORDS;++i) {
+                filter[i] = 0;
+            }
+            VALIDATE_INV(this);
+        }
+
+        __INLINE__ void destroy() {
+            DEBUG3 aout("hash table "<<this<<" destroy");
+        }
+
+        __INLINE__ unsigned hash(uintptr_t p) {
+    #ifdef __LP64__
+            p ^= p >> 33;
+            p *= BIG_CONSTANT(0xff51afd7ed558ccd);
+            p ^= p >> 33;
+            p *= BIG_CONSTANT(0xc4ceb9fe1a85ec53);
+            p ^= p >> 33;
+    #else
+            p ^= p >> 16;
+            p *= 0x85ebca6b;
+            p ^= p >> 13;
+            p *= 0xc2b2ae35;
+            p ^= p >> 16;
+    #endif
+            return p & (BLOOM_FILTER_BITS-1);
+        }
+
+        __INLINE__ bool contains(uintptr_t key) {
+            unsigned targetBit = hash(key);
+            bloom_filter_data_t fword = filter[targetBit / BLOOM_FILTER_DATA_T_BITS];
+            return fword & (1<<(targetBit & (BLOOM_FILTER_DATA_T_BITS-1))); // note: using x&(sz-1) where sz is a power of 2 as a shortcut for x%sz
+        }
+
+        // assumes there is space for e, and e is not in the hash table
+        __INLINE__ void insertFresh(uintptr_t key) {
+            DEBUG3 aout("hash table "<<this<<" insertFresh("<<debug(key)<<")");
+            VALIDATE_INV(this);
+            unsigned targetBit = hash(key);
+            unsigned wordix = targetBit / BLOOM_FILTER_DATA_T_BITS;
+            assert(wordix >= 0 && wordix < BLOOM_FILTER_WORDS);
+            filter[wordix] |= (1<<(targetBit & (BLOOM_FILTER_DATA_T_BITS-1))); // note: using x&(sz-1) where sz is a power of 2 as a shortcut for x%sz
+//            bloom_filter_data_t* fword = &filter[targetBit / BLOOM_FILTER_DATA_T_BITS];
+//            *fword |= (1<<(targetBit & (BLOOM_FILTER_DATA_T_BITS-1))); // note: using x&(sz-1) where sz is a power of 2 as a shortcut for x%sz
+            VALIDATE_INV(this);
+        }
+    };
+#endif
 
 class List {
 public:
@@ -621,13 +693,30 @@ public:
         assignValue<T>(e, value);
         e->LockFor = _LockFor;
         e->rdv = _rdv;
+#ifdef USE_FULL_HASHTABLE
         e->keyToHash = keyToHash;
+#endif
         ++currsz;
         VALIDATE_INV(this);
         return e;
     }
     
+#ifdef USE_FULL_HASHTABLE
+    
+#else
+    __INLINE__ AVPair* find(uintptr_t addr) {
+        AVPair* stop = put;
+        for (AVPair* e = head; e != stop; e = e->Next) {
+            if (e->addr == (intptr_t) addr) {
+                return e;
+            }
+        }
+        return NULL;
+    }
+#endif
+    
     void validateContainsAllAndSameSize(HashTable* tab) {
+#ifdef USE_FULL_HASHTABLE
         if (currsz != tab->sz) {
             ERROR("hash table "<<debug(tab->sz)<<" has different size from list "<<debug(currsz));
         }
@@ -648,6 +737,7 @@ public:
                 }
             }
         }
+#endif
     }
 };
 
@@ -673,7 +763,11 @@ public:
         DEBUG3 aout("hashlist "<<this<<" init");
         // assert: _sz is a power of 2
         list.init(Self, _sz);
+#ifdef USE_FULL_HASHTABLE
         tab.init(seed, _sz);
+#else
+        tab.init();
+#endif
         VALIDATE_INV(this);
     }
 
@@ -691,6 +785,7 @@ public:
         DEBUG3 aout("hashlist "<<this<<" clear");
         VALIDATE_INV(this);
         
+#ifdef USE_FULL_HASHTABLE
         // clear hash table by nulling out slots for the AVPairs in the list
         AVPair* stop = list.put;
         for (AVPair* e = list.head; e != stop; e = e->Next) {
@@ -720,6 +815,9 @@ public:
             }
         }
         tab.sz = 0;
+#else
+        tab.init();
+#endif
         
         // clear list
         list.clear();
@@ -731,6 +829,7 @@ public:
     __INLINE__ void insert(uintptr_t keyToHash, volatile T* addr, T value, vLock* _LockFor, vLockSnapshot _rdv) {
         DEBUG3 aout("hashlist "<<this<<" insert("<<debug(keyToHash)<<","<<debug(addr)<<","<<debug(value)<<","<<debug(_LockFor)<<","<<debug(_rdv)<<")");
         VALIDATE_INV(this);
+#ifdef USE_FULL_HASHTABLE        
         AVPair* e = tab.find(keyToHash);
         
         // this address is NOT in the log
@@ -778,18 +877,51 @@ public:
             }
         }
         VALIDATE_INV(this); // check all data structure invariants hold
+#else
+        if (tab.contains(keyToHash)) {  // addr MAY be in the list
+            AVPair* e = list.find(keyToHash);
+            if (e) {                    // addr IS in the list
+                // update the value
+                DEBUG2 aout("thread "<<"?"/*Self->UniqID*/<<" updates value for "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" list element "<<debug(*e)<<" to new value "<<value);
+                assignValue(e, value);
+                // note: we keep the old position in the list,
+                // and the old lock version number (and everything else).
+                return;
+            } else {                    // addr is NOT in the list
+                // add it to the log
+                list.insertFresh<T>(keyToHash, addr, value, _LockFor, _rdv);
+                DEBUG2 aout("thread "<<"?"/*Self->UniqID*/<<" inserted "<<debug(*e)<<" into "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" list");
+            }
+        } else {                        // addr is NOT in the list
+            // add it to the log
+            AVPair* e = list.insertFresh<T>(keyToHash, addr, value, _LockFor, _rdv);
+            DEBUG2 aout("thread "<<"?"/*Self->UniqID*/<<" inserted "<<debug(*e)<<" into "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" list");
+
+            // add it to the hash table
+            tab.insertFresh(keyToHash);
+            DEBUG2 aout("thread "<<"?"/*Self->UniqID*/<<" inserted "<<debug(*e)<<" into "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" hash table");
+        }
+#endif
     }
     
     __INLINE__ AVPair* find(uintptr_t keyToHash) {
+#ifdef USE_FULL_HASHTABLE
         return tab.find(keyToHash);
+#else
+        if (tab.contains(keyToHash)) {
+            return list.find(keyToHash);
+        }
+        return NULL;
+#endif
     }
     
-    __INLINE__ bool contains(uintptr_t keyToHash) {
-        return tab.findIx(keyToHash) != -1;
-    }
+//    __INLINE__ bool contains(uintptr_t keyToHash) {
+//        return tab.findIx(keyToHash) != -1;
+//    }
 };
 
 void HashList::validateInvariants() {
+#ifdef USE_FULL_HASHTABLE
     // each element of list appears in hash table
     tab.validateContainsAllAndSameSize(list.head, list.put, list.currsz);
 #ifdef LONG_VALIDATION
@@ -808,6 +940,7 @@ void HashList::validateInvariants() {
             }
         }
     }
+#endif
 #endif
 }
 
@@ -879,9 +1012,9 @@ public:
 //        return locks.contains((uintptr_t) lock);
 //    }
     
-    __INLINE__ bool contains(uintptr_t addr) {
-        return addresses.contains(addr);
-    }
+//    __INLINE__ bool contains(uintptr_t addr) {
+//        return addresses.contains(addr);
+//    }
     
 };
 
@@ -893,7 +1026,6 @@ class TypeLogs {
 public:
     Log l;
     Log f;
-    // need lock hashlist HERE so we have only one list of locks for both log types!!! this way, we won't be blocked by trying to acquire the same lock in f and l...
     long sz;
     
     void init(Thread* Self, long _sz) {
@@ -941,11 +1073,11 @@ public:
         return _log->find(addr);
     }
     
-    template <typename T>
-    __INLINE__ bool containsAddr(uintptr_t addr) {
-        Log *_log = getTypedLog<T>(this);
-        return _log->contains(addr);
-    }
+//    template <typename T>
+//    __INLINE__ bool containsAddr(uintptr_t addr) {
+//        Log *_log = getTypedLog<T>(this);
+//        return _log->contains(addr);
+//    }
 };
 
 std::ostream& operator<<(std::ostream& out, const TypeLogs& obj) {
@@ -1376,6 +1508,9 @@ __INLINE__ T TxStore(void* _Self, volatile T* addr, T valu) {
 
 void TxOnce() {
     CTASSERT((_TABSZ & (_TABSZ - 1)) == 0); /* must be power of 2 */
+    
+    initSighandler(); /**** DEBUG CODE ****/
+                
     printf("%s %s\n", TM_NAME, "system ready\n");
     memset(LockTab, 0, _TABSZ*sizeof(vLock));
 }
