@@ -12,15 +12,15 @@ extern "C" {
 #endif
 #define TXNL_MEM_RECLAMATION
 
-#define MAX_SW_ABORTS 1000000
+#define MAX_RETRIES 100000
 
 //#define DEBUG_PRINT
 #define DEBUG_PRINT_LOCK
 
 #define DEBUG0 if(1)
-#define DEBUG1 DEBUG0 if(1)
+#define DEBUG1 DEBUG0 if(0)
 #define DEBUG2 DEBUG1 if(0)
-#define DEBUG3 DEBUG2 if(1)
+#define DEBUG3 DEBUG2 if(0)
 
 #ifdef DEBUG_PRINT
     #define aout(x) { \

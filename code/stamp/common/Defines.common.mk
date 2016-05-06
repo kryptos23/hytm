@@ -27,8 +27,9 @@ LOSTM := ../../OpenTM/lostm
 STM=../$(TARGET)
 
 # ADD GPROF INSTRUMENTATION
-CPPFLAGS += -pg
-CFLAGS += -pg
+CPPFLAGS += -pg -Winline
+CFLAGS += -pg -Winline
+LDFLAGS += -pg -Winline
 
 # ==============================================================================
 #

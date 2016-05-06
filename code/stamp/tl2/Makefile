@@ -31,7 +31,7 @@ RM := rm -f
 
 # ADD GPROF INSTRUMENTATION
 CFLAGS += -pg
-LDFLAGS += -pg
+LDFLAGS += -pg -Winline
 
 # ==============================================================================
 # Rules

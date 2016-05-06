@@ -26,6 +26,7 @@ RM := rm -f
 # ADD GPROF INSTRUMENTATION
 CPPFLAGS += -pg
 CFLAGS += -pg
+LDFLAGS += -pg -Winline
 
 # ==============================================================================
 # Rules

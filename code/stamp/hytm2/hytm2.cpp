@@ -27,7 +27,8 @@
 #include <execinfo.h>
 using namespace std;
 
-#define USE_FULL_HASHTABLE
+//#define USE_FULL_HASHTABLE
+//#define USE_BLOOM_FILTER
 
 // just for debugging
 volatile int globallock = 0;
@@ -137,7 +138,7 @@ public:
 
 class vLock {
     volatile uint64_t lock; // (Version,LOCKBIT)
-    void* owner;
+    volatile void* volatile owner; // invariant: NULL when lock is not held; non-NULL (and points to thread that owns lock) only when lock is held (but sometimes may be NULL when lock is held). guarantees that a thread can tell if IT holds the lock (but cannot necessarily tell who else holds the lock).
 private:
     __INLINE__ vLock(uint64_t lockstate) {
         lock = lockstate;
@@ -149,25 +150,40 @@ public:
         owner = 0;
     }
     __INLINE__ vLockSnapshot getSnapshot() const {
-        return vLockSnapshot(lock);
+        vLockSnapshot retval (lock);
+//        __sync_synchronize();
+        return retval;
     }
     __INLINE__ bool tryAcquire(void* thread) {
         if (thread == owner) return true; // reentrant acquire
         uint64_t val = lock & (~LOCKBIT);
         bool retval = __sync_bool_compare_and_swap(&lock, val, val+1);
-        owner = thread;
+        if (retval) {
+            owner = thread;
+//            __sync_synchronize();
+//            SOFTWARE_BARRIER;
+        }
+//        __sync_synchronize();
         return retval;
     }
     __INLINE__ bool tryAcquire(void* thread, vLockSnapshot& oldval) {
         if (thread == owner) return true; // reentrant acquire
         bool retval = __sync_bool_compare_and_swap(&lock, oldval.version(), oldval.version()+1);
-        owner = thread;
+        if (retval) {
+            owner = thread;
+//            __sync_synchronize();
+//            SOFTWARE_BARRIER;
+        }
+//        __sync_synchronize();
         return retval;
     }
     __INLINE__ void release(void* thread) {
         if (thread == owner) { // reentrant release (assuming the lock should be released on the innermost release() call)
             owner = 0;
+            SOFTWARE_BARRIER;
+//            __sync_synchronize();
             ++lock;
+//            __sync_synchronize();
         }
     }
     // can be invoked only by a hardware transaction
@@ -177,16 +193,71 @@ public:
     __INLINE__ bool isOwnedBy(void* thread) {
         return (thread == owner);
     }
+    
+    friend std::ostream& operator<<(std::ostream &out, const vLock &obj);
 };
 
+#include <map>
+map<const void*, unsigned> addrToIx;
+map<unsigned, const void*> ixToAddr;
+volatile unsigned rename_ix = 0;
+#include <sstream>
+string stringifyIndex(unsigned ix) {
+#if 1
+    const unsigned NCHARS = 36;
+    stringstream ss;
+    if (ix == 0) return "0";
+    while (ix > 0) {
+        unsigned newchar = ix % NCHARS;
+        if (newchar < 10) {
+            ss<<(char)(newchar+'0');
+        } else {
+            ss<<(char)((newchar-10)+'A');
+        }
+        ix /= NCHARS;
+    }
+    string backwards = ss.str();
+    stringstream ssr;
+    for (string::reverse_iterator rit = backwards.rbegin(); rit != backwards.rend(); ++rit) {
+        ssr<<*rit;
+    }
+    return ssr.str();
+#elif 0
+    const unsigned NCHARS = 26;
+    stringstream ss;
+    if (ix == 0) return "0";
+    while (ix > 0) {
+        unsigned newchar = ix % NCHARS;
+        ss<<(char)(newchar+'A');
+        ix /= NCHARS;
+    }
+    return ss.str();
+#else 
+    stringstream ss;
+    ss<<ix;
+    return ss.str();
+#endif
+}
+string renamePointer(const void* p) {
+    map<const void*, unsigned>::iterator it = addrToIx.find(p);
+    if (it == addrToIx.end()) {
+        unsigned newix = __sync_fetch_and_add(&rename_ix, 1);
+        addrToIx[p] = newix;
+        ixToAddr[newix] = p;
+        return stringifyIndex(addrToIx[p]);
+    } else {
+        return stringifyIndex(it->second);
+    }
+}
+
 std::ostream& operator<<(std::ostream& out, const vLockSnapshot& obj) {
-    return out<<"<ver="<<obj.version()
-                <<",locked="<<obj.isLocked()<<">"
+    return out<<"ver="<<obj.version()
+                <<",locked="<<obj.isLocked()
                 ;//<<"> (raw="<<obj.lockstate<<")";
 }
 
 std::ostream& operator<<(std::ostream& out, const vLock& obj) {
-    return out<<obj.getSnapshot()<<"@"<<(&obj);
+    return out<<"<"<<obj.getSnapshot()<<",owner="<<(obj.owner?((Thread_void*) obj.owner)->UniqID:-1)<<">@"<<renamePointer(&obj);
 }
 
 /*
@@ -303,10 +374,11 @@ public:
     vLockSnapshot rdv;  /* read-version @ time of 1st read - observed */
 //    Thread* LockOwner;
     long Ordinal;
+    AVPair** hashTableEntry;
     
     AVPair() {}
     AVPair(AVPair* _Next, AVPair* _Prev, long _Ordinal)
-        : keyToHash(0), Next(_Next), Prev(_Prev), addr(0), LockFor(0), rdv(0), /*LockOwner(0),*/ Ordinal(_Ordinal) {
+        : keyToHash(0), Next(_Next), Prev(_Prev), addr(0), LockFor(0), rdv(0), /*LockOwner(0),*/ Ordinal(_Ordinal), hashTableEntry(0) {
         value.l = 0;
     }
     
@@ -316,14 +388,14 @@ public:
 };
 
 std::ostream& operator<<(std::ostream& out, const AVPair& obj) {
-    return out<<"[addr="<<(void*) obj.addr
-            <<" val="<<obj.value.l
-            <<" lock@"<<obj.LockFor
-            <<" prev="<<obj.Prev
-            <<" next="<<obj.Next
-            <<" ord="<<obj.Ordinal
+    return out<<"[addr="<<renamePointer((void*) obj.addr)
+            //<<" val="<<obj.value.l
+            <<" lock@"<<renamePointer(obj.LockFor)
+            //<<" prev="<<obj.Prev
+            //<<" next="<<obj.Next
+            //<<" ord="<<obj.Ordinal
             //<<" rdv="<<obj.rdv<<"@"<<(uintptr_t)(long*)&obj
-            <<"]@"<<&obj;
+            <<"]@"<<renamePointer(&obj);
 }
 
 template <typename T>
@@ -408,7 +480,7 @@ enum hytm_config {
     public:
         __INLINE__ void init(const uint32_t _seed, const long _sz) {
             // assert: _sz is a power of 2!
-            DEBUG3 aout("hash table "<<this<<" init");
+            DEBUG3 aout("hash table "<<renamePointer(this)<<" init");
             sz = 0;
             seed = _seed;
             cap = 2 * _sz;
@@ -418,7 +490,7 @@ enum hytm_config {
         }
 
         __INLINE__ void destroy() {
-            DEBUG3 aout("hash table "<<this<<" destroy");
+            DEBUG3 aout("hash table "<<renamePointer(this)<<" destroy");
             free(data);
         }
 
@@ -460,7 +532,7 @@ enum hytm_config {
 
         // assumes there is space for e, and e is not in the hash table
         __INLINE__ void insertFresh(uintptr_t p, AVPair* e) {
-            DEBUG3 aout("hash table "<<this<<" insertFresh("<<debug(p)<<", "<<debug(e)<<")");
+            DEBUG3 aout("hash table "<<renamePointer(this)<<" insertFresh("<<debug(p)<<", "<<debug(e)<<")");
             assert(p == e->keyToHash);
             VALIDATE_INV(this);
             int ix = hash(p);
@@ -468,10 +540,11 @@ enum hytm_config {
                 ix = (ix + 1) & (cap-1);
             }
             data[ix] = e;
+            e->hashTableEntry = &data[ix];
             ++sz;
             VALIDATE_INV(this);
         }
-
+        
         __INLINE__ int requiresExpansion() {
             return 2*sz > cap;
         }
@@ -486,7 +559,7 @@ enum hytm_config {
 
     public:
         __INLINE__ void expandAndRehashFromList(AVPair* head, AVPair* stop) {
-            DEBUG3 aout("hash table "<<this<<" expandAndRehashFromList");
+            DEBUG3 aout("hash table "<<renamePointer(this)<<" expandAndRehashFromList");
             VALIDATE_INV(this);
             expandAndClear();
             for (AVPair* e = head; e != stop; e = e->Next) {
@@ -511,7 +584,7 @@ enum hytm_config {
             }
         }
     };
-#else
+#elif defined(USE_BLOOM_FILTER)
     typedef unsigned long bloom_filter_data_t;
     #define BLOOM_FILTER_DATA_T_BITS (sizeof(bloom_filter_data_t)*8)
     #define BLOOM_FILTER_BITS 512
@@ -572,6 +645,8 @@ enum hytm_config {
             VALIDATE_INV(this);
         }
     };
+#else
+    class HashTable {};
 #endif
 
 class List {
@@ -631,7 +706,7 @@ private:
     }
 public:
     void init(Thread* Self, long _initcap) {
-        DEBUG3 aout("list "<<this<<" init");
+        DEBUG3 aout("list "<<renamePointer(this)<<" init");
         // assert: _sz is a power of 2
 
         // Allocate the primary list as a large chunk so we can guarantee ascending &
@@ -656,7 +731,7 @@ public:
     }
     
     void destroy() {
-        DEBUG3 aout("list "<<this<<" destroy");
+        DEBUG3 aout("list "<<renamePointer(this)<<" destroy");
         /* Free appended overflow entries first */
         AVPair* e = end;
         if (e != NULL) {
@@ -671,7 +746,7 @@ public:
     }
     
     __INLINE__ void clear() {
-        DEBUG3 aout("list "<<this<<" clear");
+        DEBUG3 aout("list "<<renamePointer(this)<<" clear");
         VALIDATE_INV(this);
         put = head;
         tail = NULL;
@@ -682,7 +757,7 @@ public:
     // for undo log: immediate writes -> undo on abort/restart
     template <typename T>
     __INLINE__ AVPair* insertFresh(uintptr_t keyToHash, volatile T* addr, T value, vLock* _LockFor, vLockSnapshot _rdv) {
-        DEBUG3 aout("list "<<this<<" insertFresh("<<debug(keyToHash)<<","<<debug(addr)<<","<<debug(value)<<","<<debug(_LockFor)<<","<<debug(_rdv)<<")");
+        DEBUG3 aout("list "<<renamePointer(this)<<" insertFresh("<<debug(keyToHash)<<","<<debug(renamePointer((const void*) (void*) addr))<<","<<debug(value)<<","<<debug(renamePointer(_LockFor))<<","<<debug(_rdv)<<")");
         // assert: addr is NOT in the list
         VALIDATE_INV(this);
         AVPair* e = put;
@@ -760,12 +835,12 @@ private:
     void validateInvariants();
 public:
     __INLINE__ void init(Thread* Self, long _sz, const uint32_t seed) {
-        DEBUG3 aout("hashlist "<<this<<" init");
+        DEBUG3 aout("hashlist "<<renamePointer(this)<<" init");
         // assert: _sz is a power of 2
         list.init(Self, _sz);
 #ifdef USE_FULL_HASHTABLE
         tab.init(seed, _sz);
-#else
+#elif defined(USE_BLOOM_FILTER)
         tab.init();
 #endif
         VALIDATE_INV(this);
@@ -776,46 +851,49 @@ public:
     }
     
     void destroy() {
-        DEBUG3 aout("hashlist "<<this<<" destroy");
+        DEBUG3 aout("hashlist "<<renamePointer(this)<<" destroy");
         list.destroy();
+#if defined(USE_FULL_HASHTABLE) || defined(USE_BLOOM_FILTER)
         tab.destroy();
+#endif
     }
     
     __INLINE__ void clear() {
-        DEBUG3 aout("hashlist "<<this<<" clear");
+        DEBUG3 aout("hashlist "<<renamePointer(this)<<" clear");
         VALIDATE_INV(this);
         
 #ifdef USE_FULL_HASHTABLE
         // clear hash table by nulling out slots for the AVPairs in the list
         AVPair* stop = list.put;
         for (AVPair* e = list.head; e != stop; e = e->Next) {
-            int ix = tab.findIx(e->keyToHash);
-            if (ix < 0) continue;
-            //htab[ix] = NULL;
-            // NOTE: when using probing as the collision resolution strategy,
-            //       it is insufficient to NULL out only htab[ix].
-            //       this is because other inserted elements may be placed
-            //       in other cells simply because htab[ix] was full,
-            //       and they may no longer be found if htab[ix] is null.
-            //       thus, we also want to null out everything else that
-            //       hashes to ix but is placed elsewhere due to probing.
-            //       since we use linear probing, it suffices to null out
-            //       ix and everything that follows it, up until the first
-            //       null entry.
-            // warning: this may not be enough... we may also need to go
-            //       backwards until we reach a preceding null entry.
-            //       (actually, i think it should be enough...)
-            for (int i=0;i<tab.cap;++i) {
-                int probeix = (ix+i) & (tab.cap-1);
-                if (tab.data[probeix]) {
-                    tab.data[probeix] = NULL;
-                } else {
-                    break;
-                }
-            }
+//            int ix = tab.findIx(e->keyToHash);
+//            if (ix < 0) continue;
+//            //htab[ix] = NULL;
+//            // NOTE: when using probing as the collision resolution strategy,
+//            //       it is insufficient to NULL out only htab[ix].
+//            //       this is because other inserted elements may be placed
+//            //       in other cells simply because htab[ix] was full,
+//            //       and they may no longer be found if htab[ix] is null.
+//            //       thus, we also want to null out everything else that
+//            //       hashes to ix but is placed elsewhere due to probing.
+//            //       since we use linear probing, it suffices to null out
+//            //       ix and everything that follows it, up until the first
+//            //       null entry.
+//            // warning: this may not be enough... we may also need to go
+//            //       backwards until we reach a preceding null entry.
+//            //       (actually, i think it should be enough...)
+//            for (int i=0;i<tab.cap;++i) {
+//                int probeix = (ix+i) & (tab.cap-1);
+//                if (tab.data[probeix]) {
+//                    tab.data[probeix] = NULL;
+//                } else {
+//                    break;
+//                }
+//            }
+            *(e->hashTableEntry) = 0;
         }
         tab.sz = 0;
-#else
+#elif defined(USE_BLOOM_FILTER)
         tab.init();
 #endif
         
@@ -826,8 +904,8 @@ public:
 
     // for undo log: immediate writes -> undo on abort/restart
     template <typename T>
-    __INLINE__ void insert(uintptr_t keyToHash, volatile T* addr, T value, vLock* _LockFor, vLockSnapshot _rdv) {
-        DEBUG3 aout("hashlist "<<this<<" insert("<<debug(keyToHash)<<","<<debug(addr)<<","<<debug(value)<<","<<debug(_LockFor)<<","<<debug(_rdv)<<")");
+    __INLINE__ void insert(Thread* Self, uintptr_t keyToHash, volatile T* addr, T value, vLock* _LockFor, vLockSnapshot _rdv) {
+        DEBUG3 aout("hashlist "<<renamePointer(this)<<" insert("<<debug(keyToHash)<<","<<debug(renamePointer((const void*) (void*) addr))<<","<<debug(value)<<","<<debug(renamePointer(_LockFor))<<","<<debug(_rdv)<<")");
         VALIDATE_INV(this);
 #ifdef USE_FULL_HASHTABLE        
         AVPair* e = tab.find(keyToHash);
@@ -835,7 +913,7 @@ public:
         // this address is NOT in the log
         if (e == NULL) {
             e = list.insertFresh<T>(keyToHash, addr, value, _LockFor, _rdv);
-            DEBUG2 aout("thread "<<"?"/*Self->UniqID*/<<" inserted "<<debug(*e)<<" into "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" list");
+            DEBUG2 aout("thread "<<Self->UniqID<<" inserted "<<debug(*e)<<" into "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" list");
             
             // add it to the hash table
             // (first, expand the table if necessary)
@@ -846,14 +924,14 @@ public:
                 tab.expandAndRehashFromList(list.head, list.put);
             } else {
                 tab.insertFresh(keyToHash, e);
-                DEBUG2 aout("thread "<<"?"/*Self->UniqID*/<<" inserted "<<debug(*e)<<" into "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" hash table");
+                DEBUG2 aout("thread "<<Self->UniqID<<" inserted "<<debug(*e)<<" into "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" hash table");
             }
             
         // this address is already in the log
         } else {
             // note: technically, this is unnecessary work if keyToHash is a pointer to Lock
             // update the value associated with Addr
-            DEBUG2 aout("thread "<<"?"/*Self->UniqID*/<<" updates value for "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" list element "<<debug(*e)<<" to new value "<<value);
+            DEBUG2 aout("thread "<<Self->UniqID<<" updates value for "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" list element "<<debug(*e)<<" to new value "<<value);
             assignValue(e, value);
             // note: we keep the old position in the list,
             // and the old lock version number (and everything else).
@@ -877,12 +955,12 @@ public:
             }
         }
         VALIDATE_INV(this); // check all data structure invariants hold
-#else
+#elif defined(USE_BLOOM_FILTER)
         if (tab.contains(keyToHash)) {  // addr MAY be in the list
             AVPair* e = list.find(keyToHash);
             if (e) {                    // addr IS in the list
                 // update the value
-                DEBUG2 aout("thread "<<"?"/*Self->UniqID*/<<" updates value for "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" list element "<<debug(*e)<<" to new value "<<value);
+                DEBUG2 aout("thread "<<Self->UniqID<<" updates value for "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" list element "<<debug(*e)<<" to new value "<<value);
                 assignValue(e, value);
                 // note: we keep the old position in the list,
                 // and the old lock version number (and everything else).
@@ -890,16 +968,30 @@ public:
             } else {                    // addr is NOT in the list
                 // add it to the log
                 list.insertFresh<T>(keyToHash, addr, value, _LockFor, _rdv);
-                DEBUG2 aout("thread "<<"?"/*Self->UniqID*/<<" inserted "<<debug(*e)<<" into "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" list");
+                DEBUG2 aout("thread "<<Self->UniqID<<" inserted "<<debug(*e)<<" into "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" list");
             }
         } else {                        // addr is NOT in the list
             // add it to the log
             AVPair* e = list.insertFresh<T>(keyToHash, addr, value, _LockFor, _rdv);
-            DEBUG2 aout("thread "<<"?"/*Self->UniqID*/<<" inserted "<<debug(*e)<<" into "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" list");
+            DEBUG2 aout("thread "<<Self->UniqID<<" inserted "<<debug(*e)<<" into "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" list");
 
             // add it to the hash table
             tab.insertFresh(keyToHash);
-            DEBUG2 aout("thread "<<"?"/*Self->UniqID*/<<" inserted "<<debug(*e)<<" into "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" hash table");
+            DEBUG2 aout("thread "<<Self->UniqID<<" inserted "<<debug(*e)<<" into "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" hash table");
+        }
+#else
+        AVPair* e = list.find(keyToHash);
+        if (e) {  // addr is in the list
+            // update the value
+            DEBUG2 aout("thread "<<Self->UniqID<<" updates value for "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" list element "<<debug(*e)<<" to new value "<<value);
+            assignValue(e, value);
+            // note: we keep the old position in the list,
+            // and the old lock version number (and everything else).
+            return;
+        } else {                        // addr is NOT in the list
+            // add it to the log
+            e = list.insertFresh<T>(keyToHash, addr, value, _LockFor, _rdv);
+            DEBUG2 aout("thread "<<Self->UniqID<<" inserted "<<debug(*e)<<" into "<<(keyToHash == (uintptr_t) _LockFor ? "lock" : "addr")<<" list");
         }
 #endif
     }
@@ -907,17 +999,15 @@ public:
     __INLINE__ AVPair* find(uintptr_t keyToHash) {
 #ifdef USE_FULL_HASHTABLE
         return tab.find(keyToHash);
-#else
+#elif defined(USE_BLOOM_FILTER)
         if (tab.contains(keyToHash)) {
             return list.find(keyToHash);
         }
         return NULL;
+#else
+        return list.find(keyToHash);
 #endif
     }
-    
-//    __INLINE__ bool contains(uintptr_t keyToHash) {
-//        return tab.findIx(keyToHash) != -1;
-//    }
 };
 
 void HashList::validateInvariants() {
@@ -955,14 +1045,14 @@ public:
     
 public:
     void init(Thread* Self, long _sz, const uint32_t seed) {
-        DEBUG3 aout("log "<<this<<" init");
+        DEBUG3 aout("log "<<renamePointer(this)<<" init");
         // assert: _sz is a power of 2
         addresses.init(Self, _sz, seed);
 //        locks.init(Self, _sz, seed);
     }
 
     void destroy() {
-        DEBUG3 aout("log "<<this<<" destroy");
+        DEBUG3 aout("log "<<renamePointer(this)<<" destroy");
         addresses.destroy();
 //        locks.destroy();
     }
@@ -975,16 +1065,16 @@ public:
 
     // for undo log: immediate writes -> undo on abort/restart
     template <typename T>
-    __INLINE__ void insert(volatile T* addr, T value, vLock* _LockFor, vLockSnapshot _rdv) {
-        DEBUG3 aout("log "<<this<<" insert("<<debug(addr)<<","<<debug(value)<<","<<debug(_LockFor)<<","<<debug(_rdv)<<")");
-        addresses.insert((uintptr_t) addr, addr, value, _LockFor, _rdv);
+    __INLINE__ void insert(Thread* Self, volatile T* addr, T value, vLock* _LockFor, vLockSnapshot _rdv) {
+        DEBUG3 aout("log "<<renamePointer(this)<<" insert("<<debug(renamePointer((const void*) (void*) addr))<<","<<debug(value)<<","<<debug(renamePointer(_LockFor))<<","<<debug(_rdv)<<")");
+        addresses.insert(Self, (uintptr_t) addr, addr, value, _LockFor, _rdv);
 //        locks.insert((uintptr_t) _LockFor, addr, value, _LockFor, _rdv);
     }
     
     // Transfer the data in the log to its ultimate location.
     template <typename T>
     __INLINE__ void writeReverse() {
-        DEBUG3 aout("log "<<this<<" writeReverse");
+        DEBUG3 aout("log "<<renamePointer(this)<<" writeReverse");
         for (AVPair* e = addresses.list.tail; e != NULL; e = e->Prev) {
             replayStore<T>(e);
         }
@@ -993,7 +1083,7 @@ public:
     // Transfer the data in the log to its ultimate location.
     template <typename T>
     __INLINE__ void writeForward() {
-        DEBUG3 aout("log "<<this<<" writeForward");
+        DEBUG3 aout("log "<<renamePointer(this)<<" writeForward");
         AVPair* stop = addresses.list.put;
         for (AVPair* e = addresses.list.head; e != stop; e = e->Next) {
             replayStore<T>(e);
@@ -1029,7 +1119,7 @@ public:
     long sz;
     
     void init(Thread* Self, long _sz) {
-        DEBUG3 aout("typelogs "<<this<<" init");
+        DEBUG3 aout("typelogs "<<renamePointer(this)<<" init");
         const uint32_t hashFuncSeed = 0xc4d1ca82; // random number drawn from atmospheric noise (see random.org)
         sz = _sz;
         l.init(Self, _sz, hashFuncSeed);
@@ -1037,34 +1127,34 @@ public:
     }
     
     void destroy() {
-        DEBUG3 aout("typelogs "<<this<<" destroy");
+        DEBUG3 aout("typelogs "<<renamePointer(this)<<" destroy");
         l.destroy();
         f.destroy();
     }
 
     __INLINE__ void clear() {
-        DEBUG3 aout("typelogs "<<this<<" clear");
+        DEBUG3 aout("typelogs "<<renamePointer(this)<<" clear");
         l.clear();
         f.clear();
     }
     
     __INLINE__ void writeForward() {
-        DEBUG3 aout("typelogs "<<this<<" writeForward");
+        DEBUG3 aout("typelogs "<<renamePointer(this)<<" writeForward");
         l.writeForward<long>();
         f.writeForward<float>();
     }
 
     __INLINE__ void writeReverse() {
-        DEBUG3 aout("typelogs "<<this<<" writeReverse");
+        DEBUG3 aout("typelogs "<<renamePointer(this)<<" writeReverse");
         l.writeReverse<long>();
         f.writeReverse<float>();
     }
     
     template <typename T>
-    __INLINE__ void insert(volatile T* addr, T value, vLock* _LockFor, vLockSnapshot _rdv) {
-        DEBUG3 aout("typelogs "<<this<<" insert("<<debug(addr)<<","<<debug(value)<<","<<debug(_LockFor)<<","<<debug(_rdv)<<")");
+    __INLINE__ void insert(Thread* Self, volatile T* addr, T value, vLock* _LockFor, vLockSnapshot _rdv) {
+        DEBUG3 aout("typelogs "<<renamePointer(this)<<" insert("<<debug(renamePointer((const void*) (void*) addr))<<","<<debug(value)<<","<<debug(renamePointer(_LockFor))<<","<<debug(_rdv)<<")");
         Log *_log = getTypedLog<T>(this);
-        _log->insert(addr, value, _LockFor, _rdv);
+        _log->insert(Self, addr, value, _LockFor, _rdv);
     }
     
     template <typename T>
@@ -1072,12 +1162,6 @@ public:
         Log *_log = getTypedLog<T>(this);
         return _log->find(addr);
     }
-    
-//    template <typename T>
-//    __INLINE__ bool containsAddr(uintptr_t addr) {
-//        Log *_log = getTypedLog<T>(this);
-//        return _log->contains(addr);
-//    }
 };
 
 std::ostream& operator<<(std::ostream& out, const TypeLogs& obj) {
@@ -1189,13 +1273,6 @@ __INLINE__ bool validateLockVersions(Thread* Self, List* lockAVPairs/*, bool hol
 
     AVPair* const stop = lockAVPairs->put;
     for (AVPair* curr = lockAVPairs->head; curr != stop; curr = curr->Next) {
-        // determine when we first encountered curr->addr in txload or txstore.
-        // curr->rdv contains when we first encountered it in a txLOAD,
-        // so we also need to compare it with any rdv stored in the WRITE-set.
-        AVPair* writeLogEntry = Self->wrSet->findAddr<T>((uintptr_t) curr);
-        vLockSnapshot *encounterTime = getMinLockSnap(curr, writeLogEntry);
-        assert(encounterTime);
-        
         vLock* lock = curr->LockFor;
         vLockSnapshot locksnap = lock->getSnapshot();
         if (locksnap.isLocked()) {
@@ -1204,10 +1281,19 @@ __INLINE__ bool validateLockVersions(Thread* Self, List* lockAVPairs/*, bool hol
             } else {
                 return false; // someone else locked it
             }
-        } else if (locksnap.version() != encounterTime->version()) {
-            // the address is locked, it its version number has changed
-            // (and we didn't change it, since we don't hold the lock)
-            return false; // abort if we are not holding any locks
+        } else {
+            // determine when we first encountered curr->addr in txload or txstore.
+            // curr->rdv contains when we first encountered it in a txLOAD,
+            // so we also need to compare it with any rdv stored in the WRITE-set.
+            AVPair* writeLogEntry = Self->wrSet->findAddr<T>((uintptr_t) curr);
+            vLockSnapshot *encounterTime = getMinLockSnap(curr, writeLogEntry);
+            assert(encounterTime);
+            
+            if (locksnap.version() != encounterTime->version()) {
+                // the address is locked, it its version number has changed
+                // (and we didn't change it, since we don't hold the lock)
+                return false; // abort if we are not holding any locks
+            }
         }
     }
     return true;
@@ -1390,7 +1476,18 @@ void TxAbort(void* _Self) {
     if (Self->isFallback) {
         ++Self->Retries;
         ++Self->AbortsSW;
-        if (Self->AbortsSW > MAX_SW_ABORTS) { fprintf(stderr, "TOO MANY ABORTS. QUITTING.\n"); exit(-1); }
+        if (Self->Retries > MAX_RETRIES) {
+            aout("TOO MANY ABORTS. QUITTING.");
+            aout("BEGIN DEBUG ADDRESS MAPPING:");
+            acquireLock(&globallock);
+                for (unsigned i=0;i<rename_ix;++i) {
+                    cout<<stringifyIndex(i)<<"="<<ixToAddr[i]<<" ";
+                }
+                cout<<endl;
+            releaseLock(&globallock);
+            aout("END DEBUG ADDRESS MAPPING.");
+            exit(-1);
+        }
         
 #ifdef TXNL_MEM_RECLAMATION
         // "abort" speculative allocations and speculative frees
@@ -1418,23 +1515,23 @@ __INLINE__ T TxLoad(void* _Self, volatile T* Addr) {
         
         // check whether Addr is in the write-set
         AVPair* av = Self->wrSet->findAddr<T>((uintptr_t) Addr);
-        if (av != NULL) return unpackValue<T>(av);
+        if (av) return unpackValue<T>(av);
 
         // Addr is NOT in the write-set; abort if it is locked
         vLock* lock = PSLOCK(Addr);
         vLockSnapshot locksnap = lock->getSnapshot();
-        if (locksnap.isLocked() && !lock->isOwnedBy(Self)) {
-            DEBUG2 aout("thread "<<Self->UniqID<<" TxRead saw lock "<<lock<<" was held (not by us) -> aborting");
+        if (locksnap.isLocked()) {// && !lock->isOwnedBy(Self)) { // impossible for us to hold a lock on it.
+            DEBUG2 aout("thread "<<Self->UniqID<<" TxRead saw lock "<<renamePointer(lock)<<" was held (not by us) -> aborting (retries="<<Self->Retries<<")");
             TxAbort(Self);
         }
         
         // read addr and add it to the read-set
         T val = *Addr;
-        Self->rdSet->insert(Addr, val, lock, locksnap);
+        Self->rdSet->insert(Self, Addr, val, lock, locksnap);
 
         // validate reads
         if (!validateReadSet(Self)) {
-            DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting");
+            DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting (retries="<<Self->Retries<<")");
             TxAbort(Self);
         }
 
@@ -1446,7 +1543,7 @@ __INLINE__ T TxLoad(void* _Self, volatile T* Addr) {
         // abort if addr is locked
         vLock* lock = PSLOCK(Addr);
         vLockSnapshot locksnap = lock->getSnapshot();
-        if (locksnap.isLocked()) TxAbort(Self);
+        if (locksnap.isLocked()) TxAbort(Self); // we cannot hold the lock (since we hold none)
         
         // actually read addr
         return *Addr;
@@ -1464,13 +1561,13 @@ __INLINE__ T TxStore(void* _Self, volatile T* addr, T valu) {
         // abort if addr is locked (since we do not hold any locks)
         vLock* lock = PSLOCK(addr);
         vLockSnapshot locksnap = lock->getSnapshot();
-        if (locksnap.isLocked() && !lock->isOwnedBy(Self)) {
-            DEBUG2 aout("thread "<<Self->UniqID<<" TxStore saw lock "<<lock<<" was held (not by us) -> aborting");
+        if (locksnap.isLocked()) { // note: impossible for lock to be owned by us, since we hold no locks.
+            DEBUG2 aout("thread "<<Self->UniqID<<" TxStore saw lock "<<renamePointer(lock)<<" was held (not by us) -> aborting (retries="<<Self->Retries<<")");
             TxAbort(Self);
         }
         
         // add addr to the write-set
-        Self->wrSet->insert<T>(addr, valu, lock, locksnap);
+        Self->wrSet->insert<T>(Self, addr, valu, lock, locksnap);
         Self->IsRO = false; // txn is not read-only
 
 //        printf("    txStore(id=%ld, ...) success\n", Self->UniqID);
@@ -1481,7 +1578,7 @@ __INLINE__ T TxStore(void* _Self, volatile T* addr, T valu) {
         // abort if addr is locked
         vLock* lock = PSLOCK(addr);
         vLockSnapshot locksnap = lock->getSnapshot();
-        if (locksnap.isLocked()) XABORT(_XABORT_EXPLICIT_LOCKED);
+        if (locksnap.isLocked()) XABORT(_XABORT_EXPLICIT_LOCKED); // we cannot hold the lock (since we hold none)
         
         // increment version number (to notify s/w txns of the change)
         // and write value to addr (order unimportant because of h/w)

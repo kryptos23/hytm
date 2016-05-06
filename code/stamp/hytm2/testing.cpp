@@ -71,9 +71,9 @@ void *ntest0_kernel(void* arg) {
         STM_WRITE_L(globalx, x + 1);
         STM_WRITE_L(globaly, y + 1);
         STM_END();
-#if defined(DEBUG_PRINT) || defined(DEBUG_PRINT_LOCK)
-        printf("id=%ld x=%ld y=%ld\n", *((long*) arg), x, y);
-#endif
+//#if defined(DEBUG_PRINT) || defined(DEBUG_PRINT_LOCK)
+//        printf("id=%ld x=%ld y=%ld\n", *((long*) arg), x, y);
+//#endif
     }
 }
 
@@ -174,84 +174,86 @@ void run_test(int n, void (*validate)(void), void *(*kernel)(void*)) {
     validate();
 }
 
-void bt_sighandler(int sig, struct sigcontext ctx) {
+//void bt_sighandler(int sig, struct sigcontext ctx) {
+//
+//    void *trace[16];
+//    char **messages = (char **) NULL;
+//    int i, trace_size = 0;
+//
+//    if (sig == SIGSEGV)
+//        printf("Got signal %d, faulty address is %p, "
+//                "from %p\n", sig, (void*) ctx.cr2, (void*) ctx.rip); //eip);
+//    else
+//        printf("Got signal %d\n", sig);
+//
+//    trace_size = backtrace(trace, 16);
+//    /* overwrite sigaction with caller's address */
+//    trace[1] = (void*) (long*) ctx.rip; //eip;
+//    messages = backtrace_symbols(trace, trace_size);
+//    /* skip first stack frame (points here) */
+//    printf("[bt] Execution path:\n");
+//    for (i = 1; i < trace_size; ++i) {
+//        printf("[bt] #%d %s\n", i, messages[i]);
+//
+//        /* find first occurence of '(' or ' ' in message[i] and assume
+//         * everything before that is the file name. (Don't go beyond 0 though
+//         * (string terminator)*/
+//        int p = 0;
+//        while (messages[i][p] != '(' && messages[i][p] != ' '
+//                    && messages[i][p] != 0)
+//            ++p;
+//
+//        char syscom[256];
+//        sprintf(syscom, "addr2line %p -e %.*s", trace[i], p, messages[i]);
+//        //last parameter is the file name of the symbol
+//        if (system(syscom) < 0) {
+//            printf("ERROR: could not run necessary command to build stack trace\n");
+//            exit(-1);
+//        }
+//    }
+//
+//    exit(0);
+//}
+//
+//void initSighandler() {
+//    /* Install our signal handler */
+//    struct sigaction sa;
+//
+//    sa.sa_handler = (sighandler_t) /*(void *)*/ bt_sighandler;
+//    sigemptyset(&sa.sa_mask);
+//    sa.sa_flags = SA_RESTART;
+//
+//    sigaction(SIGSEGV, &sa, NULL);
+//    sigaction(SIGUSR1, &sa, NULL);
+//}
 
-    void *trace[16];
-    char **messages = (char **) NULL;
-    int i, trace_size = 0;
-
-    if (sig == SIGSEGV)
-        printf("Got signal %d, faulty address is %p, "
-                "from %p\n", sig, (void*) ctx.cr2, (void*) ctx.rip); //eip);
-    else
-        printf("Got signal %d\n", sig);
-
-    trace_size = backtrace(trace, 16);
-    /* overwrite sigaction with caller's address */
-    trace[1] = (void*) (long*) ctx.rip; //eip;
-    messages = backtrace_symbols(trace, trace_size);
-    /* skip first stack frame (points here) */
-    printf("[bt] Execution path:\n");
-    for (i = 1; i < trace_size; ++i) {
-        printf("[bt] #%d %s\n", i, messages[i]);
-
-        /* find first occurence of '(' or ' ' in message[i] and assume
-         * everything before that is the file name. (Don't go beyond 0 though
-         * (string terminator)*/
-        int p = 0;
-        while (messages[i][p] != '(' && messages[i][p] != ' '
-                    && messages[i][p] != 0)
-            ++p;
-
-        char syscom[256];
-        sprintf(syscom, "addr2line %p -e %.*s", trace[i], p, messages[i]);
-        //last parameter is the file name of the symbol
-        if (system(syscom) < 0) {
-            printf("ERROR: could not run necessary command to build stack trace\n");
-            exit(-1);
-        }
-    }
-
-    exit(0);
-}
-
-void initSighandler() {
-    /* Install our signal handler */
-    struct sigaction sa;
-
-    sa.sa_handler = (sighandler_t) /*(void *)*/ bt_sighandler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_RESTART;
-
-    sigaction(SIGSEGV, &sa, NULL);
-    sigaction(SIGUSR1, &sa, NULL);
-}
+//void initSighandler();
 
 int main(int argc, char** argv) {
     const int NPROCESSORS = 8;
-    initSighandler();
+//    initSighandler();
     STM_STARTUP();
 //    cout<<"Main-thread test 0."<<endl;
 //    test0(0);
 //    test0(1);
 //    test0(2);
 //    test0(100);
-    test0(1000000);
+//    test0(1000000);
 //    test0(5000000);
-    test0(10000000);
-//    cout<<"Spawned-thread test 0."<<endl;
-//    for (int n=1;n<=NPROCESSORS;++n) {
-//        cout<<n<<" threads"<<endl;
-//        ntest0_init(n, 0); run_test(n, ntest0_validate, ntest0_kernel);
-//        ntest0_init(n, 1); run_test(n, ntest0_validate, ntest0_kernel);
-//        ntest0_init(n, 10); run_test(n, ntest0_validate, ntest0_kernel);
-//        ntest0_init(n, 100); run_test(n, ntest0_validate, ntest0_kernel);
-//        ntest0_init(n, 1000); run_test(n, ntest0_validate, ntest0_kernel);
-//        ntest0_init(n, 10000); run_test(n, ntest0_validate, ntest0_kernel);
-//        ntest0_init(n, 100000); run_test(n, ntest0_validate, ntest0_kernel);
-//        if (n <= 8) { ntest0_init(n, 1000000/n); run_test(n, ntest0_validate, ntest0_kernel); }
-//        if (n <= 2) { ntest0_init(n, 10000000/n); run_test(n, ntest0_validate, ntest0_kernel); }
-//    }
+//    test0(10000000);
+    cout<<"Spawned-thread test 0."<<endl;
+    for (int n=1;n<=NPROCESSORS;++n) {
+        cout<<n<<" threads"<<endl;
+        ntest0_init(n, 0); run_test(n, ntest0_validate, ntest0_kernel);
+        ntest0_init(n, 1); run_test(n, ntest0_validate, ntest0_kernel);
+        ntest0_init(n, 10); run_test(n, ntest0_validate, ntest0_kernel);
+        ntest0_init(n, 100); run_test(n, ntest0_validate, ntest0_kernel);
+        ntest0_init(n, 1000); run_test(n, ntest0_validate, ntest0_kernel);
+        ntest0_init(n, 10000); run_test(n, ntest0_validate, ntest0_kernel);
+        ntest0_init(n, 100000); run_test(n, ntest0_validate, ntest0_kernel);
+        if (n <= 8) { ntest0_init(n, 1000000/n); run_test(n, ntest0_validate, ntest0_kernel); }
+        if (n <= 2) { ntest0_init(n, 10000000/n); run_test(n, ntest0_validate, ntest0_kernel); }
+    }
 //    cout<<"Spawned-thread test 1."<<endl;
 //    for (int n=1;n<=NPROCESSORS;++n) {
 //        cout<<n<<" threads"<<endl;
@@ -265,6 +267,9 @@ int main(int argc, char** argv) {
 ////        if (n <= 8) { ntest1_init(n, 1000000/n); run_test(n, ntest1_validate, ntest1_kernel); }
 ////        if (n <= 2) { ntest1_init(n, 10000000/n); run_test(n, ntest1_validate, ntest1_kernel); }
 //    }
+
+//    const int n = 2;
+//    ntest0_init(n, 1000); run_test(n, ntest0_validate, ntest0_kernel);
 
     STM_SHUTDOWN();
     return 0;

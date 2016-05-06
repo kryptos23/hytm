@@ -73,7 +73,6 @@ typedef struct Thread_void {
 
 
 
-//void* _Self, sigjmp_buf* envPtr, int aborted_in_software, int* ROFlag
 
 #if 1
 #  define STM_BEGIN(isReadOnly)         do { \
@@ -91,20 +90,20 @@ typedef struct Thread_void {
                                             unsigned ___htmattempts; \
                                             for (___htmattempts = 0; ___htmattempts < HTM_ATTEMPT_THRESH; ++___htmattempts) { \
                                                 ___status = XBEGIN(); \
-                                                if (___status == _XBEGIN_STARTED) { /* if we aborted */ \
+                                                if (___status == _XBEGIN_STARTED) { \
                                                     break; \
-                                                } else { \
+                                                } else { /* if we aborted */ \
                                                     ++___Self->AbortsHW; \
                                                 } \
                                             } \
-                                            if (___htmattempts < HTM_ATTEMPT_THRESH) continue; \
+                                            if (___htmattempts < HTM_ATTEMPT_THRESH) break; \
                                             /* STM attempt */ \
                                             /*DEBUG2 aout("thread "<<___Self->UniqID<<" started s/w tx attempt "<<(___Self->AbortsSW+___Self->CommitsSW)<<"; s/w commits so far="<<___Self->CommitsSW);*/ \
                                             /*DEBUG1 if ((___Self->CommitsSW % 50000) == 0) aout("thread "<<___Self->UniqID<<" has committed "<<___Self->CommitsSW<<" s/w txns");*/ \
+                                            DEBUG2 printf("thread %ld started s/w tx; attempts so far=%ld, s/w commits so far=%ld\n", ___Self->UniqID, (___Self->AbortsSW+___Self->CommitsSW), ___Self->CommitsSW); \
                                             DEBUG1 if ((___Self->CommitsSW % 25000) == 0) printf("thread %ld has committed %ld s/w txns (over all threads so far=%ld)\n", ___Self->UniqID, ___Self->CommitsSW, CommitTallySW); \
                                             ___Self->isFallback = 1; \
-                                            int SETJMP_RETVAL = sigsetjmp(STM_JMPBUF, 1); \
-                                            if (SETJMP_RETVAL) { \
+                                            if (sigsetjmp(STM_JMPBUF, 1)) { \
                                                 TxClearRWSets(STM_SELF); \
                                             } \
                                             /*TxStart(STM_SELF, &STM_JMPBUF, SETJMP_RETVAL, &STM_RO_FLAG);*/ \
