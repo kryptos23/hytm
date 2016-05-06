@@ -31,7 +31,7 @@
 		
 	}\EndPart
 	\Statex
-	\Comment{In general, would it better to buffer writes in tryC?}
+	%\Comment{In general, would it better to buffer writes in tryC?}
 	\Part{$\textit{read}_k(X_j)$}{\quad\Comment{fast-path}
 		
 		\State $\textit{ov}_j := v_j.\Read()$ \Comment{cached read} 
@@ -42,8 +42,8 @@
 	\Statex
 	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
 	
-	\State $\textit{or}_j := \Read(r_j)$ \Comment{uncached read}
-	\State $r_j.\Write({or}_j+2)$ \Comment{uncached write}
+	\State $\underline{\textit{or}_j := \Read(r_j)}$ \Comment{uncached read}
+	\State $\underline{r_j.\Write({or}_j+2)}$ \Comment{uncached write}
 	\State $v_j.\Write(v)$ \Comment{cached write}
 	\Return $\ok$ \EndReturn
 		

@@ -1,2 +1,13 @@
 %!TEX root = htm.tex
-\subsection{Instrumentation cost of fast-path/slow-path concurrency and importance of non-speculative primitives}
+\subsection{Lower bound}
+%
+\begin{theorem}
+\label{th:impossibility}
+There does not exist any progressive opaque HyTM implementation $\mathcal{M}$ with invisible reads such that in every execution $E$ of $\mathcal{M}$, any t-read operation $op_k$ performed by some slow-path transaction $T_k \in \ms{txns}(E)$
+performs $O(1)$ steps.
+\end{theorem}
+%
+\begin{proof}
+ 
+\end{proof}
+
