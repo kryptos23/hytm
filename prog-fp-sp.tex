@@ -19,7 +19,7 @@
 	\Statex
 	\Part{$\textit{read}_k(X_j)$}\quad\Comment{fast-path}{
 		\State $\textit{ov}_j := \Read(v_j)$ \Comment{cached read} \label{line:lin1}
-		\State $\textit{or}_j := \Read(r_j)$ \Comment{uncached read}
+		 \State $\underline{\textit{or}_j := \Read(r_j)}$ \Comment{uncached read}
 		\If{$\textit{or}_j$ $\mathrel{\&}1$}  \label{line:hread}
 			\Return $A_k$ \EndReturn
 		\EndIf

@@ -2,6 +2,8 @@
 \section{Correctness proofs}
 \label{app:proofs}
 %
+We will prove the opacity of Algorithm~\ref{alg:inswrite} even if some of accesses performed by fast-path transactions are direct (as indicated in the pseudocode).
+%
 \begin{lemma}
 \label{lm:opacityh1}
 Algorithm~\ref{alg:inswrite} implements an opaque TM.
@@ -186,7 +188,7 @@ This is analogous to the above case.
 (\textit{Case \RNum{4}:}) $T_i$ and $T_k$ are fast-path transactions.
 Thus, $T_k$ returns $C_k$ 
 before the read of the base object associated with $X_m$ by $T_j$ in Line~\ref{line:read2}, but before $T_i$
-returns $C_i$ (this follows from Observations~\ref{ob:one} and \ref{ob:two}).
+returns $C_i$ (this follows from Observation).
 Consequently, $\Read_j(X_m)$ must read the value of $X_m$ to be $v'$ and return $v'$---contradiction.
 %
 
