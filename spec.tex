@@ -1,6 +1,8 @@
 %!TEX root = htm.tex
 \subsection{Lower bound}
 %
+\sr{Result assumes no cached accesses inside fast-path}
+%
 \begin{theorem}
 \label{th:impossibility}
 There does not exist any progressive opaque HyTM implementation $\mathcal{M}$ with invisible reads such that in every execution $E$ of $\mathcal{M}$, any t-read operation $op_k$ performed by some slow-path transaction $T_k \in \ms{txns}(E)$
@@ -8,6 +10,142 @@ performs $O(1)$ steps.
 \end{theorem}
 %
 \begin{proof}
- 
+Suppose by contradiction that there exists a progressive opaque HyTM implementation $\mathcal{M}$ with invisible reads such that in every execution $E$ of $\mathcal{M}$, any t-read operation $op_k$ performed by some slow-path transaction $T_k \in \ms{txns}(E)$
+performs $O(1)$ steps.
+
+For all $i\in \{1,\ldots , m\}$, let $v$ be the initial value of t-object $X_i$.
+Let $\pi^{m}$ denote the complete step contention-free execution of a slow-path transaction
+$T_{\phi}$ that performs ${m}$ t-reads: $\Read_{\phi}(X_1)\cdots \Read_{\phi}(X_{m})$
+such that for all $i\in \{1,\ldots , m \}$, $\Read_{\phi}(X_i) \rightarrow v$.
+%
+\begin{claim}
+\label{cl:readdap}
+For all $i\in \mathbb{N}$, $M$ has an execution of the form $\pi^{i-1}\cdot \rho^i\cdot \alpha^i$ where,
+%
+\begin{itemize}
+\item
+$\pi^{i-1}$ is the complete step contention-free execution of slow-path read-only transaction $T_{\phi}$ that performs
+$(i-1)$ t-reads: $\Read_{\phi}(X_1)\cdots \Read_{\phi}(X_{i-1})$,
+\item
+$\rho^i$ is the t-complete step contention-free execution of a fast-path transaction $T_{i}$
+that writes $nv_i\neq v_i$ to $X_i$ and commits,
+\item
+$\alpha_i$ is the complete step contention-free execution fragment of $T_{\phi}$ that performs its $i^{th}$ t-read:
+$\Read_{\phi}(X_i) \rightarrow nv_i$.
+\end{itemize}
+%
+\end{claim}
+%
+\begin{proof}
+%
+$M$ has an execution of the form $\rho^i\cdot \pi^{i-1}$.
+Since $\Dset(T_k) \cap \Dset(T_{i}) =\emptyset$ in $\rho^i\cdot \pi^{i-1}$,
+by Claim~\ref{cl:hytm}, transactions $T_{\phi}$ and $T_i$ do not contend
+on any base object in execution $\rho^i\cdot \pi^{i-1}$.
+Thus, $\rho^i\cdot \pi^{i-1}$ is also an execution of $M$.
+
+By assumption of strict serializability, $\rho^i\cdot \pi^{i-1} \cdot \alpha_i$ is an execution
+of $M$ in which the t-read of $X_i$ performed by $T_{\phi}$ must return $nv_i$.
+But $\rho^i \cdot \pi^{i-1} \cdot \alpha_i$ is indistinguishable to $T_{\phi}$ from
+$\pi^{i-1}\cdot \rho^i \cdot \alpha_i$.
+Thus, $M$ has an execution of the form $\pi^{i-1}\cdot \rho^i \cdot \alpha_i$.
+\end{proof}
+%
+By Claim~\ref{cl:readdap}, for all $i\in \{2,\ldots, m\}$, $M$ has an execution of the form 
+$E^{i}=\pi^{i-1}\cdot \rho^i \cdot \alpha_i$.
+
+For each $i\in \{2,\ldots, m\}$, $j\in \{1,2\}$ and $\ell \leq (i-1)$, 
+we now define an execution of the form  $\mathbb{E}_{j\ell}^{i}=\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$
+as follows:
+%
+\begin{itemize}
+\item
+%$\rho^m$ is defined as above;
+$\beta^{\ell}$ is the t-complete step contention-free execution fragment of a transaction $T_{\ell}$
+that writes $nv_{\ell}\neq v$ to $X_{\ell}$ and commits
+\item
+$\alpha_1^i$ (and resp. $\alpha_2^i$) is the complete step contention-free execution fragment of 
+$\Read_{\phi}(X_i) \rightarrow v$ (and resp. $\Read_{\phi}(X_i) \rightarrow A_{\phi}$).
+\end{itemize}
+%
+\begin{claim}
+\label{cl:ic2}
+For all $i\in \{2,\ldots, m\}$ and $\ell \leq (i-1)$, $M$ has an execution of the form $\mathbb{E}_{1\ell}^{i}$ or 
+$\mathbb{E}_{2\ell}^{i}$.
+\end{claim}
+%
+\begin{proof}
+%
+For all $i \in \{2,\ldots, m\}$, $\pi^{i-1}$
+is an execution of $M$.
+By assumption of invisible reads, $T_{{\ell}}$ must be committed in $\pi^{i-1}\cdot \rho^{\ell}$
+and $M$ has an execution of the form $\pi^{i-1}\cdot \beta^{\ell}$.
+By the same reasoning, since $T_i$ and $T_{\ell}$ have disjoint data sets,
+$M$ has an execution of the form $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$.
+
+Since the configuration after $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ is quiescent,
+by ICF TM-liveness, $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ extended with $\Read_{\phi}(X_i)$
+must return a matching response.
+If $\Read_{\phi}(X_i) \rightarrow v_i$, then clearly $\mathbb{E}_{1}^{i}$
+is an execution of $M$ with $T_{\phi}, T_{i-1}, T_i$ being a valid serialization
+of transactions.
+If $\Read_{\phi}(X_i) \rightarrow A_{\phi}$, the same serialization
+justifies an opaque execution.
+
+Suppose by contradiction that there exists an execution of $M$ such that
+$\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ is extended with the complete execution
+of $\Read_{\phi}(X_i) \rightarrow r$; $r \not\in \{A_{\phi},v\}$. 
+The only plausible case to analyse is when $r=nv$.
+Since $\Read_{\phi}(X_i)$ returns the value of $X_i$ updated by $T_i$, 
+the only possible serialization for transactions is $T_{\ell}$, $T_i$, $T_{\phi}$; but $\Read_{\phi}(X_{\ell})$
+performed by $T_k$ that returns the initial value $v$
+is not legal in this serialization---contradiction.
+\end{proof}
+%
+We now prove that, for all $i\in \{2,\ldots, m\}$, $j\in \{1,2\}$ and $\ell \leq (i-1)$, transaction $T_{\phi}$ must access
+$(i-1)$ different base objects during the execution of $\Read_{\phi}(X_i)$ in the execution
+$\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$.
+
+By the assumption of invisible reads,
+the execution $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$
+is indistinguishable to
+transactions $T_{\ell}$ and $T_{i}$
+from the execution ${\tilde \pi}^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$, where $\Rset(T_{\phi})=\emptyset$
+in ${\tilde \pi}^{i-1}$.
+But transactions $T_{\ell}$ and $T_{i}$ access mutually disjoint data sets in ${\tilde \pi}^{i-1}\cdot \beta^{\ell}\cdot \rho^i$ and by Lemma~\ref{cl:hytm},
+they cannot contend on the same base object in this execution.
+% Thus, $\delta(\ell) \cap \delta(i)=\emptyset$, where $\delta(\ell)$ (and resp. $\delta(i)$) denotes
+% the set of base objects to which $T_{\ell}$ (and resp. $T_i$) applies nontrivial primitives
+% in the execution fragment $\rho^{\ell}$ (and resp. $\rho^i$).
+
+Consider the $(i-1)$ different executions: 
+$\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot \rho^i$.
+For all $\ell, \ell' \leq (i-1)$;$\ell' \neq \ell$, 
+$M$ has an execution of the form $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \beta^{\ell'}$
+in which transactions $T_{\ell}$ and $T_{\ell'}$ access mutually disjoint data sets.
+By weak invisible reads and Lemma~\ref{lm:dap}, the pairs of transactions $T_{\ell'}$, $T_{i}$ and $T_{\ell'}$, $T_{\ell}$
+do not contend on any base object in this execution.
+This implies that $\pi^{i-1}\cdot \beta^{\ell} \cdot \beta^{\ell'} \cdot \rho^i$ is an execution of $M$ in which
+transactions $T_{\ell}$ and $T_{\ell'}$ each apply nontrivial primitives
+to mutually disjoint sets of base objects in the execution fragments $\beta^{\ell}$ and $\beta^{\ell'}$ respectively 
+(by Lemma~\ref{lm:dap}).
+% Thus, $\pi^{i-1}\cdot \beta^{\ell}\cdot \beta^{\ell'}$ is an execution of $M$.
+% Similarly, $\pi^{i-1}\cdot \beta^{\ell}\cdot \beta^{\ell'} \cdot \rho^i$ is also an execution of $M$.
+% It follows that, in any two executions $\pi^{i-1}\cdot\rho^{\ell'}\cdot \rho^i$ and $\pi^{i-1}\cdot\rho^{\ell}\cdot \rho^i$,
+% $T_{\ell}$ and $T_{\ell'}$ apply nontrivial primitives to disjoint sets of base objects.
+
+This implies that for any $j\in \{1,2\}$, $\ell \leq (i-1)$, the configuration $C^i$ after $E^i$ differs from the configurations
+after $\mathbb{E}_{j\ell}^{i}$ only in the states of the base objects that are accessed in the fragment $\beta^{\ell}$.
+Consequently, transaction $T_{\phi}$ must access at least $i-1$ different base objects
+in the execution fragment $\pi_j^i$
+to distinguish configuration $C^i$ from the configurations
+that result after the $(i-1)$ different executions 
+$\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot \rho^i$ respectively.
+
+Thus, for all $i \in \{2,\ldots, m\}$, transaction $T_{\phi}$ must perform at least $i-1$ steps 
+while executing the $i^{th}$ t-read in $\pi_{j}^i$ and $T_{\phi}$ itself must perform 
+$\sum\limits_{i=1}^{m-1} i=\frac{m(m-1)}{2}$ steps.
+
+
 \end{proof}
 
