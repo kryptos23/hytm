@@ -101,20 +101,22 @@ and $m \in \{\shared, \exclusive\}$ is an access \emph{mode}.
 The triple $(b, v, m)$ is added to the tracking set when $i$ performs a cached
 rmw access of $b$, where $m$ is set to $\exclusive$ if the access is
 nontrivial, and to $\shared$ otherwise.  
-As with \cite{htmdisc15}, we assume that there exists some constant $\TS$ (representing the size of the L1 cache)
-such that the condition $|\tau_i| \leq \TS$ must always hold; this
-condition will be enforced by our model.
+%we assume that there exists some constant $\TS$ (representing the size of the L1 cache)
+% such that the condition $|\tau_i| \leq \TS$ must always hold; this
+% condition will be enforced by our model.
 A base object $b$ is \emph{present} in $\tau_i$ with mode $m$ if $\exists v, (b,v,m) \in \tau_i$.
 
 A trivial (resp.\ nontrivial) 
 cached primitive $\langle g,h \rangle$ applied to $b$ 
-by process $i$ first checks the condition $|\tau_i|=\TS$ and if so, it
-sets $\tau_i=\emptyset$ and immediately returns $\bot$ (we call this event a
-\emph{capacity abort}). 
-We assume that $\TS$ is large enough so that no transaction 
-with data set of size $1$ can incur a capacity abort.
-%
-If the transaction does not incur a capacity abort, the process checks whether $b$ is present in exclusive
+by process $i$ 
+% first checks the condition $|\tau_i|=\TS$ and if so, it
+% sets $\tau_i=\emptyset$ and immediately returns $\bot$ (we call this event a
+% \emph{capacity abort}). 
+% We assume that $\TS$ is large enough so that no transaction 
+% with data set of size $1$ can incur a capacity abort.
+% %
+% If the transaction does not incur a capacity abort, the process 
+checks whether $b$ is present in exclusive
 (resp.\ any) mode in $\tau_j$ 
 for any $j\neq i$. If so, $\tau_i$ is set to $\emptyset$ and the
 primitive returns $\bot$. 
@@ -132,6 +134,9 @@ if, in a configuration $C$ where  $(b,v,\exclusive)\in\tau_i$
 (resp.\ any \emph{nontrivial} primitive) to $b$, then $\tau_i$ becomes
 \emph{invalid} and any subsequent cached primitive invoked by $i$
 sets $\tau_i$ to $\emptyset$ and returns $\bot$. We refer to this event as a \emph{tracking set abort}.
+
+Note that hardware transactions may also abort spuriously, or because of unsupported operations~\cite{Rei12}, or due to \emph{capacity} aborts. 
+Since modelling these aborts will not affect our claims and proofs, except make for a more cumbersome presentation, we only consider capacity aborts in this paper. 
 
 Any transaction $T_k \in \ms{txns}(E)$ that performs at least one cached access necessarily performs a \emph{cache-commit} primitive as the last event of $E|k$. 
 A \emph{cache-commit} primitive issued by process $i$ with

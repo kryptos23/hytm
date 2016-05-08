@@ -3,6 +3,20 @@
 %
 \sr{Result assumes no cached accesses inside fast-path}
 %
+\begin{lemma}
+\label{lm:hytm}
+%
+Let $\mathcal{M}$ be any progressive HyTM implementation.
+Let $E\cdot E_1 \cdots E_i \cdot E_{i+1} \cdots E_m$ be any execution of $\mathcal{M}$ where
+$E_i$ is the step contention-free
+execution fragment of transaction $T_i \not\in \ms{txns}(E)$,
+for all $i\in \{1,\ldots , m\}$
+and any two transactions in $E_1 \cdots E_m$ do not conflict.
+For all $i,j=1,\ldots,m$, $i\neq j$, if $T_i$ is fast-path, then $T_i$
+and $T_j$ do not contend on a
+base object in  $E\cdot E_1 \cdots E_{m} \cdots E_m$~\cite{htmdisc15}.
+\end{lemma}
+
 \begin{theorem}
 \label{th:impossibility}
 There does not exist any progressive opaque HyTM implementation $\mathcal{M}$ with invisible reads such that in every execution $E$ of $\mathcal{M}$, any t-read operation $op_k$ performed by some slow-path transaction $T_k \in \ms{txns}(E)$
@@ -40,7 +54,7 @@ $\Read_{\phi}(X_i) \rightarrow nv_i$.
 %
 $M$ has an execution of the form $\rho^i\cdot \pi^{i-1}$.
 Since $\Dset(T_k) \cap \Dset(T_{i}) =\emptyset$ in $\rho^i\cdot \pi^{i-1}$,
-by Claim~\ref{cl:hytm}, transactions $T_{\phi}$ and $T_i$ do not contend
+by Lemma~\ref{lm:hytm}, transactions $T_{\phi}$ and $T_i$ do not contend
 on any base object in execution $\rho^i\cdot \pi^{i-1}$.
 Thus, $\rho^i\cdot \pi^{i-1}$ is also an execution of $M$.
 
@@ -123,12 +137,11 @@ $\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot
 For all $\ell, \ell' \leq (i-1)$;$\ell' \neq \ell$, 
 $M$ has an execution of the form $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \beta^{\ell'}$
 in which transactions $T_{\ell}$ and $T_{\ell'}$ access mutually disjoint data sets.
-By weak invisible reads and Lemma~\ref{lm:dap}, the pairs of transactions $T_{\ell'}$, $T_{i}$ and $T_{\ell'}$, $T_{\ell}$
+By invisible reads and Lemma~\ref{lm:hytm}, the pairs of transactions $T_{\ell'}$, $T_{i}$ and $T_{\ell'}$, $T_{\ell}$
 do not contend on any base object in this execution.
 This implies that $\pi^{i-1}\cdot \beta^{\ell} \cdot \beta^{\ell'} \cdot \rho^i$ is an execution of $M$ in which
 transactions $T_{\ell}$ and $T_{\ell'}$ each apply nontrivial primitives
-to mutually disjoint sets of base objects in the execution fragments $\beta^{\ell}$ and $\beta^{\ell'}$ respectively 
-(by Lemma~\ref{lm:dap}).
+to mutually disjoint sets of base objects in the execution fragments $\beta^{\ell}$ and $\beta^{\ell'}$ respectively.
 % Thus, $\pi^{i-1}\cdot \beta^{\ell}\cdot \beta^{\ell'}$ is an execution of $M$.
 % Similarly, $\pi^{i-1}\cdot \beta^{\ell}\cdot \beta^{\ell'} \cdot \rho^i$ is also an execution of $M$.
 % It follows that, in any two executions $\pi^{i-1}\cdot\rho^{\ell'}\cdot \rho^i$ and $\pi^{i-1}\cdot\rho^{\ell}\cdot \rho^i$,
