@@ -11,7 +11,7 @@ performs $O(1)$ steps.
 %
 \begin{proof}
 Suppose by contradiction that there exists a progressive opaque HyTM implementation $\mathcal{M}$ with invisible reads such that in every execution $E$ of $\mathcal{M}$, any t-read operation $op_k$ performed by some slow-path transaction $T_k \in \ms{txns}(E)$
-performs $O(1)$ steps.
+performs $\kappa$ steps.
 
 For all $i\in \{1,\ldots , m\}$, let $v$ be the initial value of t-object $X_i$.
 Let $\pi^{m}$ denote the complete step contention-free execution of a slow-path transaction
@@ -44,7 +44,7 @@ by Claim~\ref{cl:hytm}, transactions $T_{\phi}$ and $T_i$ do not contend
 on any base object in execution $\rho^i\cdot \pi^{i-1}$.
 Thus, $\rho^i\cdot \pi^{i-1}$ is also an execution of $M$.
 
-By assumption of strict serializability, $\rho^i\cdot \pi^{i-1} \cdot \alpha_i$ is an execution
+By opacity, $\rho^i\cdot \pi^{i-1} \cdot \alpha_i$ is an execution
 of $M$ in which the t-read of $X_i$ performed by $T_{\phi}$ must return $nv_i$.
 But $\rho^i \cdot \pi^{i-1} \cdot \alpha_i$ is indistinguishable to $T_{\phi}$ from
 $\pi^{i-1}\cdot \rho^i \cdot \alpha_i$.
@@ -84,7 +84,7 @@ By the same reasoning, since $T_i$ and $T_{\ell}$ have disjoint data sets,
 $M$ has an execution of the form $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$.
 
 Since the configuration after $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ is quiescent,
-by ICF TM-liveness, $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ extended with $\Read_{\phi}(X_i)$
+$\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ extended with $\Read_{\phi}(X_i)$
 must return a matching response.
 If $\Read_{\phi}(X_i) \rightarrow v_i$, then clearly $\mathbb{E}_{1}^{i}$
 is an execution of $M$ with $T_{\phi}, T_{i-1}, T_i$ being a valid serialization
@@ -143,8 +143,7 @@ that result after the $(i-1)$ different executions
 $\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot \rho^i$ respectively.
 
 Thus, for all $i \in \{2,\ldots, m\}$, transaction $T_{\phi}$ must perform at least $i-1$ steps 
-while executing the $i^{th}$ t-read in $\pi_{j}^i$ and $T_{\phi}$ itself must perform 
-$\sum\limits_{i=1}^{m-1} i=\frac{m(m-1)}{2}$ steps.
+while executing the $i^{th}$ t-read in $\pi_{j}^i$.
 
 
 \end{proof}
