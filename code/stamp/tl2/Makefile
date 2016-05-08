@@ -9,12 +9,14 @@
 # Variables
 # ==============================================================================
 
+EXTRAFLAGS := $(EXTRAFLAGS1) $(EXTRAFLAGS2) $(EXTRAFLAGS3) $(EXTRAFLAGS4)
 CC      := gcc
-CFLAGS  := -g -Wall -Winline -O3
+CFLAGS  := -g -Wall -Winline -O3 $(EXTRAFLAGS)
 #CFLAGS  += -m32
 #CFLAGS  += -DTL2_OPTIM_HASHLOG
 #CFLAGS  += -DTL2_RESIZE_HASHLOG
 LD      := gcc
+LDFLAGS += $(EXTRAFLAGS)
 
 LIBTL2 := libtl2.a
 
@@ -30,8 +32,8 @@ RANLIB  := ranlib
 RM := rm -f
 
 # ADD GPROF INSTRUMENTATION
-CFLAGS += -pg
-LDFLAGS += -pg -Winline
+#CFLAGS += -pg
+#LDFLAGS += -pg -Winline
 
 # ==============================================================================
 # Rules

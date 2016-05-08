@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #define TM_NAME "HyTM2"
-#define HTM_ATTEMPT_THRESH 0
+//#define HTM_ATTEMPT_THRESH 0
 #ifndef HTM_ATTEMPT_THRESH
     #define HTM_ATTEMPT_THRESH 5
 #endif
@@ -17,8 +17,8 @@ extern "C" {
 //#define DEBUG_PRINT
 #define DEBUG_PRINT_LOCK
 
-#define DEBUG0 if(1)
-#define DEBUG1 DEBUG0 if(0)
+#define DEBUG0 if(0)
+#define DEBUG1 DEBUG0 if(1)
 #define DEBUG2 DEBUG1 if(0)
 #define DEBUG3 DEBUG2 if(0)
 
@@ -77,20 +77,20 @@ void     TxInitThread  (void*, long id);
 int      TxCommit      (void*);
 void     TxAbort       (void*);
 
-//intptr_t TxLoad(void* Self, volatile intptr_t* addr);
-//void TxStore(void* Self, volatile intptr_t* addr, intptr_t value);
+intptr_t TxLoad(void* Self, volatile intptr_t* addr);
+void TxStore(void* Self, volatile intptr_t* addr, intptr_t value);
 
-long TxLoadl(void* Self, volatile long* addr);
-//intptr_t TxLoadp(void* Self, volatile intptr_t* addr);
-float TxLoadf(void* Self, volatile float* addr);
-
-long TxStorel(void* Self, volatile long* addr, long value);
-//intptr_t TxStorep(void* Self, volatile intptr_t* addr, intptr_t value);
-float TxStoref(void* Self, volatile float* addr, float value);
-
-//long TxStoreLocall(void* Self, volatile long* addr, long value);
-//intptr_t TxStoreLocalp(void* Self, volatile intptr_t* addr, intptr_t value);
-//float TxStoreLocalf(void* Self, volatile float* addr, float value);
+//long TxLoadl(void* Self, volatile long* addr);
+////intptr_t TxLoadp(void* Self, volatile intptr_t* addr);
+//float TxLoadf(void* Self, volatile float* addr);
+//
+//long TxStorel(void* Self, volatile long* addr, long value);
+////intptr_t TxStorep(void* Self, volatile intptr_t* addr, intptr_t value);
+//float TxStoref(void* Self, volatile float* addr, float value);
+//
+////long TxStoreLocall(void* Self, volatile long* addr, long value);
+////intptr_t TxStoreLocalp(void* Self, volatile intptr_t* addr, intptr_t value);
+////float TxStoreLocalf(void* Self, volatile float* addr, float value);
 
 void     TxOnce        ();
 void     TxShutdown    ();

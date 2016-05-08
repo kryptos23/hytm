@@ -1,13 +1,64 @@
 #ifndef HYTM1_H
 #define HYTM1_H 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define TM_NAME "HyTM1"
+//#define HTM_ATTEMPT_THRESH 0
+#ifndef HTM_ATTEMPT_THRESH
+    #define HTM_ATTEMPT_THRESH 5
+#endif
+#define TXNL_MEM_RECLAMATION
+
+#define MAX_RETRIES 100000
+
+//#define DEBUG_PRINT
+#define DEBUG_PRINT_LOCK
+
+#define DEBUG0 if(0)
+#define DEBUG1 DEBUG0 if(1)
+#define DEBUG2 DEBUG1 if(0)
+#define DEBUG3 DEBUG2 if(0)
+
+#ifdef DEBUG_PRINT
+    #define aout(x) { \
+        cout<<x<<endl; \
+    }
+#elif defined(DEBUG_PRINT_LOCK)
+    #define aout(x) { \
+        acquireLock(&globallock); \
+        cout<<x<<endl; \
+        releaseLock(&globallock); \
+    }
+#else
+    #define aout(x) 
+#endif
+
+#define debug(x) (#x)<<"="<<x
+//#define LONG_VALIDATION
+#define VALIDATE_INV(x) VALIDATE (x)->validateInvariants()
+#define VALIDATE if(0)
+#define ERROR(x) { \
+    cerr<<"ERROR: "<<x<<endl; \
+    printStackTrace(); \
+    exit(-1); \
+}
+
+// just for debugging
+extern volatile int globallock;
+
+#define BIG_CONSTANT(x) (x##LLU)
+
+
+
+
+
+    
 #include <stdint.h>
 #include "rtm.h"
 #include "tmalloc.h"
-
-//enum hytm1_path { FALLBACK, FAST };
-
-typedef struct _Thread Thread;
 
 #  include <setjmp.h>
 #  define SIGSETJMP(env, savesigs)      sigsetjmp(env, savesigs)
@@ -17,41 +68,38 @@ typedef struct _Thread Thread;
  * Prototypes
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+void     TxClearRWSets (void* _Self);
+void     TxStart       (void*, sigjmp_buf*, int, int*);
+void*    TxNewThread   ();
 
-void     TxStart       (Thread*, sigjmp_buf*, int, int*);
-Thread*  TxNewThread   ();
+void     TxFreeThread  (void*);
+void     TxInitThread  (void*, long id);
+int      TxCommit      (void*);
+void     TxAbort       (void*);
 
-void     TxFreeThread  (Thread*);
-void     TxInitThread  (Thread*, long id);
-int      TxCommit      (Thread*);
-void     TxAbort       (Thread*);
+intptr_t TxLoad(void* Self, volatile intptr_t* addr);
+void TxStore(void* Self, volatile intptr_t* addr, intptr_t value);
 
-//intptr_t TxLoad(Thread* Self, volatile intptr_t* addr);
-//void TxStore(Thread* Self, volatile intptr_t* addr, intptr_t value);
-
-long TxLoadl(Thread* Self, volatile long* addr);
-//intptr_t TxLoadp(Thread* Self, volatile intptr_t* addr);
-float TxLoadf(Thread* Self, volatile float* addr);
-
-long TxStorel(Thread* Self, volatile long* addr, long value);
-//intptr_t TxStorep(Thread* Self, volatile intptr_t* addr, intptr_t value);
-float TxStoref(Thread* Self, volatile float* addr, float value);
-
-//long TxStoreLocall(Thread* Self, volatile long* addr, long value);
-//intptr_t TxStoreLocalp(Thread* Self, volatile intptr_t* addr, intptr_t value);
-//float TxStoreLocalf(Thread* Self, volatile float* addr, float value);
+//long TxLoadl(void* Self, volatile long* addr);
+////intptr_t TxLoadp(void* Self, volatile intptr_t* addr);
+//float TxLoadf(void* Self, volatile float* addr);
+//
+//long TxStorel(void* Self, volatile long* addr, long value);
+////intptr_t TxStorep(void* Self, volatile intptr_t* addr, intptr_t value);
+//float TxStoref(void* Self, volatile float* addr, float value);
+//
+////long TxStoreLocall(void* Self, volatile long* addr, long value);
+////intptr_t TxStoreLocalp(void* Self, volatile intptr_t* addr, intptr_t value);
+////float TxStoreLocalf(void* Self, volatile float* addr, float value);
 
 void     TxOnce        ();
 void     TxShutdown    ();
 
-void*    TxAlloc       (Thread*, size_t);
-void     TxFree        (Thread*, void*);
+void*    TxAlloc       (void*, size_t);
+void     TxFree        (void*, void*);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* HYTM1_H */
+#endif

@@ -958,6 +958,7 @@ useAfterFreeHandler (int signum, siginfo_t* siginfo, void* context)
 
     if (Self == NULL || Self->Mode == TIDLE) {
         psignal(signum, NULL);
+        perror("ERROR: something went wrong");
         exit(siginfo->si_errno);
     }
 

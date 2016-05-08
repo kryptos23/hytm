@@ -10,11 +10,13 @@ LIBNAME=hytm1
 # Variables
 # ==============================================================================
 
+EXTRAFLAGS := $(EXTRAFLAGS1) $(EXTRAFLAGS2) $(EXTRAFLAGS3) $(EXTRAFLAGS4)
 CC       := g++
-CFLAGS   := -g -Wall -Winline -O3
+CFLAGS   := -g -Wall -Winline -O3 $(EXTRAFLAGS)
 CPP      := g++
-CPPFLAGS := -g -Wall -Winline -O3
+CPPFLAGS := -g -Wall -Winline -O3 $(EXTRAFLAGS)
 LD       := g++
+LDFLAGS  += $(EXTRAFLAGS)
 
 LIBHYTM  := lib$(LIBNAME).a
 
@@ -22,6 +24,11 @@ AR       := ar
 RANLIB   := ranlib
 
 RM := rm -f
+
+# ADD GPROF INSTRUMENTATION
+#CPPFLAGS += -pg
+#CFLAGS += -pg
+#LDFLAGS += -pg -Winline
 
 # ==============================================================================
 # Rules

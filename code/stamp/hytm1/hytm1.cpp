@@ -21,26 +21,69 @@
 #include <signal.h>
 #include "platform.h"
 #include "hytm1.h"
+#include "stm.h"
 #include "tmalloc.h"
 #include "util.h"
+#include "../murmurhash/MurmurHash3_impl.h"
+#include <iostream>
+#include <execinfo.h>
+#include <stdint.h>
+using namespace std;
 
-#ifndef CACHE_LINE_SIZE
-#define CACHE_LINE_SIZE           64
-#endif
+//#define USE_FULL_HASHTABLE
+//#define USE_BLOOM_FILTER
 
-enum hytm1_config {
-    INIT_WRSET_NUM_ENTRY = 1024,
-    INIT_RDSET_NUM_ENTRY = 8192,
-    INIT_LOCAL_NUM_ENTRY = 1024,
-};
+// just for debugging
+volatile int globallock = 0; // for printf and cout
+volatile int tleLock = 0; // for tle software path
 
-#define HTM_RETRY_THRESH          5
+void printStackTrace() {
+  void *trace[16];
+  char **messages = (char **)NULL;
+  int i, trace_size = 0;
 
-typedef uintptr_t vwLock; /* (Version,LOCKBIT) */
+  trace_size = backtrace(trace, 16);
+  messages = backtrace_symbols(trace, trace_size);
+  /* skip first stack frame (points here) */
+  printf("  [bt] Execution path:\n");
+  for (i=1; i<trace_size; ++i)
+  {
+    printf("    [bt] #%d %s\n", i, messages[i]);
 
-volatile int globallock = 0;
+    /**
+     * find first occurrence of '(' or ' ' in message[i] and assume
+     * everything before that is the file name.
+     */
+    int p = 0; //size_t p = 0;
+    while(messages[i][p] != '(' && messages[i][p] != ' '
+            && messages[i][p] != 0)
+        ++p;
+    
+    char syscom[256];
+    sprintf(syscom,"echo \"    `addr2line %p -e %.*s`\"", trace[i], p, messages[i]);
+        //last parameter is the file name of the symbol
+    if (system(syscom) < 0) {
+        printf("ERROR: could not run necessary command to build stack trace\n");
+        exit(-1);
+    };
+  }
 
-void acquireLock(volatile int *lock) {
+  exit(-1);
+}
+
+void initSighandler() {
+    /* Install our signal handler */
+    struct sigaction sa;
+
+    sa.sa_handler = (sighandler_t) /*(void *)*/ printStackTrace;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART;
+
+    sigaction(SIGSEGV, &sa, NULL);
+    sigaction(SIGUSR1, &sa, NULL);
+}
+
+__INLINE__ void acquireLock(volatile int *lock) {
     while (1) {
         if (*lock) {
             __asm__ __volatile__("pause;");
@@ -52,498 +95,698 @@ void acquireLock(volatile int *lock) {
     }
 }
 
-void releaseLock(volatile int *lock) {
+__INLINE__ void releaseLock(volatile int *lock) {
     *lock = 0;
 }
 
-/* Read set and write-set log entry */
-typedef struct _AVPair {
-    struct _AVPair* Next;
-    struct _AVPair* Prev;
-    union {
-        volatile long* l;
-        volatile float* f;
-        volatile intptr_t* p;
-    } addr;
-    //volatile intptr_t* Addr;
-    //intptr_t Valu;
-    union {
-        long l;
-#ifdef __LP64__
-        float f[2];
-#else
-        float f[1];
-#endif
-        intptr_t p;
-    } value;
-    volatile vwLock* LockFor; /* points to the vwLock covering Addr */
-    vwLock rdv; /* read-version @ time of 1st read - observed */
-    struct _Thread* Owner;
-    long Ordinal;
-} AVPair;
 
-typedef struct _Log {
-    AVPair* List;
-    AVPair* put; /* Insert position - cursor */
-    AVPair* tail; /* CCM: Pointer to last valid entry */
-    AVPair* end; /* CCM: Pointer to last entry */
-    long ovf; /* Overflow - request to grow */
-} Log;
 
-typedef struct _TypeLogs {
-    Log l;
-    Log f;
-    Log p;
-} TypeLogs;
 
-struct _Thread {
-    long UniqID;
-    volatile long Retries;
-    int* ROFlag;
-//    int IsRO; // skip so that first 8 variables fit in a single cache line
-    int isFallback;
-    long Starts;
-    long Aborts; /* Tally of # of aborts */
-    unsigned long long rng;
-    unsigned long long xorrng [1];
-    tmalloc_t* allocPtr; /* CCM: speculatively allocated */
-    tmalloc_t* freePtr; /* CCM: speculatively free'd */
-    TypeLogs rdSet;
-    TypeLogs wrSet;
-    TypeLogs LocalUndo;
-    sigjmp_buf* envPtr;
-}; __attribute__((aligned(CACHE_LINE_SIZE)))
 
-__INLINE__ unsigned long long MarsagliaXORV(unsigned long long x) {
-    if (x == 0) {
-        x = 1;
+
+
+
+
+
+
+
+/**
+ * 
+ * TRY-LOCK IMPLEMENTATION AND LOCK TABLE
+ * 
+ */
+
+class Thread;
+
+#include <map>
+map<const void*, unsigned> addrToIx;
+map<unsigned, const void*> ixToAddr;
+volatile unsigned rename_ix = 0;
+#include <sstream>
+string stringifyIndex(unsigned ix) {
+#if 1
+    const unsigned NCHARS = 36;
+    stringstream ss;
+    if (ix == 0) return "0";
+    while (ix > 0) {
+        unsigned newchar = ix % NCHARS;
+        if (newchar < 10) {
+            ss<<(char)(newchar+'0');
+        } else {
+            ss<<(char)((newchar-10)+'A');
+        }
+        ix /= NCHARS;
     }
-    x ^= x << 6;
-    x ^= x >> 21;
-    x ^= x << 7;
-    return x;
+    string backwards = ss.str();
+    stringstream ssr;
+    for (string::reverse_iterator rit = backwards.rbegin(); rit != backwards.rend(); ++rit) {
+        ssr<<*rit;
+    }
+    return ssr.str();
+#elif 0
+    const unsigned NCHARS = 26;
+    stringstream ss;
+    if (ix == 0) return "0";
+    while (ix > 0) {
+        unsigned newchar = ix % NCHARS;
+        ss<<(char)(newchar+'A');
+        ix /= NCHARS;
+    }
+    return ss.str();
+#else 
+    stringstream ss;
+    ss<<ix;
+    return ss.str();
+#endif
+}
+string renamePointer(const void* p) {
+    map<const void*, unsigned>::iterator it = addrToIx.find(p);
+    if (it == addrToIx.end()) {
+        unsigned newix = __sync_fetch_and_add(&rename_ix, 1);
+        addrToIx[p] = newix;
+        ixToAddr[newix] = p;
+        return stringifyIndex(addrToIx[p]);
+    } else {
+        return stringifyIndex(it->second);
+    }
 }
 
-__INLINE__ unsigned long long MarsagliaXOR(unsigned long long* seed) {
-    unsigned long long x = MarsagliaXORV(*seed);
-    *seed = x;
-    return x;
+
+
+
+
+
+
+
+
+
+/**
+ * 
+ * THREAD CLASS
+ *
+ */
+
+class List;
+
+class Thread {
+public:
+    long UniqID;
+    volatile long Retries;
+//    int* ROFlag; // not used by stamp
+    int IsRO;
+    int isFallback;
+//    long Starts; // how many times the user called TxBegin
+    long AbortsHW; // # of times hw txns aborted
+    long AbortsSW; // # of times sw txns aborted
+    long CommitsHW;
+    long CommitsSW;
+    unsigned long long rng;
+    unsigned long long xorrng [1];
+    tmalloc_t* allocPtr;    /* CCM: speculatively allocated */
+    tmalloc_t* freePtr;     /* CCM: speculatively free'd */
+//    TypeLogs* rdSet;
+//    TypeLogs* wrSet;
+//    TypeLogs* LocalUndo;
+    List* rdSet;
+    List* wrSet;
+    sigjmp_buf* envPtr;
+    
+    Thread(long id);
+    void destroy();
+    void compileTimeAsserts() {
+        CTASSERT(sizeof(*this) == sizeof(Thread_void));
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * 
+ * LOG IMPLEMENTATION
+ * 
+ */
+
+/* list element (serves as an entry in a read/write set) */
+class AVPair {
+public:
+    AVPair* Next;
+    AVPair* Prev;
+    volatile intptr_t* addr;
+    intptr_t value;
+    long Ordinal;
+    AVPair** hashTableEntry;
+    
+    AVPair() {}
+    AVPair(AVPair* _Next, AVPair* _Prev, long _Ordinal)
+        : Next(_Next), Prev(_Prev), addr(0), value(0), Ordinal(_Ordinal), hashTableEntry(0)
+    {}
+    
+    void validateInvariants() {}
+};
+
+std::ostream& operator<<(std::ostream& out, const AVPair& obj) {
+    return out<<"[addr="<<renamePointer((void*) obj.addr)
+            //<<" val="<<obj.value.l
+            //<<" lock@"<<renamePointer(obj.LockFor)
+            //<<" prev="<<obj.Prev
+            //<<" next="<<obj.Next
+            //<<" ord="<<obj.Ordinal
+            //<<" rdv="<<obj.rdv<<"@"<<(uintptr_t)(long*)&obj
+            <<"]@"<<renamePointer(&obj);
+}
+
+#define HASHTABLE_CLEAR_FROM_LIST
+
+enum hytm_config {
+    INIT_WRSET_NUM_ENTRY = 1024,
+    INIT_RDSET_NUM_ENTRY = 8192,
+    INIT_LOCAL_NUM_ENTRY = 1024,
+};
+
+#ifdef USE_FULL_HASHTABLE
+    class HashTable {
+    public:
+        AVPair** data;
+        long sz;        // number of elements in the hash table
+        long cap;       // capacity of the hash table
+    private:
+        void validateInvariants() {
+            // hash table capacity is a power of 2
+            long htc = cap;
+            while (htc > 0) {
+                if ((htc & 1) && (htc != 1)) {
+                    ERROR(debug(cap)<<" is not a power of 2");
+                }
+                htc /= 2;
+            }
+            // htabcap >= 2*htabsz
+            if (requiresExpansion()) {
+                ERROR("hash table capacity too small: "<<debug(cap)<<" "<<debug(sz));
+            }
+        #ifdef LONG_VALIDATION
+            // htabsz = size of hash table
+            long _htabsz = 0;
+            for (int i=0;i<cap;++i) {
+                if (data[i]) {
+                    ++_htabsz; // # non-null entries of htab
+                }
+            }
+            if (sz != _htabsz) {
+                ERROR("hash table size incorrect: "<<debug(sz)<<" "<<debug(_htabsz));
+            }
+        #endif
+        }
+
+    public:
+        __INLINE__ void init(const long _sz) {
+            // assert: _sz is a power of 2!
+            DEBUG3 aout("hash table "<<renamePointer(this)<<" init");
+            sz = 0;
+            cap = 2 * _sz;
+            data = (AVPair**) malloc(sizeof(AVPair*) * cap);
+            memset(data, 0, sizeof(AVPair*) * cap);
+            VALIDATE_INV(this);
+        }
+
+        __INLINE__ void destroy() {
+            DEBUG3 aout("hash table "<<renamePointer(this)<<" destroy");
+            free(data);
+        }
+
+        __INLINE__ int32_t hash(volatile intptr_t* addr) {
+            intptr_t p = (intptr_t) addr;
+            // assert: htabcap is a power of 2
+    #ifdef __LP64__
+            p ^= p >> 33;
+            p *= BIG_CONSTANT(0xff51afd7ed558ccd);
+            p ^= p >> 33;
+            p *= BIG_CONSTANT(0xc4ceb9fe1a85ec53);
+            p ^= p >> 33;
+    #else
+            p ^= p >> 16;
+            p *= 0x85ebca6b;
+            p ^= p >> 13;
+            p *= 0xc2b2ae35;
+            p ^= p >> 16;
+    #endif
+            assert(0 <= (p & (cap-1)) && (p & (cap-1)) < INT32_MAX);
+            return p & (cap-1);
+        }
+
+        __INLINE__ int32_t findIx(volatile intptr_t* addr) {
+            int32_t ix = hash(addr);
+            while (data[ix]) {
+                if (data[ix]->addr == addr) {
+                    return ix;
+                }
+                ix = (ix + 1) & (cap-1);
+            }
+            return -1;
+        }
+
+        __INLINE__ AVPair* find(volatile intptr_t* addr) {
+            int32_t ix = findIx(addr);
+            if (ix < 0) return NULL;
+            return data[ix];
+        }
+
+        // assumes there is space for e, and e is not in the hash table
+        __INLINE__ void insertFresh(AVPair* e) {
+            DEBUG3 aout("hash table "<<renamePointer(this)<<" insertFresh("<<debug(e)<<")");
+            VALIDATE_INV(this);
+            int32_t ix = hash(e->addr);
+            while (data[ix]) { // assumes hash table does NOT contain e
+                ix = (ix + 1) & (cap-1);
+            }
+            data[ix] = e;
+#ifdef HASHTABLE_CLEAR_FROM_LIST
+            e->hashTableEntry = &data[ix];
+#endif
+            VALIDATE ++sz;
+            VALIDATE_INV(this);
+        }
+        
+        __INLINE__ int requiresExpansion() {
+            return 2*sz > cap;
+        }
+        
+    private:
+        // expand table by a factor of 2
+        __INLINE__ void expandAndClear() {
+            AVPair** olddata = data;
+            init(cap); // note: cap will be doubled by init
+            free(olddata);
+        }
+
+    public:
+        __INLINE__ void expandAndRehashFromList(AVPair* head, AVPair* stop) {
+            DEBUG3 aout("hash table "<<renamePointer(this)<<" expandAndRehashFromList");
+            VALIDATE_INV(this);
+            expandAndClear();
+            for (AVPair* e = head; e != stop; e = e->Next) {
+                insertFresh(e);
+            }
+            VALIDATE_INV(this);
+        }
+        
+        __INLINE__ void clear(AVPair* head, AVPair* stop) {
+#ifdef HASHTABLE_CLEAR_FROM_LIST
+            for (AVPair* e = head; e != stop; e = e->Next) {
+                //assert(*e->hashTableEntry);
+                //assert(*e->hashTableEntry == e);
+                *e->hashTableEntry = NULL;
+            }
+#else
+            memset(data, 0, sizeof(AVPair*) * cap);
+#endif
+        }
+
+        void validateContainsAllAndSameSize(AVPair* head, AVPair* stop, const int listsz) {
+            // each element of list appears in hash table
+            for (AVPair* e = head; e != stop; e = e->Next) {
+                if (find(e->addr) != e) {
+                    ERROR("element "<<debug(*e)<<" of list was not in hash table");
+                }
+            }
+            if (listsz != sz) {
+                ERROR("list and hash table sizes differ: "<<debug(listsz)<<" "<<debug(sz));
+            }
+        }
+    };
+#elif defined(USE_BLOOM_FILTER)
+    typedef unsigned long bloom_filter_data_t;
+    #define BLOOM_FILTER_DATA_T_BITS (sizeof(bloom_filter_data_t)*8)
+    #define BLOOM_FILTER_BITS 512
+    #define BLOOM_FILTER_WORDS (BLOOM_FILTER_BITS/sizeof(bloom_filter_data_t))
+    class HashTable {
+    public:
+        bloom_filter_data_t filter[BLOOM_FILTER_WORDS]; // bloom filter data
+    private:
+        void validateInvariants() {
+
+        }
+
+    public:
+        __INLINE__ void init() {
+            for (unsigned i=0;i<BLOOM_FILTER_WORDS;++i) {
+                filter[i] = 0;
+            }
+            VALIDATE_INV(this);
+        }
+
+        __INLINE__ void destroy() {
+            DEBUG3 aout("hash table "<<this<<" destroy");
+        }
+
+        __INLINE__ unsigned hash(volatile intptr_t* key) {
+            intptr_t p = (intptr_t) key;
+    #ifdef __LP64__
+            p ^= p >> 33;
+            p *= BIG_CONSTANT(0xff51afd7ed558ccd);
+            p ^= p >> 33;
+            p *= BIG_CONSTANT(0xc4ceb9fe1a85ec53);
+            p ^= p >> 33;
+    #else
+            p ^= p >> 16;
+            p *= 0x85ebca6b;
+            p ^= p >> 13;
+            p *= 0xc2b2ae35;
+            p ^= p >> 16;
+    #endif
+            return p & (BLOOM_FILTER_BITS-1);
+        }
+
+        __INLINE__ bool contains(volatile intptr_t* key) {
+            unsigned targetBit = hash(key);
+            bloom_filter_data_t fword = filter[targetBit / BLOOM_FILTER_DATA_T_BITS];
+            return fword & (1<<(targetBit & (BLOOM_FILTER_DATA_T_BITS-1))); // note: using x&(sz-1) where sz is a power of 2 as a shortcut for x%sz
+        }
+
+        // assumes there is space for e, and e is not in the hash table
+        __INLINE__ void insertFresh(volatile intptr_t* key) {
+            DEBUG3 aout("hash table "<<this<<" insertFresh("<<debug(key)<<")");
+            VALIDATE_INV(this);
+            unsigned targetBit = hash(key);
+            unsigned wordix = targetBit / BLOOM_FILTER_DATA_T_BITS;
+            assert(wordix >= 0 && wordix < BLOOM_FILTER_WORDS);
+            filter[wordix] |= (1<<(targetBit & (BLOOM_FILTER_DATA_T_BITS-1))); // note: using x&(sz-1) where sz is a power of 2 as a shortcut for x%sz
+            VALIDATE_INV(this);
+        }
+    };
+#else
+    class HashTable {};
+#endif
+
+class List {
+public:
+    // linked list (for iteration)
+    AVPair* head;
+    AVPair* put;    /* Insert position - cursor */
+    AVPair* tail;   /* CCM: Pointer to last valid entry */
+    AVPair* end;    /* CCM: Pointer to last entry */
+    long ovf;       /* Overflow - request to grow */
+    long initcap;
+    long currsz;
+    
+    HashTable tab;
+    
+private:
+    __INLINE__ AVPair* extendList() {
+        VALIDATE_INV(this);
+        // Append at the tail. We want the front of the list,
+        // which sees the most traffic, to remains contiguous.
+        ovf++;
+        AVPair* e = (AVPair*) malloc(sizeof(*e));
+        assert(e);
+        tail->Next = e;
+        *e = AVPair(NULL, tail, tail->Ordinal+1);
+        end = e;
+        VALIDATE_INV(this);
+        return e;
+    }
+    
+    void validateInvariants() {
+        // currsz == size of list
+        long _currsz = 0;
+        AVPair* stop = put;
+        for (AVPair* e = head; e != stop; e = e->Next) {
+            VALIDATE_INV(e);
+            ++_currsz;
+        }
+        if (currsz != _currsz) {
+            ERROR("list size incorrect: "<<debug(currsz)<<" "<<debug(_currsz));
+        }
+
+        // capacity is correct and next fields are not too far
+        long _currcap = 0;
+        for (AVPair* e = head; e; e = e->Next) {
+            VALIDATE_INV(e);
+            if (e->Next > head+initcap && ovf == 0) {
+                ERROR("list has AVPair with a next field that jumps off the end of the AVPair array, but ovf is 0; "<<debug(*e));
+            }
+            if (e->Next && e->Next != e+1) {
+                ERROR("list has incorrect distance between AVPairs; "<<debug(e)<<" "<<debug(e->Next));
+            }
+            ++_currcap;
+        }
+        if (_currcap != initcap) {
+            ERROR("list capacity incorrect: "<<debug(initcap)<<" "<<debug(_currcap));
+        }
+    }
+public:
+    void init(Thread* Self, long _initcap) {
+        DEBUG3 aout("list "<<renamePointer(this)<<" init");
+        // assert: _sz is a power of 2
+
+        // Allocate the primary list as a large chunk so we can guarantee ascending &
+        // adjacent addresses through the list. This improves D$ and DTLB behavior.
+        head = (AVPair*) malloc((sizeof (AVPair) * _initcap) + CACHE_LINE_SIZE);
+        assert(head);
+        memset(head, 0, sizeof(AVPair) * _initcap);
+        AVPair* curr = head;
+        put = head;
+        end = NULL;
+        tail = NULL;
+        for (int i = 0; i < _initcap; i++) {
+            AVPair* e = curr++;
+            *e = AVPair(curr, tail, i); // note: curr is invalid in the last iteration
+            tail = e;
+        }
+        tail->Next = NULL; // fix invalid next pointer from last iteration
+        initcap = _initcap;
+        ovf = 0;
+        currsz = 0;
+        VALIDATE_INV(this);
+#ifdef USE_FULL_HASHTABLE
+        tab.init(_initcap);
+#elif defined(USE_BLOOM_FILTER)
+        tab.init();
+#endif
+    }
+    
+    void destroy() {
+        DEBUG3 aout("list "<<renamePointer(this)<<" destroy");
+        /* Free appended overflow entries first */
+        AVPair* e = end;
+        if (e != NULL) {
+            while (e->Ordinal >= initcap) {
+                AVPair* tmp = e;
+                e = e->Prev;
+                free(tmp);
+            }
+        }
+        /* Free contiguous beginning */
+        free(head);
+#if defined(USE_FULL_HASHTABLE) || defined(USE_BLOOM_FILTER)
+        tab.destroy();
+#endif
+    }
+    
+    __INLINE__ void clear() {
+        DEBUG3 aout("list "<<renamePointer(this)<<" clear");
+        VALIDATE_INV(this);
+#ifdef USE_FULL_HASHTABLE
+        tab.clear(head, put);
+#elif defined(USE_BLOOM_FILTER)
+        tab.init();
+#endif
+        put = head;
+        tail = NULL;
+        currsz = 0;
+        VALIDATE_INV(this);
+    }
+
+    __INLINE__ AVPair* find(volatile intptr_t* addr) {
+#ifdef USE_FULL_HASHTABLE
+        return tab.find(addr);
+#elif defined(USE_BLOOM_FILTER)
+        if (!tab.contains(addr)) return NULL;
+#endif
+        AVPair* stop = put;
+        for (AVPair* e = head; e != stop; e = e->Next) {
+            if (e->addr == addr) {
+                return e;
+            }
+        }
+        return NULL;
+    }
+    
+private:
+    __INLINE__ AVPair* append(Thread* Self, volatile intptr_t* addr, intptr_t value) {
+        AVPair* e = put;
+        if (e == NULL) e = extendList();
+        tail = e;
+        put = e->Next;
+        e->addr = addr;
+        e->value = value;
+        VALIDATE ++currsz;
+        return e;
+    }
+    
+public:
+    __INLINE__ void insertReplace(Thread* Self, volatile intptr_t* addr, intptr_t value) {
+        DEBUG3 aout("list "<<renamePointer(this)<<" insertReplace("<<debug(renamePointer((const void*) (void*) addr))<<","<<debug(value)<<")");
+        AVPair* e = find(addr);
+        if (e) {
+            e->value = value;
+        } else {
+            e = append(Self, addr, value);
+#ifdef USE_FULL_HASHTABLE
+            // insert in hash table
+//            if (tab.requiresExpansion()) tab.expandAndRehashFromList(head, put);
+            tab.insertFresh(e);
+#elif defined(USE_BLOOM_FILTER)
+            tab.insertFresh(addr);
+#endif
+        }
+    }
+
+    // Transfer the data in the log to its ultimate location.
+    __INLINE__ void writeForward() {
+        //DEBUG3 aout("list "<<renamePointer(this)<<" writeForward");
+        AVPair* stop = put;
+        for (AVPair* e = head; e != stop; e = e->Next) {
+            *e->addr = e->value;
+        }
+    }
+    
+    // Transfer the data in the log to its ultimate location.
+    __INLINE__ void writeBackward() {
+        //DEBUG3 aout("list "<<renamePointer(this)<<" writeBackward");
+        for (AVPair* e = tail; e; e = e->Prev) {
+            *e->addr = e->value;
+        }
+    }
+    
+    void validateContainsAllAndSameSize(HashTable* tab) {
+#ifdef USE_FULL_HASHTABLE
+        if (currsz != tab->sz) {
+            ERROR("hash table "<<debug(tab->sz)<<" has different size from list "<<debug(currsz));
+        }
+        AVPair* stop = put;
+        // each element of hash table appears in list
+        for (int i=0;i<tab->cap;++i) {
+            AVPair* elt = tab->data[i];
+            if (elt) {
+                // element in hash table; is it in the list?
+                bool found = false;
+                for (AVPair* e = head; e != stop; e = e->Next) {
+                    if (e == elt) {
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    ERROR("element "<<debug(*elt)<<" of hash table was not in list");
+                }
+            }
+        }
+#endif
+    }
+};
+
+std::ostream& operator<<(std::ostream& out, const List& obj) {
+    AVPair* stop = obj.put;
+    for (AVPair* curr = obj.head; curr != stop; curr = curr->Next) {
+        out<<*curr<<(curr->Next == stop ? "" : " ");
+    }
+    return out;
 }
 
 __INLINE__ intptr_t AtomicAdd(volatile intptr_t* addr, intptr_t dx) {
     intptr_t v;
-    for (v = *addr; CAS(addr, v, v + dx) != v; v = *addr) {
-    }
+    for (v = *addr; CAS(addr, v, v + dx) != v; v = *addr) {}
     return (v + dx);
 }
 
 
-/*
- * Consider 4M alignment for LockTab so we can use large-page support.
- * Alternately, we could mmap() the region with anonymous DZF pages.
+
+
+
+
+
+
+
+
+/**
+ * 
+ * THREAD CLASS IMPLEMENTATION
+ * 
  */
-#define _TABSZ  (1<< 20)
-static volatile vwLock LockTab[_TABSZ];
 
 volatile long StartTally = 0;
-volatile long AbortTally = 0;
-//volatile long ReadOverflowTally  = 0;
-//volatile long WriteOverflowTally = 0;
-//volatile long LocalOverflowTally = 0;
+volatile long AbortTallyHW = 0;
+volatile long AbortTallySW = 0;
+volatile long CommitTallyHW = 0;
+volatile long CommitTallySW = 0;
 
-/*
- * With PS the versioned lock words (the LockTab array) are table stable and
- * references will never fault.  Under PO, however, fetches by a doomed
- * zombie txn can fault if the referent is free()ed and unmapped
- */
-#if 0
-#define LDLOCK(a)                     LDNF(a)  /* for PO */
-#else
-#define LDLOCK(a)                     *(a)     /* for PS */
-#endif
+Thread::Thread(long id) {
+    DEBUG1 aout("new thread with id "<<id);
+    memset(this, 0, sizeof(Thread)); /* Default value for most members */
+    UniqID = id;
+    rng = id + 1;
+    xorrng[0] = rng;
 
+    wrSet = (List*) malloc(sizeof(*wrSet));//(TypeLogs*) malloc(sizeof(TypeLogs));
+    rdSet = (List*) malloc(sizeof(*rdSet));//(TypeLogs*) malloc(sizeof(TypeLogs));
+    //LocalUndo = (TypeLogs*) malloc(sizeof(TypeLogs));
+    wrSet->init(this, INIT_WRSET_NUM_ENTRY);
+    rdSet->init(this, INIT_RDSET_NUM_ENTRY);
+    //LocalUndo->init(this, INIT_LOCAL_NUM_ENTRY);
 
-
-/*
- * PSLOCK: maps variable address to lock address.
- * For PW the mapping is simply (UNS(addr)+sizeof(int))
- * COLOR attempts to place the lock(metadata) and the data on
- * different D$ indexes.
- */
-#define TABMSK                        (_TABSZ-1)
-#define COLOR                           (128)
-
-/*
- * ILP32 vs LP64.  PSSHIFT == Log2(sizeof(intptr_t)).
- */
-#define PSSHIFT                         ((sizeof(void*) == 4) ? 2 : 3)
-#define PSLOCK(a) (LockTab + (((UNS(a)+COLOR) >> PSSHIFT) & TABMSK)) /* PS1M */
-
-/* =============================================================================
- * MakeList
- *
- * Allocate the primary list as a large chunk so we can guarantee ascending &
- * adjacent addresses through the list. This improves D$ and DTLB behavior.
- * =============================================================================
- */
-__INLINE__ AVPair* MakeList(long sz, Thread* Self) {
-    AVPair* ap = (AVPair*) malloc((sizeof (*ap) * sz) + CACHE_LINE_SIZE);
-    assert(ap);
-    memset(ap, 0, sizeof (*ap) * sz);
-    AVPair* List = ap;
-    AVPair* Tail = NULL;
-    long i;
-    for (i = 0; i < sz; i++) {
-        AVPair* e = ap++;
-        e->Next = ap;
-        e->Prev = Tail;
-        e->Owner = Self;
-        e->Ordinal = i;
-        Tail = e;
-    }
-    Tail->Next = NULL;
-
-    return List;
+    allocPtr = tmalloc_alloc(1);
+    freePtr = tmalloc_alloc(1);
+    assert(allocPtr);
+    assert(freePtr);
 }
 
-__INLINE__ void MakeTypeLogs(Thread* Self, TypeLogs* logs, long sz) {
-    logs->l.List = MakeList(sz, Self);
-    logs->l.put = logs->l.List;
-    logs->f.List = MakeList(sz, Self);
-    logs->f.put = logs->f.List;
-    logs->p.List = MakeList(sz, Self);
-    logs->p.put = logs->p.List;
+void Thread::destroy() {
+    AtomicAdd((volatile intptr_t*)((void*) (&AbortTallySW)), AbortsSW);
+    AtomicAdd((volatile intptr_t*)((void*) (&AbortTallyHW)), AbortsHW);
+    AtomicAdd((volatile intptr_t*)((void*) (&CommitTallySW)), CommitsSW);
+    AtomicAdd((volatile intptr_t*)((void*) (&CommitTallyHW)), CommitsHW);
+    tmalloc_free(allocPtr);
+    tmalloc_free(freePtr);
+    wrSet->destroy();
+    rdSet->destroy();
+    free(wrSet);
+    free(rdSet);
 }
 
-__INLINE__ void ClearTypeLogs(TypeLogs* logs) {
-    logs->l.put = logs->l.List;
-    logs->l.tail = NULL;
-    logs->f.put = logs->f.List;
-    logs->f.tail = NULL;
-    logs->p.put = logs->p.List;
-    logs->p.tail = NULL;
-}
 
-void FreeList(Log*, long) __attribute__((noinline));
 
-/*__INLINE__*/ void FreeList(Log* k, long sz) {
-    /* Free appended overflow entries first */
-    AVPair* e = k->end;
-    if (e != NULL) {
-        while (e->Ordinal >= sz) {
-            AVPair* tmp = e;
-            e = e->Prev;
-            free(tmp);
-        }
-    }
-    /* Free continguous beginning */
-    free(k->List);
-}
-               
-void FreeTypeLogs(TypeLogs* logs, long sz) {
-    FreeList(&logs->l, sz);
-    FreeList(&logs->f, sz);
-    FreeList(&logs->p, sz);
-}
 
-/* =============================================================================
- * ExtendList
- *
- * Postpend at the tail. We want the front of the list, which sees the most
- * traffic, to remains contiguous.
- * =============================================================================
- */
-__INLINE__ AVPair* ExtendList(AVPair* tail) {
-    AVPair* e = (AVPair*) malloc(sizeof (*e));
-    assert(e);
-    memset(e, 0, sizeof (*e));
-    tail->Next = e;
-    e->Prev = tail;
-    e->Next = NULL;
-    e->Owner = tail->Owner;
-    e->Ordinal = tail->Ordinal + 1;
-    /*e->Held    = 0; -- done by memset*/
-    return e;
-}
 
-/* =============================================================================
- * WriteBackForward
- *
- * Transfer the data in the log to its ultimate location.
- * =============================================================================
+
+
+
+
+
+/**
+ * 
+ * IMPLEMENTATION OF TM OPERATIONS
+ * 
  */
 
-template <typename T>
-inline void replayStore(AVPair* e);
-template <>
-inline void replayStore<long>(AVPair* e) {
-    *(e->addr.l) = e->value.l;
-}
-template <>
-inline void replayStore<float>(AVPair* e) {
-    *(e->addr.f) = e->value.f[0];
-}
-//template <>
-//inline void replayStore<intptr_t>(AVPair* e) {
-//    *(e->addr.p) = e->value.p;
-//}
-
-template <typename T>
-__INLINE__ void SingleTypeLogWriteBackForward(Log* k) {
-    AVPair* e;
-    AVPair* End = k->put;
-    for (e = k->List; e != End; e = e->Next) {
-        replayStore<T>(e);
-        //*(e->Addr) = e->Valu;
-    }
+void TxClearRWSets(void* _Self) {
+    Thread* Self = (Thread*) _Self;
+    Self->wrSet->clear();
+    Self->rdSet->clear();
 }
 
-__INLINE__ void WriteBackForward(TypeLogs* logs) {
-    SingleTypeLogWriteBackForward<long>(&logs->l);
-    SingleTypeLogWriteBackForward<float>(&logs->f);
-    SingleTypeLogWriteBackForward<intptr_t>(&logs->p);
-}
-
-/* =============================================================================
- * WriteBackReverse
- *
- * Transfer the data in the log to its ultimate location.
- * =============================================================================
- */
-template <typename T>
-__INLINE__ void SingleTypeLogWriteBackReverse(Log* k) {
-    AVPair* e;
-    for (e = k->tail; e != NULL; e = e->Prev) {
-        replayStore<T>(e);
-        //*(e->Addr) = e->Valu;
-    }
-}
-
-__INLINE__ void WriteBackReverse(TypeLogs* logs) {
-    SingleTypeLogWriteBackReverse<long>(&logs->l);
-    SingleTypeLogWriteBackReverse<float>(&logs->f);
-    SingleTypeLogWriteBackReverse<intptr_t>(&logs->p);
-}
-
-///* =============================================================================
-// * FindFirst
-// *
-// * Search for first log entry that contains lock.
-// * =============================================================================
-// */
-//__INLINE__ AVPair* FindFirst(Log* k, volatile vwLock* Lock) {
-//    AVPair* e;
-//    AVPair * const End = k->put;
-//    for (e = k->List; e != End; e = e->Next) {
-//        if (e->LockFor == Lock) {
-//            return e;
-//        }
-//    }
-//    return NULL;
-//}
-
-//// for redo log: deferred writes -> write-back phase
-//__INLINE__ void RecordStore(Log* k, volatile intptr_t* Addr, intptr_t Valu, volatile vwLock* Lock) {
-//    /*
-//     * As an optimization we could squash multiple stores to the same location.
-//     * Maintain FIFO order to avoid WAW hazards.
-//     * TODO-FIXME - CONSIDER
-//     * Keep Self->LockSet as a sorted linked list of unique LockFor addresses.
-//     * We'd scan the LockSet for Lock.  If not found we'd insert a new
-//     * LockRecord at the appropriate location in the list.
-//     * Call InsertIfAbsent (Self, LockFor)
-//     */
-//    AVPair* e = k->put;
-//    if (e == NULL) {
-//        k->ovf++;
-//        e = ExtendList(k->tail);
-//        k->end = e;
-//    }
-//    ASSERT(Addr != NULL);
-//    k->tail = e;
-//    k->put = e->Next;
-//    e->Addr = Addr;
-//    e->Valu = Valu;
-//    e->LockFor = Lock;
-//    //    e->Held    = 0;
-//    e->rdv = 0; //LOCKBIT; /* use either 0 or LOCKBIT */
-//}
-
-template <typename T>
-inline void assignAV(AVPair* e, volatile T* addr, T value);
-template <>
-inline void assignAV<long>(AVPair* e, volatile long* addr, long value) {
-    e->addr.l = addr;
-    e->value.l = value;
-}
-template <>
-inline void assignAV<float>(AVPair* e, volatile float* addr, float value) {
-    e->addr.f = addr;
-    e->value.f[0] = value;
-}
-//template <>
-//inline void assignAV<intptr_t>(AVPair* e, volatile intptr_t* addr, intptr_t value) {
-//    e->addr.p = addr;
-//    e->value.p = value;
-//}
-
-// for undo log: immediate writes -> undo on abort/restart
-template <typename T>
-__INLINE__ void SaveForRollBack(Log* k, volatile T* Addr, T Valu) {
-    AVPair* e = k->put;
-    if (e == NULL) {
-        k->ovf++;
-        e = ExtendList(k->tail);
-        k->end = e;
-    }
-    k->tail = e;
-    k->put = e->Next;
-    assignAV(e, Addr, Valu);
-    e->LockFor = NULL;
-}
-
-void TxOnce() {
-    CTASSERT((_TABSZ & (_TABSZ - 1)) == 0); /* must be power of 2 */
-    printf("HyTM1 system ready\n");
-}
-
-void TxShutdown() {
-    printf("HyTM1 system shutdown:\n"
-            "  Starts=%li Aborts=%li\n",
-            StartTally, AbortTally);
-}
-
-Thread* TxNewThread() {
-    Thread* t = (Thread*) malloc(sizeof (Thread));
-    assert(t);
-    return t;
-}
-
-void TxFreeThread(Thread* t) {
-    AtomicAdd((volatile intptr_t*)((void*) (&StartTally)), t->Starts);
-    AtomicAdd((volatile intptr_t*)((void*) (&AbortTally)), t->Aborts);
-    FreeTypeLogs(&t->wrSet, INIT_WRSET_NUM_ENTRY);
-    FreeTypeLogs(&t->rdSet, INIT_RDSET_NUM_ENTRY);
-    FreeTypeLogs(&t->LocalUndo, INIT_LOCAL_NUM_ENTRY);
-    tmalloc_free(t->allocPtr);
-    tmalloc_free(t->freePtr);
-    free(t);
-}
-
-void TxInitThread(Thread* t, long id) {
-    memset(t, 0, sizeof (*t)); /* Default value for most members */
-
-    t->UniqID = id;
-    t->rng = id + 1;
-    t->xorrng[0] = t->rng;
-
-    MakeTypeLogs(t, &t->wrSet, INIT_WRSET_NUM_ENTRY);
-    MakeTypeLogs(t, &t->rdSet, INIT_RDSET_NUM_ENTRY);
-    MakeTypeLogs(t, &t->LocalUndo, INIT_LOCAL_NUM_ENTRY);
-
-    t->allocPtr = tmalloc_alloc(1);
-    assert(t->allocPtr);
-    t->freePtr = tmalloc_alloc(1);
-    assert(t->freePtr);
-}
-
-template <typename T>
-inline Log * getTypedLog(TypeLogs * typelogs); 
-template <>
-inline Log * getTypedLog<long>(TypeLogs * typelogs) {
-    return &typelogs->l;
-}
-template <>
-inline Log * getTypedLog<float>(TypeLogs * typelogs) {
-    return &typelogs->f;
-}
-//template <>
-//inline Log * getTypedLog<intptr_t>(TypeLogs * typelogs) {
-//    return &typelogs->p;
-//}
-
-template <typename T>
-T TxLoad(Thread* Self, volatile T* Addr) {
-    return *Addr;
-}
-
-template <typename T>
-T TxStore(Thread* Self, volatile T* addr, T valu) {
+int TxCommit(void* _Self) {
+    Thread* Self = (Thread*) _Self;
     if (Self->isFallback) {
-        SaveForRollBack(getTypedLog<T>(&Self->LocalUndo), addr, *addr);
-    }
-    return *addr = valu;
-}
-
-long TxLoadl(Thread* Self, volatile long* addr) {
-    return TxLoad(Self, addr);
-}
-//intptr_t TxLoadp(Thread* Self, volatile intptr_t* addr) {
-//    return TxLoad(Self, addr);
-//}
-float TxLoadf(Thread* Self, volatile float* addr) {
-    return TxLoad(Self, addr);
-}
-
-long TxStorel(Thread* Self, volatile long* addr, long value) {
-    return TxStore(Self, addr, value);
-}
-//intptr_t TxStorep(Thread* Self, volatile intptr_t* addr, intptr_t value) {
-//    return TxStore(Self, addr, value);
-//}
-float TxStoref(Thread* Self, volatile float* addr, float value) {
-    return TxStore(Self, addr, value);
-}
-
-
-//void TxStoreLocal(Thread* Self, volatile intptr_t* Addr, intptr_t Valu) {
-//    if (Self->isFallback) {
-//        SaveForRollBack(&Self->LocalUndo, Addr, *Addr);
-//    }
-//    *Addr = Valu;
-//}
-
-void TxStart(Thread* Self, sigjmp_buf* envPtr, int aborted_in_software, int* ROFlag) {
-    ClearTypeLogs(&Self->wrSet);
-    ClearTypeLogs(&Self->rdSet);
-    ClearTypeLogs(&Self->LocalUndo);
-
-    Self->Retries = 0;
-    Self->isFallback = 0;
-    Self->ROFlag = ROFlag;
-    Self->envPtr = envPtr;
-    
-    unsigned status = -1;
-    if (aborted_in_software) {
-        goto software;
-    }
-    Self->Starts++;
-htmretry: ;
-    status = XBEGIN();
-    if (status == _XBEGIN_STARTED) {
-        if (globallock) XABORT(1);
-    } else {
-        // if we aborted
-        ++Self->Aborts;
-        if (++Self->Retries < HTM_RETRY_THRESH) {
-            // wait until lock is no longer held (to avoid lemmings)
-            while (globallock) {
-                __asm__ __volatile__("pause;");
-            }
-            goto htmretry;
-        } else {
-            goto software;
-        }
-    }
-    return;
-software:
-    Self->isFallback = 1;
-    acquireLock(&globallock);
-}
-
-int TxCommit(Thread* Self) {
-    if (Self->isFallback) {
-        releaseLock(&globallock);
+        releaseLock(&tleLock);
         tmalloc_clear(Self->allocPtr);
         tmalloc_releaseAllForward(Self->freePtr, NULL);
     } else {
@@ -551,30 +794,106 @@ int TxCommit(Thread* Self) {
         XEND();
         tmalloc_clear(Self->allocPtr);
     }
-    return 1;
+    return true;
 }
 
-void TxAbort(Thread* Self) {
+void TxAbort(void* _Self) {
+    Thread* Self = (Thread*) _Self;
     if (Self->isFallback) {
         /* Clean up after an abort. Restore any modified locations. */
-//        if (Self->LocalUndo.put != Self->LocalUndo.List) {
-            WriteBackReverse(&Self->LocalUndo);
-//        }
+        Self->wrSet->writeBackward();
         
         // release global lock
-        releaseLock(&globallock);
+        releaseLock(&tleLock);
 
         ++Self->Retries;
-        ++Self->Aborts;
+        ++Self->AbortsSW;
+        if (Self->Retries > MAX_RETRIES) {
+            aout("TOO MANY ABORTS. QUITTING.");
+            aout("BEGIN DEBUG ADDRESS MAPPING:");
+            acquireLock(&globallock);
+                for (unsigned i=0;i<rename_ix;++i) {
+                    cout<<stringifyIndex(i)<<"="<<ixToAddr[i]<<" ";
+                }
+                cout<<endl;
+            releaseLock(&globallock);
+            aout("END DEBUG ADDRESS MAPPING.");
+            exit(-1);
+        }
         
+#ifdef TXNL_MEM_RECLAMATION
+        // "abort" speculative allocations and speculative frees
         // Rollback any memory allocation, and longjmp to retry the txn
         tmalloc_releaseAllReverse(Self->allocPtr, NULL);
         tmalloc_clear(Self->freePtr);
+#endif
+
         SIGLONGJMP(*Self->envPtr, 1);
         ASSERT(0);
     } else {
         XABORT(0);
     }
+}
+
+/*__INLINE__*/
+intptr_t TxLoad(void* _Self, volatile intptr_t* addr) {
+    return *addr;
+}
+
+/*__INLINE__*/
+void TxStore(void* _Self, volatile intptr_t* addr, intptr_t value) {
+    Thread* Self = (Thread*) _Self;
+    if (Self->isFallback) {
+        Self->wrSet->insertReplace(Self, addr, *addr);
+    }
+    *addr = value;
+}
+
+
+
+
+
+
+
+
+
+/**
+ * 
+ * FRAMEWORK FUNCTIONS
+ * (PROBABLY DON'T NEED TO BE CHANGED WHEN CREATING A VARIATION OF THIS TM)
+ * 
+ */
+
+void TxOnce() {
+    initSighandler(); /**** DEBUG CODE ****/
+                
+    printf("%s %s\n", TM_NAME, "system ready\n");
+//    memset(LockTab, 0, _TABSZ*sizeof(vLock));
+}
+
+void TxShutdown() {
+    printf("%s system shutdown:\n  Starts=%li CommitsHW=%li AbortsHW=%li CommitsSW=%li AbortsSW=%li\n",
+                TM_NAME,
+                CommitTallyHW+CommitTallySW,
+                CommitTallyHW, AbortTallyHW,
+                CommitTallySW, AbortTallySW);
+}
+
+void* TxNewThread() {
+    Thread* t = (Thread*) malloc(sizeof(Thread));
+    assert(t);
+    return t;
+}
+
+void TxFreeThread(void* _t) {
+    Thread* t = (Thread*) _t;
+    t->destroy();
+    free(t);
+}
+
+void TxInitThread(void* _t, long id) {
+    Thread* t = (Thread*) _t;
+    *t = Thread(id);
 }
 
 /* =============================================================================
@@ -583,16 +902,19 @@ void TxAbort(Thread* Self) {
  * CCM: simple transactional memory allocation
  * =============================================================================
  */
-void* TxAlloc (Thread* Self, size_t size)
-{
+void* TxAlloc(void* _Self, size_t size) {
+#ifdef TXNL_MEM_RECLAMATION
+    Thread* Self = (Thread*) _Self;
     void* ptr = tmalloc_reserve(size);
     if (ptr) {
         tmalloc_append(Self->allocPtr, ptr);
     }
 
     return ptr;
+#else
+    return malloc(size);
+#endif
 }
-
 
 /* =============================================================================
  * TxFree
@@ -600,7 +922,11 @@ void* TxAlloc (Thread* Self, size_t size)
  * CCM: simple transactional memory de-allocation
  * =============================================================================
  */
-void TxFree (Thread* Self, void* ptr)
-{
+void TxFree(void* _Self, void* ptr) {
+#ifdef TXNL_MEM_RECLAMATION
+    Thread* Self = (Thread*) _Self;
     tmalloc_append(Self->freePtr, ptr);
+#else
+    free(ptr);
+#endif
 }
