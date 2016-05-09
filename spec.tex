@@ -6,15 +6,13 @@
 \begin{lemma}
 \label{lm:hytm}
 %
-Let $\mathcal{M}$ be any progressive HyTM implementation.
-Let $E\cdot E_1 \cdots E_i \cdot E_{i+1} \cdots E_m$ be any execution of $\mathcal{M}$ where
-$E_i$ is the step contention-free
-execution fragment of transaction $T_i \not\in \ms{txns}(E)$,
-for all $i\in \{1,\ldots , m\}$
-and any two transactions in $E_1 \cdots E_m$ do not conflict.
-For all $i,j=1,\ldots,m$, $i\neq j$, if $T_i$ is fast-path, then $T_i$
-and $T_j$ do not contend on a
-base object in  $E\cdot E_1 \cdots E_{m} \cdots E_m$~\cite{htmdisc15}.
+LLet $\mathcal{M}$ be any progressive HyTM implementation.
+Let $E\cdot E_1 \cdot E_2$ be an execution of $\mathcal{M}$ where
+$E_1$ (and resp. $E_2$) is the step contention-free
+execution fragment of fast-path transaction $T_1 \not\in \ms{txns}(E)$ (and
+resp. $T_2 \not\in \ms{txns}(E)$),
+$T_1$ (and resp. $T_2$) does not conflict with any transaction in $E\cdot E_1 \cdot E_2$. 
+Then, $T_1$ and $T_2$ do not contend on any base object in $E\cdot E_1 \cdot E_2$~\cite{htmdisc15}.
 \end{lemma}
 
 \begin{theorem}
@@ -27,14 +25,14 @@ performs $O(1)$ steps.
 Suppose by contradiction that there exists a progressive opaque HyTM implementation $\mathcal{M}$ with invisible reads such that in every execution $E$ of $\mathcal{M}$, any t-read operation $op_k$ performed by some slow-path transaction $T_k \in \ms{txns}(E)$
 performs $\kappa$ steps.
 
-For all $i\in \{1,\ldots , m\}$, let $v$ be the initial value of t-object $X_i$.
+Let $m \in \mathbb{N}$ be a constant such that $m \gg \kappa$ and for all $i\in \{1,\ldots , m\}$, let $v$ be the initial value of t-object $X_i$.
 Let $\pi^{m}$ denote the complete step contention-free execution of a slow-path transaction
 $T_{\phi}$ that performs ${m}$ t-reads: $\Read_{\phi}(X_1)\cdots \Read_{\phi}(X_{m})$
 such that for all $i\in \{1,\ldots , m \}$, $\Read_{\phi}(X_i) \rightarrow v$.
 %
 \begin{claim}
 \label{cl:readdap}
-For all $i\in \mathbb{N}$, $M$ has an execution of the form $\pi^{i-1}\cdot \rho^i\cdot \alpha^i$ where,
+For all $i\in \mathbb{N}$, $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \rho^i\cdot \alpha^i$ where,
 %
 \begin{itemize}
 \item
@@ -52,7 +50,7 @@ $\Read_{\phi}(X_i) \rightarrow nv_i$.
 %
 \begin{proof}
 %
-$M$ has an execution of the form $\rho^i\cdot \pi^{i-1}$.
+$\mathcal{M}$ has an execution of the form $\rho^i\cdot \pi^{i-1}$.
 Since $\Dset(T_k) \cap \Dset(T_{i}) =\emptyset$ in $\rho^i\cdot \pi^{i-1}$,
 by Lemma~\ref{lm:hytm}, transactions $T_{\phi}$ and $T_i$ do not contend
 on any base object in execution $\rho^i\cdot \pi^{i-1}$.
@@ -75,7 +73,7 @@ as follows:
 \begin{itemize}
 \item
 %$\rho^m$ is defined as above;
-$\beta^{\ell}$ is the t-complete step contention-free execution fragment of a transaction $T_{\ell}$
+$\beta^{\ell}$ is the t-complete step contention-free execution fragment of a fast-path transaction $T_{\ell}$
 that writes $nv_{\ell}\neq v$ to $X_{\ell}$ and commits
 \item
 $\alpha_1^i$ (and resp. $\alpha_2^i$) is the complete step contention-free execution fragment of 
@@ -84,17 +82,17 @@ $\Read_{\phi}(X_i) \rightarrow v$ (and resp. $\Read_{\phi}(X_i) \rightarrow A_{\
 %
 \begin{claim}
 \label{cl:ic2}
-For all $i\in \{2,\ldots, m\}$ and $\ell \leq (i-1)$, $M$ has an execution of the form $\mathbb{E}_{1\ell}^{i}$ or 
+For all $i\in \{2,\ldots, m\}$ and $\ell \leq (i-1)$, $\mathcal{M}$ has an execution of the form $\mathbb{E}_{1\ell}^{i}$ or 
 $\mathbb{E}_{2\ell}^{i}$.
 \end{claim}
 %
 \begin{proof}
 %
 For all $i \in \{2,\ldots, m\}$, $\pi^{i-1}$
-is an execution of $M$.
+is an execution of $\mathcal{M}$.
 By assumption of invisible reads, $T_{{\ell}}$ must be committed in $\pi^{i-1}\cdot \rho^{\ell}$
 and $M$ has an execution of the form $\pi^{i-1}\cdot \beta^{\ell}$.
-By the same reasoning, since $T_i$ and $T_{\ell}$ have disjoint data sets,
+By the same reasoning, since $T_i$ and $T_{\ell}$ do not have conflicting data sets,
 $M$ has an execution of the form $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$.
 
 Since the configuration after $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ is quiescent,
@@ -106,7 +104,7 @@ of transactions.
 If $\Read_{\phi}(X_i) \rightarrow A_{\phi}$, the same serialization
 justifies an opaque execution.
 
-Suppose by contradiction that there exists an execution of $M$ such that
+Suppose by contradiction that there exists an execution of $\mathcal{M}$ such that
 $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ is extended with the complete execution
 of $\Read_{\phi}(X_i) \rightarrow r$; $r \not\in \{A_{\phi},v\}$. 
 The only plausible case to analyse is when $r=nv$.
@@ -116,10 +114,14 @@ performed by $T_k$ that returns the initial value $v$
 is not legal in this serialization---contradiction.
 \end{proof}
 %
-We now prove that, for all $i\in \{2,\ldots, m\}$, $j\in \{1,2\}$ and $\ell \leq (i-1)$, transaction $T_{\phi}$ must access
+\begin{claim}
+\label{cl:three}
+For all $i\in \{2,\ldots, m\}$, $j\in \{1,2\}$ and $\ell \leq (i-1)$, transaction $T_{\phi}$ must access
 $(i-1)$ different base objects during the execution of $\Read_{\phi}(X_i)$ in the execution
 $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$.
-
+\end{claim}
+%
+\begin{proof}
 By the assumption of invisible reads,
 the execution $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$
 is indistinguishable to
@@ -128,9 +130,6 @@ from the execution ${\tilde \pi}^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alph
 in ${\tilde \pi}^{i-1}$.
 But transactions $T_{\ell}$ and $T_{i}$ access mutually disjoint data sets in ${\tilde \pi}^{i-1}\cdot \beta^{\ell}\cdot \rho^i$ and by Lemma~\ref{cl:hytm},
 they cannot contend on the same base object in this execution.
-% Thus, $\delta(\ell) \cap \delta(i)=\emptyset$, where $\delta(\ell)$ (and resp. $\delta(i)$) denotes
-% the set of base objects to which $T_{\ell}$ (and resp. $T_i$) applies nontrivial primitives
-% in the execution fragment $\rho^{\ell}$ (and resp. $\rho^i$).
 
 Consider the $(i-1)$ different executions: 
 $\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot \rho^i$.
@@ -142,10 +141,6 @@ do not contend on any base object in this execution.
 This implies that $\pi^{i-1}\cdot \beta^{\ell} \cdot \beta^{\ell'} \cdot \rho^i$ is an execution of $M$ in which
 transactions $T_{\ell}$ and $T_{\ell'}$ each apply nontrivial primitives
 to mutually disjoint sets of base objects in the execution fragments $\beta^{\ell}$ and $\beta^{\ell'}$ respectively.
-% Thus, $\pi^{i-1}\cdot \beta^{\ell}\cdot \beta^{\ell'}$ is an execution of $M$.
-% Similarly, $\pi^{i-1}\cdot \beta^{\ell}\cdot \beta^{\ell'} \cdot \rho^i$ is also an execution of $M$.
-% It follows that, in any two executions $\pi^{i-1}\cdot\rho^{\ell'}\cdot \rho^i$ and $\pi^{i-1}\cdot\rho^{\ell}\cdot \rho^i$,
-% $T_{\ell}$ and $T_{\ell'}$ apply nontrivial primitives to disjoint sets of base objects.
 
 This implies that for any $j\in \{1,2\}$, $\ell \leq (i-1)$, the configuration $C^i$ after $E^i$ differs from the configurations
 after $\mathbb{E}_{j\ell}^{i}$ only in the states of the base objects that are accessed in the fragment $\beta^{\ell}$.
@@ -157,7 +152,9 @@ $\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot
 
 Thus, for all $i \in \{2,\ldots, m\}$, transaction $T_{\phi}$ must perform at least $i-1$ steps 
 while executing the $i^{th}$ t-read in $\pi_{j}^i$.
-
-
+\end{proof}
+%
+However, this contradicts the assumption that in every execution $E$ of $\mathcal{M}$, any t-read operation $op_k$ performed by some slow-path transaction $T_k \in \ms{txns}(E)$
+performs $\kappa$ steps. This completes the proof.
 \end{proof}
 
