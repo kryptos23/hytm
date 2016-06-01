@@ -1,0 +1,28 @@
+PROG := dsbench
+EXTRAFLAGS := $(EXTRAFLAGS1) $(EXTRAFLAGS2) $(EXTRAFLAGS3) $(EXTRAFLAGS4)
+STM := ../$(TARGET)
+LIB := ../lib
+
+FLAGS = -std=c++0x -mcx16 -mrtm
+FLAGS += -DSTM -I$(STM) -I$(LIB)
+FLAGS += -g
+FLAGS += $(EXTRAFLAGS)
+FLAGS += -DPHYSICAL_PROCESSORS=72
+FLAGS += -DRECORD_ABORTS
+#FLAGS += -DNDEBUG
+#FLAGS += -DDEBUG=if\(1\) -DDEBUG1=if\(1\) -DDEBUG2=if\(1\)
+
+LDFLAGS = -lpthread -l$(TARGET)
+#LDFLAGS += -ltcmalloc
+LDFLAGS += -L$(STM)
+
+GPP = g++
+
+all: microbench
+
+clean:
+	
+
+microbench:
+	$(GPP) $(FLAGS) -o $(PROG)_$(TARGET) -O2 -DBST -DFIND_FUNC=find_tle -DRQ_FUNC=rangeQuery_tle -DINSERT_FUNC=insert_tle -DERASE_FUNC=erase_tle -DP1ALG1 -DP2ALG1 -DP3ALG12 -DTHREAD_BINDING=0 main.cpp ../lib/thread.c $(LDFLAGS)
+	

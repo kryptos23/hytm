@@ -15,9 +15,9 @@ LDFLAGS  += -L$(STM)
 LIBS     += -l$(TARGET)
 
 # ADD GPROF INSTRUMENTATION
-CPPFLAGS += -pg
-CFLAGS += -pg
-LDFLAGS += -pg
+#CPPFLAGS += -pg
+#CFLAGS += -pg
+#LDFLAGS += -pg
 
 # ==============================================================================
 # Rules

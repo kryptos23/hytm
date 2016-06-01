@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#PROGS="dsbench"
 PROGS="bayes genome intruder kmeans labyrinth ssca2 vacation yada"
 #TARGETS="seq seqtm tl2 hytm1 hytm2"
 
@@ -11,6 +12,7 @@ TARGETS="seq tl2 hytm2sw hytm1 hytm2"
 xflags1=-mx32
 xflags2=-DNDEBUG
 
+echo "Precompilation work..."
 mkdir bin
 
 g++ sum.cpp -o bin/sum -O3 -std=c++11
@@ -19,6 +21,9 @@ if [ "$?" -ne "0" ]; then
 	exit 1
 fi
 
+echo "Done."
+echo
+
 for t in ${TARGETS}
 do
     # compile the TM library
@@ -26,21 +31,25 @@ do
         mfile="Makefile.seq"
     elif [ $t == "hytm2sw" ]; then
         cd hytm2
+        echo "Compiling TM library: $t"
         make clean
         make EXTRAFLAGS1=$xflags1 EXTRAFLAGS2=$xflags2 EXTRAFLAGS3=-DHTM_ATTEMPT_THRESH=0
         if [ $? -ne 0 ]; then echo "ERROR: failed to compile TM library $t"; exit -1; fi
         cd ..
-        echo "Compiled TM library: $t"
+        echo "Success."
+        echo
         mfile="Makefile.stm"
         mv hytm2/libhytm2.a hytm2sw/libhytm2sw.a
         cp hytm2/*.h hytm2sw/
     else
         cd $t
+        echo "Compiling TM library: $t"
         make clean
         make EXTRAFLAGS1=$xflags1 EXTRAFLAGS2=$xflags2 EXTRAFLAGS3=$xflags3
         if [ $? -ne 0 ]; then echo "ERROR: failed to compile TM library $t"; exit -1; fi
         cd ..
-        echo "Compiled TM library: $t"
+        echo "Success."
+        echo
         mfile="Makefile.stm"
     fi
 
@@ -48,12 +57,21 @@ do
     for p in ${PROGS}
     do
         cd $p
-        make -f $mfile clean TARGET=$t
-        make -f $mfile TARGET=$t EXTRAFLAGS1=$xflags1 EXTRAFLAGS2=$xflags2
-        if [ $? -ne 0 ]; then "ERROR: failed to compile benchmark $p for TM library $t"; exit -1; fi
-        mv ${p}_${t} ../bin/
+        echo "Compiling benchmark $p for TM library $t"
+        if [ -e $mfile ]; then
+            make -f $mfile clean TARGET=$t
+            make -f $mfile TARGET=$t EXTRAFLAGS1=$xflags1 EXTRAFLAGS2=$xflags2
+            if [ $? -ne 0 ]; then
+                echo "ERROR: failed to compile benchmark $p for TM library $t"
+                exit 1
+            fi
+            mv ${p}_${t} ../bin/
+            echo "Success. Moved ''./${p}_${t}'' to ''../bin/''."
+        else
+            echo "WARNING: no file ''$mfile'' to compile for target $t (may simply indicate an invalid pairing of stm library and benchmark that was left in the FOR loops for convenience)"
+        fi
+        echo
         cd ..
-        echo "Compiled benchmark $p for TM library $t"
     done
 done
 echo "Compiled all benchmarks successfully (I think...)"
