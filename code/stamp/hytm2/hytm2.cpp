@@ -1486,6 +1486,7 @@ int TxCommit(void* _Self) {
         // return immediately if txn is read-only
         if (Self->IsRO) {
             DEBUG2 aout("thread "<<Self->UniqID<<" commits read-only txn");
+            ++Self->CommitsSW;
             goto success;
         }
         
@@ -1679,8 +1680,9 @@ void TxOnce() {
 }
 
 void TxShutdown() {
-    printf("%s system shutdown:\n  Starts=%li CommitsHW=%li AbortsHW=%li CommitsSW=%li AbortsSW=%li\n",
+    printf("%s system shutdown:\n  HTM_ATTEMPT_THRESH=%d Starts=%li CommitsHW=%li AbortsHW=%li CommitsSW=%li AbortsSW=%li\n",
                 TM_NAME,
+                HTM_ATTEMPT_THRESH,
                 CommitTallyHW+CommitTallySW,
                 CommitTallyHW, AbortTallyHW,
                 CommitTallySW, AbortTallySW);

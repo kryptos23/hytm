@@ -1,14 +1,16 @@
 #!/bin/bash
 
-#PROGS="dsbench"
-PROGS="bayes genome intruder kmeans labyrinth ssca2 vacation yada"
+PROGS="dsbench"
+#TARGETS="tle"
+TARGETS="tl2 hytm2sw hytm1 hytm2"
+
+#PROGS="bayes genome intruder kmeans labyrinth ssca2 vacation yada"
 #TARGETS="seq seqtm tl2 hytm1 hytm2"
 
 #PROGS="kmeans"
 #TARGETS="tl2"
 #TARGETS="hytm2"
-#TARGETS="hytm1"
-TARGETS="seq tl2 hytm2sw hytm1 hytm2"
+#TARGETS="tl2 hytm2sw hytm1 hytm2"
 xflags1=-mx32
 xflags2=-DNDEBUG
 
@@ -27,13 +29,17 @@ echo
 for t in ${TARGETS}
 do
     # compile the TM library
+    xflags3=""
     if [ $t == "seq" ]; then
         mfile="Makefile.seq"
+    elif [ $t == "tle" ]; then
+        mfile="Makefile.tle"
     elif [ $t == "hytm2sw" ]; then
         cd hytm2
         echo "Compiling TM library: $t"
+        xflags3="-DHTM_ATTEMPT_THRESH=-1"
         make clean
-        make EXTRAFLAGS1=$xflags1 EXTRAFLAGS2=$xflags2 EXTRAFLAGS3=-DHTM_ATTEMPT_THRESH=0
+        make EXTRAFLAGS1=$xflags1 EXTRAFLAGS2=$xflags2 EXTRAFLAGS3=$xflags3
         if [ $? -ne 0 ]; then echo "ERROR: failed to compile TM library $t"; exit -1; fi
         cd ..
         echo "Success."
@@ -60,7 +66,7 @@ do
         echo "Compiling benchmark $p for TM library $t"
         if [ -e $mfile ]; then
             make -f $mfile clean TARGET=$t
-            make -f $mfile TARGET=$t EXTRAFLAGS1=$xflags1 EXTRAFLAGS2=$xflags2
+            make -f $mfile TARGET=$t EXTRAFLAGS1=$xflags1 EXTRAFLAGS2=$xflags2 EXTRAFLAGS3=$xflags3
             if [ $? -ne 0 ]; then
                 echo "ERROR: failed to compile benchmark $p for TM library $t"
                 exit 1

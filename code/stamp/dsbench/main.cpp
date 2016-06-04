@@ -41,16 +41,16 @@ static Random rngs[MAX_TID_POW2*PREFETCH_SIZE_WORDS]; // create per-thread rando
 #if defined(BST)
 #include "bst/bst_impl.h"
 #include "recordmgr/record_manager.h"
-#elif defined(MCLIST)
-#include "mcas/List/MC_list_impl.h"
-#define INSERT_IF_ABSENT
+//#elif defined(MCLIST)
+//#include "mcas/List/MC_list_impl.h"
+//#define INSERT_IF_ABSENT
 #elif defined(ABTREE)
 #include "abtree/abtree_impl.h"
 #include "recordmgr/record_manager.h"
-#elif defined(CITRUS)
-#include "recordmgr/record_manager.h"
-#include "citrus/prcu.h"
-#include "citrus/citrus_impl.h"
+//#elif defined(CITRUS)
+//#include "recordmgr/record_manager.h"
+//#include "citrus/prcu.h"
+//#include "citrus/citrus_impl.h"
 #else
 #error "Failed to define a data structure"
 #endif
@@ -77,14 +77,14 @@ const test_type POS_INFTY = 2000000000;
 
 #if defined(BST)
 #define DS_DECLARATION bst<test_type, test_type, less<test_type>, MemMgmt>
-#elif defined(MCLIST)
-#define DS_DECLARATION MC_list<test_type, test_type, MemMgmt>
+//#elif defined(MCLIST)
+//#define DS_DECLARATION MC_list<test_type, test_type, MemMgmt>
 #elif defined(ABTREE)
 #define ABTREE_NODE_DEGREE 16
 #define ABTREE_NODE_MIN_DEGREE 6
 #define DS_DECLARATION abtree<ABTREE_NODE_DEGREE, test_type, less<test_type>, MemMgmt>
-#elif defined(CITRUS)
-#define DS_DECLARATION citrustree<MemMgmt>
+//#elif defined(CITRUS)
+//#define DS_DECLARATION citrustree<MemMgmt>
 #else
 #error "Failed to define a data structure"
 #endif
@@ -92,25 +92,25 @@ const test_type POS_INFTY = 2000000000;
 #define STR(x) XSTR(x)
 #define XSTR(x) #x
 
-#ifndef RQ_FUNC
-#define RQ_FUNC rangeQuery
-#endif
-
-#ifndef INSERT_FUNC
-#define INSERT_FUNC insert
-#endif
-
-#ifndef ERASE_FUNC
-#define ERASE_FUNC erase
-#endif
-
-#ifndef RQ_FUNC
-#define RQ_FUNC rangeQuery
-#endif
-
-#ifndef FIND_FUNC
-#define FIND_FUNC find
-#endif
+//#ifndef RQ_FUNC
+//#define RQ_FUNC rangeQuery
+//#endif
+//
+//#ifndef INSERT_FUNC
+//#define INSERT_FUNC insert
+//#endif
+//
+//#ifndef ERASE_FUNC
+//#define ERASE_FUNC erase
+//#endif
+//
+//#ifndef RQ_FUNC
+//#define RQ_FUNC rangeQuery
+//#endif
+//
+//#ifndef FIND_FUNC
+//#define FIND_FUNC find
+//#endif
 
 #if defined(ABTREE)
 #define VALUE ((void*) (int64_t) key)
@@ -121,16 +121,23 @@ const test_type POS_INFTY = 2000000000;
 #endif
 
 #if defined(BST) || defined(ABTREE)
-#define INSERT_AND_CHECK_SUCCESS tree->INSERT_FUNC(tid, key, VALUE) == tree->NO_VALUE
-#define DELETE_AND_CHECK_SUCCESS tree->ERASE_FUNC(tid, key).second
-#define FIND_AND_CHECK_SUCCESS tree->FIND_FUNC(tid, key)
-#define RQ_AND_CHECK_SUCCESS(rqcnt) rqcnt = tree->RQ_FUNC(tid, key, key+RQSIZE, rqResults)
-#define RQ_GARBAGE(rqcnt) rqResults[0]->KEY + rqResults[rqcnt-1]->KEY
-#define INIT_THREAD(tid) tree->initThread(tid)
-#define PRCU_INIT 
-#define PRCU_REGISTER(tid)
-#define PRCU_UNREGISTER
-#define CLEAR_COUNTERS tree->clearCounters()
+#if defined(TLE) || defined(tle)
+        #define INSERT_AND_CHECK_SUCCESS tree->insert_tle(tid, key, VALUE) == tree->NO_VALUE
+        #define DELETE_AND_CHECK_SUCCESS tree->erase_tle(tid, key).second
+        #define FIND_AND_CHECK_SUCCESS tree->find_tle(tid, key)
+    #else
+        #define INSERT_AND_CHECK_SUCCESS tree->insert_stm(TM_ARG_ALONE, tid, key, VALUE) == tree->NO_VALUE
+        #define DELETE_AND_CHECK_SUCCESS tree->erase_stm(TM_ARG_ALONE, tid, key).second
+        #define FIND_AND_CHECK_SUCCESS tree->find_stm(TM_ARG_ALONE, tid, key)
+    #endif
+
+    //#define RQ_AND_CHECK_SUCCESS(rqcnt) rqcnt = tree->RQ_FUNC(tid, key, key+RQSIZE, rqResults)
+    //#define RQ_GARBAGE(rqcnt) rqResults[0]->KEY + rqResults[rqcnt-1]->KEY
+    #define INIT_THREAD(tid) tree->initThread(tid)
+    #define PRCU_INIT 
+    #define PRCU_REGISTER(tid)
+    #define PRCU_UNREGISTER
+    #define CLEAR_COUNTERS tree->clearCounters()
 #endif
 
 // cpu sets for binding threads to cores
@@ -138,75 +145,75 @@ const test_type POS_INFTY = 2000000000;
 cpu_set_t *cpusets[PHYSICAL_PROCESSORS];
 #endif
 
-template <class MemMgmt>
-void prefill(DS_DECLARATION * tree) {
-    const double PREFILL_THRESHOLD = 0.03;
-    for (int tid=0;tid<TOTAL_THREADS;++tid) {
-        INIT_THREAD(tid); // it must be okay that we do this with the main thread and later with another thread.
-    }
-    Random& rng = rngs[0];
-    const double expectedFullness = (INS+DEL ? INS / (double)(INS+DEL) : 0.5); // percent full in expectation
-    const int expectedSize = (int)(MAXKEY * expectedFullness);
-
-#if defined(BST) || defined(ABTREE) || defined(CITRUS)
-    int sz = 0;
-    int tid = 0;
-    for (int i=0;;++i) {
-        VERBOSE {
-            if (i&&((i % 1000000) == 0)) COUTATOMIC("PREFILL op# "<<i<<" sz="<<sz<<" expectedSize="<<expectedSize<<endl);
-        }
-        
-        int key = rng.nextNatural(MAXKEY);
-        int op = rng.nextNatural(100);
-        if (op < 100*expectedFullness) {
-            if (INSERT_AND_CHECK_SUCCESS) {
-                keysum->add(tid, key);
-                ++sz;
-            }
-        } else {
-            if (DELETE_AND_CHECK_SUCCESS) {
-                keysum->add(tid, -key);
-                --sz;
-            }
-        }
-        int absdiff = (sz < expectedSize ? expectedSize - sz : sz - expectedSize);
-        if (absdiff < expectedSize*PREFILL_THRESHOLD) {
-            break;
-        }
-    }
-#elif defined(MCLIST)
-    bool present[MAXKEY];
-    for (int i=0;i<MAXKEY;++i) present[i] = 0;
-    
-    int sz = 0;
-    int tid = 0;
-    for (int i=0;;++i) {
-        VERBOSE {
-            if (i&&((i % 1000000) == 0)) COUTATOMIC("PREFILL op# "<<i<<" sz="<<sz<<" expectedSize="<<expectedSize<<endl);
-        }
-        int key = rng.nextNatural(MAXKEY);
-        if (!present[key]) {
-            present[key] = 1;
-            if (++sz >= expectedSize) break;
-        }
-    }
-    // always insert at the head of the list for efficiency
-    for (int i=MAXKEY-1;i>=0;--i) {
-        if (present[i]) {
-            int key = i;
-            if (INSERT_AND_CHECK_SUCCESS) {
-                keysum->add(tid, key);
-            } else {
-                cerr<<"fatal error during prefilling: key should have been inserted"<<endl;
-                exit(-1);
-            }
-        }
-    }
-#endif
-    
-    CLEAR_COUNTERS;
-    VERBOSE COUTATOMIC("finished prefilling to size "<<sz<<" for expected size "<<expectedSize<<endl);
-}
+//template <class MemMgmt>
+//void prefill(DS_DECLARATION * tree) {
+//    const double PREFILL_THRESHOLD = 0.03;
+//    for (int tid=0;tid<TOTAL_THREADS;++tid) {
+//        INIT_THREAD(tid); // it must be okay that we do this with the main thread and later with another thread.
+//    }
+//    Random& rng = rngs[0];
+//    const double expectedFullness = (INS+DEL ? INS / (double)(INS+DEL) : 0.5); // percent full in expectation
+//    const int expectedSize = (int)(MAXKEY * expectedFullness);
+//
+//#if defined(BST) || defined(ABTREE) //|| defined(CITRUS)
+//    int sz = 0;
+//    int tid = 0;
+//    for (int i=0;;++i) {
+//        VERBOSE {
+//            if (i&&((i % 1000000) == 0)) COUTATOMIC("PREFILL op# "<<i<<" sz="<<sz<<" expectedSize="<<expectedSize<<endl);
+//        }
+//        
+//        int key = rng.nextNatural(MAXKEY);
+//        int op = rng.nextNatural(100);
+//        if (op < 100*expectedFullness) {
+//            if (INSERT_AND_CHECK_SUCCESS) {
+//                keysum->add(tid, key);
+//                ++sz;
+//            }
+//        } else {
+//            if (DELETE_AND_CHECK_SUCCESS) {
+//                keysum->add(tid, -key);
+//                --sz;
+//            }
+//        }
+//        int absdiff = (sz < expectedSize ? expectedSize - sz : sz - expectedSize);
+//        if (absdiff < expectedSize*PREFILL_THRESHOLD) {
+//            break;
+//        }
+//    }
+////#elif defined(MCLIST)
+////    bool present[MAXKEY];
+////    for (int i=0;i<MAXKEY;++i) present[i] = 0;
+////    
+////    int sz = 0;
+////    int tid = 0;
+////    for (int i=0;;++i) {
+////        VERBOSE {
+////            if (i&&((i % 1000000) == 0)) COUTATOMIC("PREFILL op# "<<i<<" sz="<<sz<<" expectedSize="<<expectedSize<<endl);
+////        }
+////        int key = rng.nextNatural(MAXKEY);
+////        if (!present[key]) {
+////            present[key] = 1;
+////            if (++sz >= expectedSize) break;
+////        }
+////    }
+////    // always insert at the head of the list for efficiency
+////    for (int i=MAXKEY-1;i>=0;--i) {
+////        if (present[i]) {
+////            int key = i;
+////            if (INSERT_AND_CHECK_SUCCESS) {
+////                keysum->add(tid, key);
+////            } else {
+////                cerr<<"fatal error during prefilling: key should have been inserted"<<endl;
+////                exit(-1);
+////            }
+////        }
+////    }
+//#endif
+//    
+//    CLEAR_COUNTERS;
+//    VERBOSE COUTATOMIC("finished prefilling to size "<<sz<<" for expected size "<<expectedSize<<endl);
+//}
 
 
 template <class MemMgmt>
@@ -230,12 +237,12 @@ void thread_timed(void *unused) {
 
 #if defined(BST)
     Node<test_type, test_type> const ** rqResults = new Node<test_type, test_type> const *[RQSIZE];
-#elif defined(MCLIST)
-    Node<test_type, test_type> const ** rqResults = new Node<test_type, test_type> const *[RQSIZE];
+//#elif defined(MCLIST)
+//    Node<test_type, test_type> const ** rqResults = new Node<test_type, test_type> const *[RQSIZE];
 #elif defined(ABTREE)
     abtree_Node<ABTREE_NODE_DEGREE, test_type> const ** rqResults = new abtree_Node<ABTREE_NODE_DEGREE, test_type> const *[RQSIZE];
-#elif defined(CITRUS)
-    int * rqResults = new int[RQSIZE];
+//#elif defined(CITRUS)
+//    int * rqResults = new int[RQSIZE];
 #endif
     
     INIT_THREAD(tid);
@@ -268,11 +275,11 @@ void thread_timed(void *unused) {
             }
             tree->debugGetCounters()->eraseSuccess->inc(tid);
         } else if (op < INS+DEL+RQ) {
-            int rqcnt;
-            if (RQ_AND_CHECK_SUCCESS(rqcnt)) { // prevent rqResults and count from being optimized out
-                garbage += RQ_GARBAGE(rqcnt);
-            }
-            tree->debugGetCounters()->rqSuccess->inc(tid);
+//            int rqcnt;
+//            if (RQ_AND_CHECK_SUCCESS(rqcnt)) { // prevent rqResults and count from being optimized out
+//                garbage += RQ_GARBAGE(rqcnt);
+//            }
+//            tree->debugGetCounters()->rqSuccess->inc(tid);
         } else {
             FIND_AND_CHECK_SUCCESS;
             tree->debugGetCounters()->findSuccess->inc(tid);
@@ -488,12 +495,12 @@ template <class MemMgmt>
 void trial() {
 #if defined(BST)
     __tree = (void*) new DS_DECLARATION(NO_KEY, NO_VALUE, RETRY, TOTAL_THREADS);
-#elif defined(MCLIST)
-    __tree = (void*) new DS_DECLARATION(TOTAL_THREADS, NEG_INFTY, POS_INFTY, NO_VALUE);
+//#elif defined(MCLIST)
+//    __tree = (void*) new DS_DECLARATION(TOTAL_THREADS, NEG_INFTY, POS_INFTY, NO_VALUE);
 #elif defined(ABTREE)
     __tree = (void*) new DS_DECLARATION(TOTAL_THREADS, DEFAULT_SUSPECTED_SIGNAL, NO_KEY, ABTREE_NODE_MIN_DEGREE);
-#elif defined(CITRUS)
-    __tree = (void*) new DS_DECLARATION(MAXKEY, TOTAL_THREADS);
+//#elif defined(CITRUS)
+//    __tree = (void*) new DS_DECLARATION(MAXKEY, TOTAL_THREADS);
 #else
 #error "Failed to define a data structure"
 #endif
@@ -670,11 +677,11 @@ void printOutput() {
     }
     
     for (int path=0;path<NUMBER_OF_PATHS;++path) {
-        switch (path) {
-            case PATH_FAST_HTM: if (MAX_FAST_HTM_RETRIES >= 0) COUTATOMIC("[" << PATH_NAMES[path] << " = " << P1NAME << "]" << endl); break;
-            case PATH_SLOW_HTM: if (MAX_SLOW_HTM_RETRIES >= 0) COUTATOMIC("[" << PATH_NAMES[path] << " = " << P2NAME << "]" << endl); break;
-            case PATH_FALLBACK: COUTATOMIC("[" << PATH_NAMES[path] << " = " << P3NAME << "]" << endl); break;
-        }
+//        switch (path) {
+//            case PATH_FAST_HTM: if (MAX_FAST_HTM_RETRIES >= 0) COUTATOMIC("[" << PATH_NAMES[path] << " = " << P1NAME << "]" << endl); break;
+//            case PATH_SLOW_HTM: if (MAX_SLOW_HTM_RETRIES >= 0) COUTATOMIC("[" << PATH_NAMES[path] << " = " << P2NAME << "]" << endl); break;
+//            case PATH_FALLBACK: COUTATOMIC("[" << PATH_NAMES[path] << " = " << P3NAME << "]" << endl); break;
+//        }
         if (totalPathOps[path] > 0) {
             COUTATOMIC("total path "<<PATH_NAMES[path]<<"           : "<<totalPathOps[path]<<" ("<<percent(totalPathOps[path], totalOps)<<" of ops)"<<endl);
         }
@@ -757,10 +764,10 @@ void performExperiment() {
     typedef record_manager<Reclaim, Alloc, Pool, Node<test_type, test_type>, SCXRecord<test_type, test_type> > MemMgmt;
 #elif defined(ABTREE)
     typedef record_manager<Reclaim, Alloc, Pool, abtree_Node<ABTREE_NODE_DEGREE, test_type>, abtree_SCXRecord<ABTREE_NODE_DEGREE, test_type> > MemMgmt;
-#elif defined(MCLIST)
-    typedef record_manager<Reclaim, Alloc, Pool, Node<test_type, test_type> > MemMgmt;
-#elif defined(CITRUS)
-    typedef record_manager<Reclaim, Alloc, Pool, node_t> MemMgmt;
+//#elif defined(MCLIST)
+//    typedef record_manager<Reclaim, Alloc, Pool, Node<test_type, test_type> > MemMgmt;
+//#elif defined(CITRUS)
+//    typedef record_manager<Reclaim, Alloc, Pool, node_t> MemMgmt;
 #endif
     EXPERIMENT_FN<MemMgmt>();
     printOutput<MemMgmt>();
@@ -877,8 +884,8 @@ int main(int argc, char** argv) {
             RQSIZE = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-k") == 0) {
             MAXKEY = atoi(argv[++i]);
-        } else if (strcmp(argv[i], "-nrq") == 0) {
-            RQ_THREADS = atoi(argv[++i]);
+//        } else if (strcmp(argv[i], "-nrq") == 0) {
+//            RQ_THREADS = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-nwork") == 0) {
             WORK_THREADS = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-o") == 0) {
@@ -893,10 +900,10 @@ int main(int argc, char** argv) {
             MILLIS_TO_RUN = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-p") == 0) {
             PREFILL = true;
-        } else if (strcmp(argv[i], "-htmfast") == 0) {
-            MAX_FAST_HTM_RETRIES = atoi(argv[++i]);
-        } else if (strcmp(argv[i], "-htmslow") == 0) {
-            MAX_SLOW_HTM_RETRIES = atoi(argv[++i]);
+//        } else if (strcmp(argv[i], "-htmfast") == 0) {
+//            MAX_FAST_HTM_RETRIES = atoi(argv[++i]);
+//        } else if (strcmp(argv[i], "-htmslow") == 0) {
+//            MAX_SLOW_HTM_RETRIES = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-print") == 0) {
             PRINT_TREE = true;
         } else if (strcmp(argv[i], "-trace") == 0) {
@@ -912,23 +919,26 @@ int main(int argc, char** argv) {
     }
     TOTAL_THREADS = WORK_THREADS + RQ_THREADS;
     
-    PRINTS(P1NAME);
-    PRINTS(P2NAME);
-    PRINTS(P3NAME);
-    PRINTS(STR(FIND_FUNC));
-    PRINTS(STR(INSERT_FUNC));
-    PRINTS(STR(ERASE_FUNC));
-    PRINTS(STR(RQ_FUNC));
+//    PRINTS(P1NAME);
+//    PRINTS(P2NAME);
+//    PRINTS(P3NAME);
+    PRINTS(STR(FIND_AND_CHECK_SUCCESS));
+    PRINTS(STR(INSERT_AND_CHECK_SUCCESS));
+    PRINTS(STR(DELETE_AND_CHECK_SUCCESS));
+//    PRINTS(STR(FIND_FUNC));
+//    PRINTS(STR(INSERT_FUNC));
+//    PRINTS(STR(ERASE_FUNC));
+//    PRINTS(STR(RQ_FUNC));
     PRINTS(STR(EXPERIMENT_FN));
-    PRINTI(MAX_FAST_HTM_RETRIES);
-    PRINTI(MAX_SLOW_HTM_RETRIES);
+//    PRINTI(MAX_FAST_HTM_RETRIES);
+//    PRINTI(MAX_SLOW_HTM_RETRIES);
     PRINTI(PREFILL);
     PRINTI(MILLIS_TO_RUN);
     PRINTI(INS);
     PRINTI(DEL);
     PRINTI(MAXKEY);
     PRINTI(WORK_THREADS);
-    PRINTI(RQ_THREADS);
+//    PRINTI(RQ_THREADS);
     PRINTS(RECLAIM_TYPE);
     PRINTS(ALLOC_TYPE);
     PRINTS(POOL_TYPE);

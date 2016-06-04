@@ -127,7 +127,7 @@ private:
     atomic_uint numFallback; // number of processes on the fallback path
     char padding2[PREFETCH_SIZE_BYTES];
 
-    int numSlowHTM;  // TODO: MAKE THIS A SNZI OBJECT INSTEAD OF AN INTEGER
+    int numSlowHTM;  // TODO: consider making this a SNZI object
     
     // Originally, I tested (node->key == NO_KEY or node == root->left->left)
     // to see if node is a sentinel, but there is a nice observation:
@@ -298,16 +298,16 @@ public:
     Node<K,V> *getRoot(void) { return root; }
     const V insert(const int tid, const K& key, const V& val);
     const V insert_tle(const int tid, const K& key, const V& val);
-    const V insert_stm(const int tid, const K& key, const V& val);
+    const V insert_stm(TM_ARGDECL_ALONE, const int tid, const K& key, const V& val);
     const pair<V,bool> erase(const int tid, const K& key);
     const pair<V,bool> erase_tle(const int tid, const K& key);
-    const pair<V,bool> erase_stm(const int tid, const K& key);
+    const pair<V,bool> erase_stm(TM_ARGDECL_ALONE, const int tid, const K& key);
     const pair<V,bool> find(const int tid, const K& key);
     const pair<V,bool> find_tle(const int tid, const K& key);
-    const pair<V,bool> find_stm(const int tid, const K& key);
+    const pair<V,bool> find_stm(TM_ARGDECL_ALONE, const int tid, const K& key);
     int rangeQuery(const int tid, const K& low, const K& hi, Node<K,V> const ** result);
     int rangeQuery_tle(const int tid, const K& low, const K& hi, Node<K,V> const ** result);
-    int rangeQuery_stm(const int tid, const K& low, const K& hi, Node<K,V> const ** result);
+    int rangeQuery_stm(TM_ARGDECL_ALONE, const int tid, const K& low, const K& hi, Node<K,V> const ** result);
     //bool contains(const int tid, const K& key);
     int size(void); /** warning: size is a LINEAR time operation, and does not return consistent results with concurrency **/
     

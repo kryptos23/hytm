@@ -87,8 +87,10 @@ typedef struct Thread_void {
                                             ___Self->isFallback = 0; \
                                             ___Self->IsRO = 1; \
                                             ___Self->envPtr = &STM_JMPBUF; \
-                                            unsigned ___htmattempts; \
-                                            for (___htmattempts = 0; ___htmattempts < HTM_ATTEMPT_THRESH; ++___htmattempts) { \
+                                            int ___htmattempts; \
+                                            /*printf("HTM_ATTEMPT_THRESH=%d\n", HTM_ATTEMPT_THRESH);*/ \
+                                            for (___htmattempts = 0 ; ___htmattempts < HTM_ATTEMPT_THRESH; ++___htmattempts) { \
+                                                /*printf("h/w loop iteration\n");*/ \
                                                 ___status = XBEGIN(); \
                                                 if (___status == _XBEGIN_STARTED) { \
                                                     break; \
@@ -96,7 +98,9 @@ typedef struct Thread_void {
                                                     ++___Self->AbortsHW; \
                                                 } \
                                             } \
+                                            /*printf("exited loop\n");*/ \
                                             if (___htmattempts < HTM_ATTEMPT_THRESH) break; \
+                                            /*printf("passed h/w break\n");*/ \
                                             /* STM attempt */ \
                                             /*DEBUG2 aout("thread "<<___Self->UniqID<<" started s/w tx attempt "<<(___Self->AbortsSW+___Self->CommitsSW)<<"; s/w commits so far="<<___Self->CommitsSW);*/ \
                                             /*DEBUG1 if ((___Self->CommitsSW % 50000) == 0) aout("thread "<<___Self->UniqID<<" has committed "<<___Self->CommitsSW<<" s/w txns");*/ \
@@ -108,6 +112,7 @@ typedef struct Thread_void {
                                             } \
                                             /*TxStart(STM_SELF, &STM_JMPBUF, SETJMP_RETVAL, &STM_RO_FLAG);*/ \
                                             SOFTWARE_BARRIER; \
+                                            /*printf("begin software attempt\n");*/ \
                                         } while (0); /* enforce comma */
 #else
 #  define STM_BEGIN(isReadOnly)         do { \

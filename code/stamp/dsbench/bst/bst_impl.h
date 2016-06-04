@@ -590,46 +590,43 @@ const pair<V,bool> bst<K,V,Compare,RecManager>::find_tle(const int tid, const K&
 }
 
 template<class K, class V, class Compare, class RecManager>
-const pair<V,bool> bst<K,V,Compare,RecManager>::find_stm(const int tid, const K& key) {
+const pair<V,bool> bst<K,V,Compare,RecManager>::find_stm(TM_ARGDECL_ALONE, const int tid, const K& key) {
     pair<V,bool> result;
     Node<K,V> *p;
     Node<K,V> *l;
     
-//    shmem->leaveQuiescentState(tid);
+    shmem->leaveQuiescentState(tid);
     TM_BEGIN_RO();
 
     TRACE COUTATOMICTID("find(tid="<<tid<<" key="<<key<<")"<<endl);
     // root is never retired, so we don't need to call
     // protectPointer before accessing its child pointers
-    p = root->left;
-    assert(p != root);
-    l = p->left;
+    p = (Node<K,V> *) TM_SHARED_READ_P(root->left);
+    l = (Node<K,V> *) TM_SHARED_READ_P(p->left);
     if (l == NULL) {
         result = pair<V,bool>(NO_VALUE, false); // no keys in data structure
-        
         TM_END();
         shmem->enterQuiescentState(tid);
         return result; // success
     }
 
-    assert(shmem->isProtected(tid, l));
-    while (l->left != NULL) {
+    while (TM_SHARED_READ_P(l->left) != NULL) {
         TRACE COUTATOMICTID("traversing tree; l="<<*l<<endl);
         p = l; // note: the new p is currently protected
-        if (cmp(key, p->key)) {
-            l = p->left;
+        if (cmp(key, TM_SHARED_READ_L(p->key))) {
+            l = (Node<K,V> *) TM_SHARED_READ_P(p->left);
         } else {
-            l = p->right;
+            l = (Node<K,V> *) TM_SHARED_READ_P(p->right);
         }
     }
-    if (key == l->key) {
-        result = pair<V,bool>(l->value, true);
+    if (key == TM_SHARED_READ_L(l->key)) {
+        result = pair<V,bool>(TM_SHARED_READ_L(l->value), true);
     } else {
         result = pair<V,bool>(NO_VALUE, false);
     }
 
-//    shmem->enterQuiescentState(tid);
     TM_END();
+    shmem->enterQuiescentState(tid);
     return result; // success
 }
 
@@ -697,46 +694,46 @@ const V bst<K,V,Compare,RecManager>::insert_tle(const int tid, const K& key, con
 }
 
 template<class K, class V, class Compare, class RecManager>
-const V bst<K,V,Compare,RecManager>::insert_stm(const int tid, const K& key, const V& val) {
+const V bst<K,V,Compare,RecManager>::insert_stm(TM_ARGDECL_ALONE, const int tid, const K& key, const V& val) {
     shmem->leaveQuiescentState(tid);
-    TLEScope scope (&this->lock, MAX_FAST_HTM_RETRIES, tid, counters->pathSuccess, counters->pathFail, counters->htmAbort);
+    TM_BEGIN();
 
     initializeNode(tid, GET_ALLOCATED_NODE_PTR(tid, 0), key, val, /*1,*/ NULL, NULL);
-    Node<K,V> *p = root, *l;
-    l = root->left;
-    if (l->left != NULL) { // the tree contains some node besides sentinels...
+    Node<K,V> *p = (Node<K,V> *) TM_SHARED_READ_P(root);
+    Node<K,V> *l = (Node<K,V> *) TM_SHARED_READ_P(p->left);
+    if (TM_SHARED_READ_P(l->left) != NULL) { // the tree contains some node besides sentinels...
         p = l;
-        l = l->left;    // note: l must have key infinity, and l->left must not.
-        while (l->left != NULL) {
+        l = (Node<K,V> *) TM_SHARED_READ_P(l->left);    // note: l must have key infinity, and l->left must not.
+        while (TM_SHARED_READ_P(l->left) != NULL) {
             p = l;
-            if (cmp(key, p->key)) {
-                l = p->left;
+            if (cmp(key, TM_SHARED_READ_L(p->key))) {
+                l = (Node<K,V> *) TM_SHARED_READ_P(p->left);
             } else {
-                l = p->right;
+                l = (Node<K,V> *) TM_SHARED_READ_P(p->right);
             }
         }
     }
     // if we find the key in the tree already
-    if (key == l->key) {
-        V result = l->value;
-        l->value = val;
-        scope.end();
+    if (key == TM_SHARED_READ_L(l->key)) {
+        V result = TM_SHARED_READ_L(l->value);
+        TM_SHARED_WRITE_L(l->value, val);
+        TM_END();
         shmem->enterQuiescentState(tid);
         return result;
     } else {
-        if (l->key == NO_KEY || cmp(key, l->key)) {
-            initializeNode(tid, GET_ALLOCATED_NODE_PTR(tid, 1), l->key, l->value, /*newWeight,*/ GET_ALLOCATED_NODE_PTR(tid, 0), l);
+        if (TM_SHARED_READ_L(l->key) == NO_KEY || cmp(key, TM_SHARED_READ_L(l->key))) {
+            initializeNode(tid, GET_ALLOCATED_NODE_PTR(tid, 1), TM_SHARED_READ_L(l->key), TM_SHARED_READ_L(l->value), /*newWeight,*/ GET_ALLOCATED_NODE_PTR(tid, 0), l);
         } else {
             initializeNode(tid, GET_ALLOCATED_NODE_PTR(tid, 1), key, val, /*newWeight,*/ l, GET_ALLOCATED_NODE_PTR(tid, 0));
         }
 
-        Node<K,V> *pleft = p->left;
+        Node<K,V> *pleft = (Node<K,V> *) TM_SHARED_READ_P(p->left);
         if (l == pleft) {
-            p->left = GET_ALLOCATED_NODE_PTR(tid, 1);
+            TM_SHARED_WRITE_P(p->left, GET_ALLOCATED_NODE_PTR(tid, 1));
         } else {
-            p->right = GET_ALLOCATED_NODE_PTR(tid, 1);
+            TM_SHARED_WRITE_P(p->right, GET_ALLOCATED_NODE_PTR(tid, 1));
         }
-        scope.end();
+        TM_END();
         shmem->enterQuiescentState(tid);
 
         // do memory reclamation and allocation
@@ -812,66 +809,64 @@ const pair<V,bool> bst<K,V,Compare,RecManager>::erase_tle(const int tid, const K
         // do memory reclamation and allocation
         shmem->retire(tid, p);
         shmem->retire(tid, l);
-        tryRetireSCXRecord(tid, p->scxRecord, p);
     }
     return pair<V,bool>(result, (result != NO_VALUE));
 }
 
 template<class K, class V, class Compare, class RecManager>
-const pair<V,bool> bst<K,V,Compare,RecManager>::erase_stm(const int tid, const K& key) {
+const pair<V,bool> bst<K,V,Compare,RecManager>::erase_stm(TM_ARGDECL_ALONE, const int tid, const K& key) {
     shmem->leaveQuiescentState(tid);
-    TLEScope scope (&this->lock, MAX_FAST_HTM_RETRIES, tid, counters->pathSuccess, counters->pathFail, counters->htmAbort);
+    TM_BEGIN();
 
     V result = NO_VALUE;
     
     Node<K,V> *gp, *p, *l;
-    l = root->left;
-    if (l->left == NULL) {
-        scope.end();
+    l = (Node<K,V> *) TM_SHARED_READ_P(((Node<K,V> *) TM_SHARED_READ_P(root))->left);
+    if (TM_SHARED_READ_P(l->left) == NULL) {
+        TM_END();
         shmem->enterQuiescentState(tid);
         return pair<V,bool>(result, (result != NO_VALUE)); // success
     } // only sentinels in tree...
-    gp = root;
+    gp = (Node<K,V> *) TM_SHARED_READ_P(root);
     p = l;
-    l = p->left;    // note: l must have key infinity, and l->left must not.
-    while (l->left != NULL) {
+    l = (Node<K,V> *) TM_SHARED_READ_P(p->left); // note: l must have key infinity, and l->left must not.
+    while (TM_SHARED_READ_P(l->left) != NULL) {
         gp = p;
         p = l;
-        if (cmp(key, p->key)) {
-            l = p->left;
+        if (cmp(key, TM_SHARED_READ_L(p->key))) {
+            l = (Node<K,V> *) TM_SHARED_READ_P(p->left);
         } else {
-            l = p->right;
+            l = (Node<K,V> *) TM_SHARED_READ_P(p->right);
         }
     }
     // if we fail to find the key in the tree
-    if (key != l->key) {
-        scope.end();
+    if (key != TM_SHARED_READ_L(l->key)) {
+        TM_END();
         shmem->enterQuiescentState(tid);
     } else {
         Node<K,V> *gpleft, *gpright;
         Node<K,V> *pleft, *pright;
         Node<K,V> *sleft, *sright;
-        gpleft = gp->left;
-        gpright = gp->right;
-        pleft = p->left;
-        pright = p->right;
+        gpleft = (Node<K,V> *) TM_SHARED_READ_P(gp->left);
+        gpright = (Node<K,V> *) TM_SHARED_READ_P(gp->right);
+        pleft = (Node<K,V> *) TM_SHARED_READ_P(p->left);
+        pright = (Node<K,V> *) TM_SHARED_READ_P(p->right);
         // assert p is a child of gp, l is a child of p
         Node<K,V> *s = (l == pleft ? pright : pleft);
-        sleft = s->left;
-        sright = s->right;
+        sleft = (Node<K,V> *) TM_SHARED_READ_P(s->left);
+        sright = (Node<K,V> *) TM_SHARED_READ_P(s->right);
         if (p == gpleft) {
-            gp->left = s;
+            TM_SHARED_WRITE_P(gp->left, s);
         } else {
-            gp->right = s;
+            TM_SHARED_WRITE_P(gp->right, s);
         }
-        result = l->value;
-        scope.end();
+        result = TM_SHARED_READ_L(l->value);
+        TM_END();
         shmem->enterQuiescentState(tid);
 
         // do memory reclamation and allocation
         shmem->retire(tid, p);
         shmem->retire(tid, l);
-        tryRetireSCXRecord(tid, p->scxRecord, p);
     }
     return pair<V,bool>(result, (result != NO_VALUE));
 }
