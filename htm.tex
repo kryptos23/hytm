@@ -1,6 +1,4 @@
-%\documentclass[•]{•}10pt,conference,compsocconf,letterpaper]{IEEEtran}
-\documentclass[11pt,pdftex,a4paper]{article}%
-\pdfoutput=1
+\documentclass[nocopyrightspace,numbers,9pt,preprint]{sigplanconf}
 %\documentclass{sig-alt-release2}
 %\documentclass{llncs}
 %\usepackage{llncsdoc}
@@ -15,7 +13,7 @@
 \restylefloat{figure}
 \usepackage{subfig}
 %\usepackage{mdframed}
-\usepackage{amsthm}
+%\usepackage{amsthm}
 \usepackage{tikz}
 \usepackage{hyperref}
 \usepackage{color}
@@ -26,17 +24,7 @@
 \setlist{nolistsep}
 %\setenumerate{itemsep=0pt}
 \usepackage{tikz}
-\usepackage[margin=0.96in]{geometry}
-\usepackage{cite}
-\usepackage[textsize=tiny]{todonotes}
 \usepackage{cleveref}
-%\usepackage[dvips]{graphicx}
-%\ifx\pdftexversion\undefined
-%\usepackage[dvips]{graphicx}
-%\else
-%  \usepackage[pdftex]{graphicx}
-%  \DeclareGraphicsRule{*}{mps}{*}{}
-%\fi
 \newif\ifcode
 \codefalse
 %%%
@@ -101,7 +89,9 @@
 % \newtheorem{summary}[theorem]{Summary}
 \newtheorem{observation}[theorem]{Observation}
 %\newenvironment{proof}[1][Proof]{\noindent\textbf{#1.} }{\hfill $\Box$\\[2mm]} %\rule{0.5em}{0.5em}\\}
-\newenvironment{proofsketch}[1][Proof sketch]{\noindent\textbf{#1.} }{\hfill $\Box$\\[2mm]} %\rule{0.5em}{0.5em}\\}
+\newenvironment{proof}[1][Proof]{\noindent\textbf{#1.} }{\hfill $\Box$\\[2mm]}
+\newenvironment{proofsketch}[1][Proof sketch]{\noindent\textbf{#1.} }{\hfill $\Box$\\[2mm]}
+
 
 \newenvironment{reptheorem}[1][Theorem]{\noindent\textbf{#1}}{}
 \def\lf{\tiny}
@@ -215,14 +205,13 @@
 
 
 \begin{document}
-\bibliographystyle{abbrv}
 
 \title{The Cost of Concurrency in Hybrid Transactional Memory}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\date{}
+\authorinfo{}{}
+
 \maketitle
-%
-\thispagestyle{empty}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 \begin{abstract}
 The \emph{Transactional Memory (TM)} abstraction is a synchronization mechanism 
@@ -243,14 +232,14 @@ We evaluate implementations of these algorithms on Intel Haswell, which does not
 Viewed collectively, our results highlight the subtle performance tradeoffs between concurrency, instrumentation cost and the complexity of software transactions in the design space of hybrid TMs.
 \end{abstract}
 
-\newpage
-
 %\newpage
 \pagenumbering{arabic}\setcounter{page}{1}
 
 \input{intro}
 %
 \input{model_alt}
+%
+\input{spec}
 %
 \input{algos}
 %
@@ -259,8 +248,7 @@ Viewed collectively, our results highlight the subtle performance tradeoffs betw
 \input{related}
 %
 \input{conc}
-%
-\newpage
+\bibliographystyle{abbrv}
 \bibliography{references2}
 \appendix
 %
