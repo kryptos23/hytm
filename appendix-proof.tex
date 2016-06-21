@@ -94,6 +94,15 @@ serialization point is chosen between the first and last event of the transactio
 implying if $T_i \prec_{H} T_j$, then $\delta_{T_i} <_{E} \delta_{T_j}$ implies $T_i <_S T_j$.
 \end{proof}
 %
+\begin{claim}
+\label{cl:alg1claim}
+%
+If process $p_i$ executing transaction $T_k\in \ms{txns}(E)$ holds the lock on $X_j\in \ms{Wset}(T_k)$ after $E$, then the value $r_j$ is an odd integer value.
+\end{claim}
+%
+\begin{proof}
+%
+\end{proof}
 %
 \begin{claim}
 \label{cl:readfrom}
