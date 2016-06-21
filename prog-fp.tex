@@ -104,30 +104,29 @@
 		  \State $flag \gets L.\lit{cas}(0,1)$
 		\EndWhile
 		\ForAll{$X_j \in Q$}	
-			\State $or_j\gets r_j.\lit{read}()$ 
+			\State $nr_j\gets r_j.\lit{read}()$
+			\If{$or_j \neq nr_j$}
+			  \State $\lit{release}(\Wset(T_k))$
+			\EndIf
+			\Return $A_k$ \EndReturn
 			 		
 		\EndFor
-		\Comment{First read, then write all: single barrier}
 		\ForAll{$X_j \in Q$}	
-			\State $r_j.\lit{write}(or_j + 1)$ 
+			\State $r_j.\lit{write}(nr_j + 1)$ 
 			 		
 		\EndFor
 		\If{$\lit{validate}()$}
-			\State \textbf{goto} Line~\ref{line:release}
-			
+			\State $\lit{release}(\Wset(T_k))$
+			\Return $A_k$ \EndReturn
 		\EndIf
 		
 		\ForAll{$X_j \in \Wset(T_k)$}
 	 		 \State  $v_j.\lit{write}(\textit{nv}_j)$
 			 
-			 
-	 	\EndFor		
+		\EndFor		
 		
-  		\ForAll{$X_j \in \Wset(T_k)$}	\label{line:release}
- 			\State $r_j.\lit{write}(or_j + 1)$ 
-		\EndFor
-		
-		\State $L.\lit{write}(1)$
+  		\State $\lit{release}(\Wset(T_k))$	\label{line:release}
+ 		
    		\Return $C_k$ \EndReturn
    	 }\EndPart		
 	\Statex
@@ -139,7 +138,15 @@
 		
 		 \Return $\true$ \EndReturn
 	}\EndPart
-	
+	\Statex
+ 	\Part{Function: $\lit{release}(Q)$}{
+		\ForAll{$X_j \in Q$}	
+			\State $r_j.\lit{write}(nr_j + 1)$ 
+			 		
+		\EndFor
+		\State $L.\lit{write}(0)$ 
+		\Return $ok$ \EndReturn
+	}\EndPart
 % 	
 	}
 	\end{multicols}
