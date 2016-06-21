@@ -2,7 +2,7 @@
  * Code for HyTM is loosely based on the code for TL2
  * (in particular, the data structures)
  * 
- * This is an implementation of Algorithm 1 from the paper.
+ * This is an implementation of Algorithm 2 from the paper.
  * 
  * [ note: we cannot distribute this without inserting the appropriate
  *         copyright notices as required by TL2 and STAMP ]
@@ -18,7 +18,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include "platform.h"
-#include "hytm2.h"
+#include "hytm3.h"
 #include "stm.h"
 #include "tmalloc.h"
 #include "util.h"
@@ -28,11 +28,14 @@
 #include <stdint.h>
 using namespace std;
 
+#define PREFETCH_SIZE_BYTES 192
 #define USE_FULL_HASHTABLE
 //#define USE_BLOOM_FILTER
 
 // just for debugging
 volatile int globallock = 0;
+
+volatile int lockflag = 0;
 
 void printStackTrace() {
 
@@ -138,8 +141,13 @@ public:
 };
 
 class vLock {
-    volatile uint64_t lock; // (Version,LOCKBIT)
-    volatile void* volatile owner; // invariant: NULL when lock is not held; non-NULL (and points to thread that owns lock) only when lock is held (but sometimes may be NULL when lock is held). guarantees that a thread can tell if IT holds the lock (but cannot necessarily tell who else holds the lock).
+    union {
+        struct {
+            volatile uint64_t lock; // (Version,LOCKBIT)
+            volatile void* volatile owner; // invariant: NULL when lock is not held; non-NULL (and points to thread that owns lock) only when lock is held (but sometimes may be NULL when lock is held). guarantees that a thread can tell if IT holds the lock (but cannot necessarily tell who else holds the lock).
+        };
+//        char bytes[PREFETCH_SIZE_BYTES];
+    };
 private:
     __INLINE__ vLock(uint64_t lockstate) {
         lock = lockstate;
@@ -148,7 +156,7 @@ private:
 public:
     __INLINE__ vLock() {
         lock = 0;
-        owner = 0;
+        owner = NULL;
     }
     __INLINE__ vLockSnapshot getSnapshot() const {
         vLockSnapshot retval (lock);
@@ -161,36 +169,41 @@ public:
 //        bool retval = __sync_bool_compare_and_swap(&lock, val, val+1);
 //        if (retval) {
 //            owner = thread;
-////            __sync_synchronize();
-////            SOFTWARE_BARRIER;
 //        }
-////        __sync_synchronize();
 //        return retval;
 //    }
-    __INLINE__ bool tryAcquire(void* thread, vLockSnapshot& oldval) {
+//    __INLINE__ bool tryAcquire(void* thread, vLockSnapshot& oldval) {
 //        if (thread == owner) return true; // reentrant acquire
-        bool retval = __sync_bool_compare_and_swap(&lock, oldval.version(), oldval.version()+1);
-        if (retval) {
-            owner = thread;
-//            __sync_synchronize();
-//            SOFTWARE_BARRIER;
-        }
-//        __sync_synchronize();
-        return retval;
-    }
+//        bool retval = __sync_bool_compare_and_swap(&lock, oldval.version(), oldval.version()+1);
+//        if (retval) {
+//            owner = thread;
+//        }
+//        return retval;
+//    }
     __INLINE__ void release(void* thread) {
         if (thread == owner) { // reentrant release (assuming the lock should be released on the innermost release() call)
-            owner = 0;
+            owner = NULL;
             SOFTWARE_BARRIER;
-//            __sync_synchronize();
             ++lock;
-//            __sync_synchronize();
         }
     }
+
+    __INLINE__ bool glockedAcquire(void* thread, vLockSnapshot& oldval) {
+//        if (thread == owner) return true; // reentrant acquire
+        if (oldval.version() == lock) {
+            ++lock;
+            SOFTWARE_BARRIER;
+            owner = thread;
+            return true;
+        }
+        return false;
+    }
+
     // can be invoked only by a hardware transaction
     __INLINE__ void htmIncrementVersion() {
         lock += 2;
     }
+
     __INLINE__ bool isOwnedBy(void* thread) {
         return (thread == owner);
     }
@@ -1263,39 +1276,21 @@ bool lockAll(Thread* Self, List* lockAVPairs) {
             // so we also need to compare it with any rdv stored in the READ-set.
             AVPair* readLogEntry = Self->rdSet->find(curr->addr);
             vLockSnapshot *encounterTime = getMinLockSnap(curr, readLogEntry);
-            assert(encounterTime);
-    //        if (encounterTime->version() != readLogEntry->rdv.version()) {
-    //            fprintf(stderr, "WARNING: read encounter time was not taken as the minimum\n");
-    //        }
 
-    //        vLockSnapshot currsnap = curr->rdv;
-            DEBUG2 aout("thread "<<Self->UniqID<<" trying to acquire lock "
-                        <<*curr->LockFor
-                        <<" with old-ver "<<encounterTime->version()
-                        //<<" (and curr-ver "<<currsnap.version()<<" raw="<<currsnap.lockstate<<" raw&(~1)="<<(currsnap.lockstate&(~1))<<")"
-                        //<<" to protect val "<<(*((T*) curr->addr))
-                        //<<" (and write new-val "<<unpackValue<T>(curr)
-                        <<")");
-
-            // try to acquire locks
-            // (and fail if their versions have changed since encounterTime)
-            if (!curr->LockFor->tryAcquire(Self, *encounterTime)) {
-                DEBUG2 aout("thread "<<Self->UniqID<<" failed to acquire lock "<<*curr->LockFor);
-                // if we fail to acquire a lock, we must
-                // unlock all previous locks that we acquired
+            if (!curr->LockFor->glockedAcquire(Self, *encounterTime)) {
                 for (AVPair* toUnlock = lockAVPairs->head; toUnlock != curr; toUnlock = toUnlock->Next) {
                     toUnlock->LockFor->release(Self);
                     DEBUG2 aout("thread "<<Self->UniqID<<" releasing lock "<<*curr->LockFor<<" in lockAll (will be ver "<<(curr->LockFor->getSnapshot().version()+2)<<")");
                 }
                 return false;
             }
-            DEBUG2 aout("thread "<<Self->UniqID<<" acquired lock "<<*curr->LockFor);
         }
+        DEBUG2 aout("thread "<<Self->UniqID<<" acquired lock "<<*curr->LockFor);
     }
     return true;
 }
 
-__INLINE__ bool tryAcquireWriteSet(Thread* Self) {
+__INLINE__ bool glockedAcquireWS(Thread* Self) {
 //    return lockAll(Self, &Self->wrSet->locks.list);
 //    return lockAll<long>(Self, &Self->wrSet->l.addresses.list)
 //        && lockAll<float>(Self, &Self->wrSet->f.addresses.list);
@@ -1349,7 +1344,7 @@ __INLINE__ bool validateLockVersions(Thread* Self, List* lockAVPairs/*, bool hol
             assert(encounterTime);
             
             if (locksnap.version() != encounterTime->version()) {
-                // the address is locked, it its version number has changed
+                // the address is locked, and its version number has changed
                 // (and we didn't change it, since we don't hold the lock)
                 return false; // abort if we are not holding any locks
             }
@@ -1450,36 +1445,6 @@ void TxClearRWSets(void* _Self) {
 //    Self->LocalUndo->clear();
 }
 
-void TxStart(void* _Self, sigjmp_buf* envPtr, int aborted_in_software, int* ROFlag) {
-    Thread* Self = (Thread*) _Self;
-    Self->wrSet->clear();
-    Self->rdSet->clear();
-//    Self->LocalUndo->clear();
-
-    unsigned status;
-    if (aborted_in_software) goto software;
-
-//    Self->Starts++;
-    Self->Retries = 0;
-    Self->isFallback = 0;
-//    Self->ROFlag = ROFlag;
-    Self->IsRO = true;
-    Self->envPtr = envPtr;
-    if (HTM_ATTEMPT_THRESH <= 0) goto software;
-htmretry:
-    status = XBEGIN();
-    if (status != _XBEGIN_STARTED) { // if we aborted
-        ++Self->AbortsHW;
-        if (++Self->Retries < HTM_ATTEMPT_THRESH) goto htmretry;
-        else goto software;
-    }
-    return;
-software:
-    DEBUG2 aout("thread "<<Self->UniqID<<" started s/w tx attempt "<<(Self->AbortsSW+Self->CommitsSW)<<"; s/w commits so far="<<Self->CommitsSW);
-    DEBUG1 if ((Self->CommitsSW % 50000) == 0) aout("thread "<<Self->UniqID<<" has committed "<<Self->CommitsSW<<" s/w txns");
-    Self->isFallback = 1;
-}
-
 int TxCommit(void* _Self) {
     Thread* Self = (Thread*) _Self;
     
@@ -1492,27 +1457,32 @@ int TxCommit(void* _Self) {
             goto success;
         }
         
-        // lock all addresses in the write-set
-        DEBUG2 aout("thread "<<Self->UniqID<<" invokes tryLockWriteSet "<<*Self->wrSet);
-        if (!tryAcquireWriteSet(Self)) {
-            TxAbort(Self); // abort if we fail to acquire some lock
-            // (note: after lockAll we hold either all or no locks)
-        }
+        // acquire global STM lock
+        acquireLock(&lockflag);
         
-        // validate reads
+        // lock all addresses in the write-set, then validate the read-set
+        DEBUG2 aout("thread "<<Self->UniqID<<" invokes glockedAcquireWS "<<*Self->wrSet);
+        if (!glockedAcquireWS(Self)) {
+            DEBUG2 aout("thread "<<Self->UniqID<<" TxCommit failed glockedAcquireWS -> release global lock & abort");
+            releaseLock(&lockflag);
+            TxAbort(Self);
+        }    
         if (!validateReadSet(Self)) {
-            // if we fail validation, release all locks and abort
+            // release all locks and abort
             DEBUG2 aout("thread "<<Self->UniqID<<" TxCommit failed validation -> release locks & abort");
             releaseWriteSet(Self);
+            releaseLock(&lockflag);
             TxAbort(Self);
         }
         
         // perform the actual writes
+        __sync_synchronize();
         Self->wrSet->writeForward();
         
         // release all locks
         DEBUG2 aout("thread "<<Self->UniqID<<" committed -> release locks");
         releaseWriteSet(Self);
+        releaseLock(&lockflag);
         ++Self->CommitsSW;
         
     // hardware path
@@ -1607,11 +1577,6 @@ intptr_t TxLoad(void* _Self, volatile intptr_t* addr) {
         
     // hardware path
     } else {
-        // abort if addr is locked
-        vLock* lock = PSLOCK(addr);
-        vLockSnapshot locksnap = lock->getSnapshot();
-        if (locksnap.isLocked()) TxAbort(Self); // we cannot hold the lock (since we hold none)
-        
         // actually read addr
         intptr_t val = *addr;
         return val;
@@ -1626,14 +1591,9 @@ void TxStore(void* _Self, volatile intptr_t* addr, intptr_t value) {
     if (Self->isFallback) {
 //        printf("txStore(id=%ld, addr=0x%lX, val=%ld) on fallback\n", Self->UniqID, (unsigned long)(void*) addr, (long) value);
         
-        // abort if addr is locked (since we do not hold any locks)
+//        // abort if addr is locked (since we do not hold any locks)
         vLock* lock = PSLOCK(addr);
         vLockSnapshot locksnap = lock->getSnapshot();
-        if (locksnap.isLocked()) { // note: impossible for lock to be owned by us, since we hold no locks.
-            DEBUG2 aout("thread "<<Self->UniqID<<" TxStore saw lock "<<renamePointer(lock)<<" was held (not by us) -> aborting (retries="<<Self->Retries<<")");
-            TxAbort(Self);
-        }
-        
         // add addr to the write-set
         Self->wrSet->insertReplace(Self, addr, value, lock, locksnap);
         Self->IsRO = false; // txn is not read-only
@@ -1643,16 +1603,12 @@ void TxStore(void* _Self, volatile intptr_t* addr, intptr_t value) {
         
     // hardware path
     } else {
-        // abort if addr is locked
-        vLock* lock = PSLOCK(addr);
-        vLockSnapshot locksnap = lock->getSnapshot();
-        if (locksnap.isLocked()) XABORT(_XABORT_EXPLICIT_LOCKED); // we cannot hold the lock (since we hold none)
-        
+        // todo: also try buffering writes until commit time and using ONE tsuspend/tresume pair
         // increment version number (to notify s/w txns of the change)
         // and write value to addr (order unimportant because of h/w)
+        vLock* lock = PSLOCK(addr);
         lock->htmIncrementVersion();
         *addr = value;
-//        return *addr = value;
     }
 }
 

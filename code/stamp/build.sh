@@ -1,13 +1,14 @@
 #!/bin/bash
 
-PROGS="dsbench"
+#PROGS="dsbench"
 #TARGETS="tle"
-TARGETS="tl2 hytm2sw hytm1 hytm2"
+#TARGETS="tl2 hytm2sw hytm1 hytm2"
 
 #PROGS="bayes genome intruder kmeans labyrinth ssca2 vacation yada"
 #TARGETS="seq seqtm tl2 hytm1 hytm2"
 
-#PROGS="kmeans"
+PROGS="kmeans"
+TARGETS="hytm3 hytm2"
 #TARGETS="tl2"
 #TARGETS="hytm2"
 #TARGETS="tl2 hytm2sw hytm1 hytm2"
@@ -48,6 +49,7 @@ do
         mv hytm2/libhytm2.a hytm2sw/libhytm2sw.a
         cp hytm2/*.h hytm2sw/
     else
+        xflags3="-DHTM_ATTEMPT_THRESH=20"
         cd $t
         echo "Compiling TM library: $t"
         make clean
