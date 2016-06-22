@@ -28,6 +28,9 @@
 #include <stdint.h>
 using namespace std;
 
+#include "../hytm1/counters/debugcounters_cpp.h"
+struct debugCounters *counters;
+
 #define PREFETCH_SIZE_BYTES 192
 #define USE_FULL_HASHTABLE
 //#define USE_BLOOM_FILTER
@@ -1459,6 +1462,7 @@ int TxCommit(void* _Self) {
         
         // acquire global STM lock
         acquireLock(&lockflag);
+        countersProbStartTime(counters, Self->UniqID, 0.);
         
         // lock all addresses in the write-set, then validate the read-set
         DEBUG2 aout("thread "<<Self->UniqID<<" invokes glockedAcquireWS "<<*Self->wrSet);
@@ -1482,13 +1486,16 @@ int TxCommit(void* _Self) {
         // release all locks
         DEBUG2 aout("thread "<<Self->UniqID<<" committed -> release locks");
         releaseWriteSet(Self);
+        countersProbEndTime(counters, Self->UniqID, counters->timingOnFallback);
         releaseLock(&lockflag);
         ++Self->CommitsSW;
+        counterInc(counters->htmCommit[PATH_FALLBACK], Self->UniqID);
         
     // hardware path
     } else {
         XEND();
         ++Self->CommitsHW;
+        counterInc(counters->htmCommit[PATH_FAST_HTM], Self->UniqID);
     }
     
 success:
@@ -1519,6 +1526,8 @@ void TxAbort(void* _Self) {
             aout("END DEBUG ADDRESS MAPPING.");
             exit(-1);
         }
+        registerHTMAbort(counters, Self->UniqID, 0, PATH_FALLBACK);
+        countersProbEndTime(counters, Self->UniqID, counters->timingOnFallback);
         
 #ifdef TXNL_MEM_RECLAMATION
         // "abort" speculative allocations and speculative frees
@@ -1632,18 +1641,23 @@ void TxOnce() {
     CTASSERT((_TABSZ & (_TABSZ - 1)) == 0); /* must be power of 2 */
     
     initSighandler(); /**** DEBUG CODE ****/
-                
+    counters = (debugCounters *) malloc(sizeof(debugCounters));
+    countersInit(counters, MAX_TID_POW2);                
     printf("%s %s\n", TM_NAME, "system ready\n");
     memset(LockTab, 0, _TABSZ*sizeof(vLock));
 }
 
 void TxShutdown() {
-    printf("%s system shutdown:\n  HTM_ATTEMPT_THRESH=%d Starts=%li CommitsHW=%li AbortsHW=%li CommitsSW=%li AbortsSW=%li\n",
-                TM_NAME,
-                HTM_ATTEMPT_THRESH,
-                CommitTallyHW+CommitTallySW,
-                CommitTallyHW, AbortTallyHW,
-                CommitTallySW, AbortTallySW);
+    printf("%s system shutdown:\n", //  Starts=%li CommitsHW=%li AbortsHW=%li CommitsSW=%li AbortsSW=%li\n",
+                TM_NAME //,
+                //CommitTallyHW+CommitTallySW,
+                //CommitTallyHW, AbortTallyHW,
+                //CommitTallySW, AbortTallySW
+                );
+
+    countersPrint(counters);
+    countersDestroy(counters);
+    free(counters);
 }
 
 void* TxNewThread() {

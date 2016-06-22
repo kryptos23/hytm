@@ -30,6 +30,9 @@
 #include <stdint.h>
 using namespace std;
 
+#include "counters/debugcounters_cpp.h"
+struct debugCounters *counters;
+
 //#define USE_FULL_HASHTABLE
 //#define USE_BLOOM_FILTER
 
@@ -789,10 +792,13 @@ int TxCommit(void* _Self) {
         releaseLock(&tleLock);
         tmalloc_clear(Self->allocPtr);
         tmalloc_releaseAllForward(Self->freePtr, NULL);
+        counterInc(counters->htmCommit[PATH_FALLBACK], Self->UniqID);
+        countersProbEndTime(counters, Self->UniqID, counters->timingOnFallback);
     } else {
         tmalloc_releaseAllForward(Self->freePtr, NULL);
         XEND();
         tmalloc_clear(Self->allocPtr);
+        counterInc(counters->htmCommit[PATH_FAST_HTM], Self->UniqID);
     }
     return true;
 }
@@ -804,6 +810,7 @@ void TxAbort(void* _Self) {
         Self->wrSet->writeBackward();
         
         // release global lock
+        countersProbEndTime(counters, Self->UniqID, counters->timingOnFallback);
         releaseLock(&tleLock);
 
         ++Self->Retries;
@@ -820,6 +827,7 @@ void TxAbort(void* _Self) {
             aout("END DEBUG ADDRESS MAPPING.");
             exit(-1);
         }
+        registerHTMAbort(counters, Self->UniqID, 0, PATH_FALLBACK);
         
 #ifdef TXNL_MEM_RECLAMATION
         // "abort" speculative allocations and speculative frees
@@ -866,17 +874,23 @@ void TxStore(void* _Self, volatile intptr_t* addr, intptr_t value) {
 
 void TxOnce() {
     initSighandler(); /**** DEBUG CODE ****/
-                
+    counters = (debugCounters *) malloc(sizeof(debugCounters));
+    countersInit(counters, MAX_TID_POW2);
     printf("%s %s\n", TM_NAME, "system ready\n");
 //    memset(LockTab, 0, _TABSZ*sizeof(vLock));
 }
 
 void TxShutdown() {
-    printf("%s system shutdown:\n  Starts=%li CommitsHW=%li AbortsHW=%li CommitsSW=%li AbortsSW=%li\n",
-                TM_NAME,
-                CommitTallyHW+CommitTallySW,
-                CommitTallyHW, AbortTallyHW,
-                CommitTallySW, AbortTallySW);
+    printf("%s system shutdown:\n", //  Starts=%li CommitsHW=%li AbortsHW=%li CommitsSW=%li AbortsSW=%li\n",
+                TM_NAME //,
+                //CommitTallyHW+CommitTallySW,
+                //CommitTallyHW, AbortTallyHW,
+                //CommitTallySW, AbortTallySW
+                );
+
+    countersPrint(counters);
+    countersDestroy(counters);
+    free(counters);
 }
 
 void* TxNewThread() {

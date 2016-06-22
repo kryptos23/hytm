@@ -95,6 +95,7 @@ typedef struct Thread_void {
                                                 if (___status == _XBEGIN_STARTED) { \
                                                     break; \
                                                 } else { /* if we aborted */ \
+                                                    registerHTMAbort(counters, ___Self->UniqID, ___status, PATH_FAST_HTM); \
                                                     ++___Self->AbortsHW; \
                                                 } \
                                             } \
@@ -113,6 +114,7 @@ typedef struct Thread_void {
                                             /*TxStart(STM_SELF, &STM_JMPBUF, SETJMP_RETVAL, &STM_RO_FLAG);*/ \
                                             SOFTWARE_BARRIER; \
                                             /*printf("begin software attempt\n");*/ \
+                                            /*countersProbStartTime(counters, ___Self->UniqID, 0.);*/ \
                                         } while (0); /* enforce comma */
 #else
 #  define STM_BEGIN(isReadOnly)         do { \

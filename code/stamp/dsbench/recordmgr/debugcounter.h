@@ -8,8 +8,8 @@
 #ifndef DEBUGCOUNTER_H
 #define	DEBUGCOUNTER_H
 
-#include <string>
-#include <sstream>
+//#include <string>
+//#include <sstream>
 #include "machineconstants.h"
 using namespace std;
 

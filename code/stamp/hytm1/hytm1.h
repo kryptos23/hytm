@@ -22,6 +22,9 @@ extern "C" {
 #define DEBUG2 DEBUG1 if(0)
 #define DEBUG3 DEBUG2 if(0)
 
+#include "counters/debugcounters.h"
+extern struct debugCounters *counters;
+    
 #ifdef DEBUG_PRINT
     #define aout(x) { \
         cout<<x<<endl; \

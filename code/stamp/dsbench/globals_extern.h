@@ -40,17 +40,7 @@ extern std::atomic_bool ___validateops;
 
 #include <sstream>
 #define COUTATOMIC(coutstr) cout<<coutstr
-//{ \
-    stringstream ss; \
-    ss<<coutstr; \
-    cout<<ss.str(); \
-}
 #define COUTATOMICTID(coutstr) cout<<"tid="<<(tid<10?" ":"")<<tid<<": "<<coutstr
-// { \
-    stringstream ss; \
-    ss<<"tid="<<tid<<(tid<10?" ":"")<<": "<<coutstr; \
-    cout<<ss.str(); \
-}
 
 #ifndef IF_ALWAYS_RETRY_WHEN_BIT_SET
 //#define IF_ALWAYS_RETRY_WHEN_BIT_SET if(1)

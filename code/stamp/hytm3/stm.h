@@ -96,6 +96,7 @@ typedef struct Thread_void {
                                                     if (lockflag) XABORT(0); \
                                                     break; \
                                                 } else { /* if we aborted */ \
+                                                    registerHTMAbort(counters, ___Self->UniqID, ___status, PATH_FAST_HTM); \
                                                     ++___Self->AbortsHW; \
                                                 } \
                                             } \

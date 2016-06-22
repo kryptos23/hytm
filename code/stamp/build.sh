@@ -8,9 +8,9 @@
 #TARGETS="seq seqtm tl2 hytm1 hytm2"
 
 PROGS="kmeans"
-TARGETS="hytm3 hytm2"
+#TARGETS="hytm3 hytm2"
 #TARGETS="tl2"
-#TARGETS="hytm2"
+TARGETS="hytm1 hytm2 hytm3"
 #TARGETS="tl2 hytm2sw hytm1 hytm2"
 xflags1=-mx32
 xflags2=-DNDEBUG

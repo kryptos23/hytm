@@ -37,7 +37,7 @@
 #define SOFTWARE_BARRIER asm volatile("": : :"memory")
 #endif
 
-#include <iostream>
+//#include <iostream>
 
 //#define NO_TXNS
 #ifdef NO_TXNS

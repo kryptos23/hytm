@@ -13,6 +13,9 @@ extern "C" {
 #define TXNL_MEM_RECLAMATION
 
 #define MAX_RETRIES 100000
+    
+#include "../hytm1/counters/debugcounters.h"
+extern struct debugCounters *counters;
 
 //#define DEBUG_PRINT
 #define DEBUG_PRINT_LOCK

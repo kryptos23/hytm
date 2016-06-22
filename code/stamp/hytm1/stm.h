@@ -92,6 +92,7 @@ typedef struct Thread_void {
                                                     break; \
                                                 } else { /* if we aborted */ \
                                                     ++___Self->AbortsHW; \
+                                                    registerHTMAbort(counters, ___Self->UniqID, ___status, PATH_FAST_HTM); \
                                                     while (tleLock) { \
                                                         __asm__ __volatile__("pause;"); \
                                                     } \
@@ -116,6 +117,7 @@ typedef struct Thread_void {
                                                     continue; \
                                                 } \
                                                 if (__sync_bool_compare_and_swap(&tleLock, 0, 1)) { \
+                                                    countersProbStartTime(counters, ___Self->UniqID, 0.); \
                                                     break; \
                                                 } \
                                             } \

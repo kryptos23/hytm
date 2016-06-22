@@ -14,7 +14,7 @@ EXTRAFLAGS := $(EXTRAFLAGS1) $(EXTRAFLAGS2) $(EXTRAFLAGS3) $(EXTRAFLAGS4)
 CC       := g++
 CFLAGS   := -g -Wall -Winline -O3 $(EXTRAFLAGS)
 CPP      := g++
-CPPFLAGS := -g -Wall -Winline -O3 $(EXTRAFLAGS)
+CPPFLAGS := -g -Wall -Winline -O3 $(EXTRAFLAGS) -DRECORD_ABORTS
 LD       := g++
 LDFLAGS  += $(EXTRAFLAGS)
 
