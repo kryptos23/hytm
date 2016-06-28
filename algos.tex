@@ -1,6 +1,19 @@
 %!TEX root = htm.tex
 \section{Hybrid transactional memory algorithms}\label{sec:hytmalgos}
 %
+\begin{figure*}[!ht]
+\begin{center}
+	\subfloat[\label{sfig:ob-01}]{\scalebox{0.5}[0.5]{\input{ob01}}}
+	\hspace{10mm}
+	\subfloat[\label{sfig:ob-02}]{\scalebox{0.5}[0.5]{\input{ob11}}}
+	 
+\end{center}
+\caption{
+\label{fig:ob1}
+Execution $E$ in Figure~\ref{sfig:ob-01} is indistinguishable
+to $T_1$ from the execution $E'$ in Figure~\ref{sfig:ob-02}}
+\end{figure*}
+%
 In this section, we first identify some invariants that follow from the HyTM execution model presented in the previous section.
 We then describe two HyTM implementations: \cref{sec:hytm1} describes a progressive opaque TM while \cref{sec:hytm2} describes an opaque HyTM that is progressive only for read-only slow-path transactions.
 
@@ -13,19 +26,6 @@ t-incomplete or aborted. Let $E'$ be the execution fragment that is a subsequenc
 To every slow-path transaction $T_m \in \ms{txns}(E)$, $E$ is indistinguishable from $E'$. Additionally, if a fast-path transaction $T_m\in \ms{txns}(E) \setminus \{T_k\}$ does not incur a tracking set abort in $E$, 
 then $E$ is indistinguishable to $T_m$ from $E'$.
 \end{observation}
-%
-\begin{figure*}[t]
-\begin{center}
-	\subfloat[\label{sfig:ob-01}]{\scalebox{0.5}[0.5]{\input{ob01}}}
-	\hspace{10mm}
-	\subfloat[\label{sfig:ob-02}]{\scalebox{0.5}[0.5]{\input{ob11}}}
-	 
-\end{center}
-\caption{
-\label{fig:ob1}
-Execution $E$ in Figure~\ref{sfig:ob-01} is indistinguishable
-to $T_1$ from the execution $E'$ in Figure~\ref{sfig:ob-02}}
-\end{figure*}
 %
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
