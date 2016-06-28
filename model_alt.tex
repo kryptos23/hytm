@@ -21,7 +21,7 @@ $\mathit{write}_k(X,v)$, for a value $v \in V$,
 that returns $\mathit{ok}$ or $A_k$, and
 $\mathit{tryC}_k$ that returns $C_k\notin V$ (\emph{commit}) or $A_k$.
 Additionally, we assume that a transaction $T_k$
-may perform a $\mathit{start_k}$ that is the first t-operation performed by $T_k$ which returns $A_k$ or $\mathit{ok}$.
+may perform a $\mathit{start_k}$ that is the first t-operation performed by $T_k$ prior to invoking any $\mathit{read}_k$ or $\mathit{write}_k$.
 
 \vspace{1mm}\noindent\textbf{Configurations and executions.} 
 A \emph{configuration} of a TM implementation specifies the state of each base object and each process. 
@@ -36,9 +36,6 @@ An \emph{execution fragment} is a (finite or infinite) sequence of events $E = e
 An \emph{execution} of a TM implementation $\mathcal{M}$ is an
 execution fragment where, informally, each event respects the
 specification of base objects and the algorithms specified by $\mathcal{M}$.
-In the next subsection, we define precisely how base objects should
-behave in a hybrid model combining direct memory accesses with \emph{cached} accesses (hardware
-transactions).
 
 %applicable to the initial configuration 
 %where each event of each transaction is issued according to $\mathcal{M}$.
@@ -84,18 +81,16 @@ Events $e$ and $e'$ of an execution $E$  \emph{contend} on a base
 object $b$ if they are both primitives on $b$ in $E$ and at least 
 one of them is nontrivial.
 
-\vspace{1mm}\noindent\textbf{Direct accesses and cached accesses.}
-We now describe the execution model of a \emph{Hybrid Transactional Memory (HyTM)} implementation.
-In our HyTM model, every base object can be accessed with two kinds of
-primitives, \emph{direct} and \emph{cached}.
-
-In a direct access, the rmw primitive operates on the memory state:
+\vspace{1mm}\noindent\textbf{Hybrid transactional memory executions.}
+We now describe the execution model of a \emph{Hybrid transactional memory (HyTM)} implementation.
+In our HyTM model, shared memory configurations may be modified by accessing base objects via two kinds of
+primitives: \emph{direct} and \emph{cached}.
+(i) In a direct access, the rmw primitive operates on the memory state:
 the direct-access event atomically reads the value of the object in
 the shared memory and, if necessary, modifies it.
-
-In a cached access performed by a process $i$, the rmw primitive operates on the \emph{cached}
+(ii) In a cached access performed by a process $i$, the rmw primitive operates on the \emph{cached}
 state recorded in process $i$'s \emph{tracking set} $\tau_i$ (analogous to \emph{L1 cache} of process $i$). 
- 
+
 More precisely, $\tau_i$ is a set of triples $(b, v, m)$ where $b$ is a base object identifier, $v$ is a value, 
 and $m \in \{\shared, \exclusive\}$ is an access \emph{mode}. 
 The triple $(b, v, m)$ is added to the tracking set when $i$ performs a cached
@@ -128,6 +123,7 @@ hardware transaction) or the value of $b$ in the current
 memory configuration, and finally $h(v)$ is returned.
 %
 
+\vspace{1mm}\noindent\textbf{Hardware aborts.}
 A tracking set can be \emph{invalidated} by a concurrent process: 
 if, in a configuration $C$ where  $(b,v,\exclusive)\in\tau_i$
 (resp.\ $(b,v,\shared)\in\tau_i)$,  a process $j\neq i$ applies any primitive 
@@ -136,7 +132,7 @@ if, in a configuration $C$ where  $(b,v,\exclusive)\in\tau_i$
 sets $\tau_i$ to $\emptyset$ and returns $\bot$. We refer to this event as a \emph{tracking set abort}.
 
 Note that hardware transactions may also abort spuriously, or because of unsupported operations~\cite{Rei12}, or due to \emph{capacity} aborts. 
-Since modelling these aborts will not affect our claims and proofs, except make for a more cumbersome presentation, we only consider capacity aborts in this paper. 
+Since modelling these aborts will not affect our results, except make for a more cumbersome presentation, we only consider capacity aborts in this paper. 
 
 Any transaction $T_k \in \ms{txns}(E)$ that performs at least one cached access necessarily performs a \emph{cache-commit} primitive as the last event of $E|k$. 
 A \emph{cache-commit} primitive issued by process $i$ with
@@ -155,7 +151,7 @@ a direct rmw primitive on a base object.
 
 A fast-path transaction essentially encapsulates a hardware transaction. Specifically, in any execution $E$,
 we say that a transaction $T_k\in \ms{txns}(E)$ is a fast-path transaction if $E|k$ contains at least one cached event.
-A \emph{hardware transaction} is a series of direct and (at least one) cached rmw primitive(s) performed on $\tau_i$ followed by
+A \emph{hardware transaction} is a series of direct and at least one cached rmw primitive(s) performed on $\tau_i$ followed by
 a \emph{cache-commit} primitive. 
 Thus, an event of a fast-path transaction is either an invocation or response of a t-operation, 
 a cached primitive on a base object, or a \emph{cache-commit}.
