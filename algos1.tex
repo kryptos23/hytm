@@ -43,9 +43,8 @@ We can now prove the following theorem:
 %
 \begin{theorem}
 \label{th:inswrite}
-There exists an opaque HyTM implementation that provides invisible reads, progressiveness
-such that
-in its every execution $E$, every fast-path transaction $T\in \ms{txns}(E)$
+Algorithm~\ref{alg:inswrite} an opaque HyTM that provides invisible reads, progressiveness
+such that in its every execution $E$, every fast-path transaction $T\in \ms{txns}(E)$
 accesses $m=|\Dset(T_k)|$ distinct metadata base objects.
 \end{theorem}
 %
@@ -64,7 +63,7 @@ We can now prove the following theorem:
 %
 \begin{theorem}
 \label{th:inswrite2}
-There exists an opaque HyTM implementation that provides invisible reads
+Algorithm~\ref{alg:inswrite2} implements an opaque HyTM that provides invisible reads
 such that (1) in every execution $E$,
 every fast-path transaction $T\in \ms{txns}(E)$
 accesses one metadata base object,
