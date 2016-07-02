@@ -25,7 +25,70 @@ performs $O(1)$ steps.
 \end{proofsketch}
 %
 The formal proof follows.
+%
+\begin{lemma}
+\label{lm:hytm}
+%
+Let $\mathcal{M}$ be any fast-path progressive HyTM implementation.
+Let $E\cdot E_1 \cdot E_2$ be an execution of $\mathcal{M}$ where
+$E_1$ (and resp. $E_2$) is the step contention-free
+execution fragment of transaction $T_1 \not\in \ms{txns}(E)$ (and
+resp. $T_2 \not\in \ms{txns}(E)$),
+$T_1$ (and resp. $T_2$) does not conflict with any transaction in $E\cdot E_1 \cdot E_2$, and
+at least one of $T_1$ or $T_2$ is a fast-path transaction. 
+Then, $T_1$ and $T_2$ do not contend on any base object in $E\cdot E_1 \cdot E_2$.
+\end{lemma}
+%
+\begin{proof}
+%
+By the assumption of invisible reads,
+the execution $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$
+is indistinguishable to
+transactions $T_{\ell}$ and $T_{i}$
+from an execution in which transaction $T_{\phi}$ does not participate.
+Thus, we only consider the execution $\beta^{\ell}\cdot \rho^i$ and show that fast-path transactions $T_i$ and $T_{\ell}$ do not contend on the same object.                                                                                                                                                                                                    
 
+Let $E_1\cdot E_2=\beta^{\ell}\cdot \rho^i$. 
+Suppose, by contradiction that $T_i$ and $T_{\ell}$ 
+contend on the same base object in $E_1\cdot E_2$.
+Let $p_i$ (and resp. $p_{\ell}$) be the process executing transaction $T_i$ (and resp. $T_{\ell}$).
+
+If in $E_1$, $T_i$ performs a nontrivial event on a base object on which they contend, let $e_1$ be the last
+event in $E_1$ in which $T_i$ performs such an event to some base object $b$ and $e_2$, the first event
+in $E_2$ that accesses $b$ (note that by assumption, $e_1$ is a cached access).
+Otherwise, $T_i$ only performs trivial events in $E_1$ to base objects (some of which may be uncached) on which it contends with $T_{\ell}$ in $E_1\cdot E_2$:
+let $e_2$ be the first event in $E_2$ in which $E_2$ performs a nontrivial event to some base object $b$
+on which they contend and $e_1$, the last event of $E_1$ in $T_i$ that accesses $b$ (possibly uncached).
+
+Let $E_1'$ (and resp. $E_2'$) be the longest prefix of $E_1$ (and resp. $E_2$) that does not include
+$e_1$ (and resp. $e_2$).
+Since before accessing $b$, the execution is step contention-free for $T_i$, $E \cdot
+E_1'\cdot E_2'$ is an execution of $\mathcal{M}$.
+By assumption of lemma, $T_i$ and $T_{\ell}$ do not conflict in $E_1'\cdot E_2'$.
+By construction, $E_1 \cdot E_2'$ is indistinguishable to $T_{\ell}$ from $E_1' \cdot E_2'$.
+Hence, $T_1$ and $T_{\ell}$ are poised to apply contending events $e_1$ and $e_2$ on $b$ in the execution
+$\tilde E=E_1' \cdot E_2'$.
+
+We now consider two cases:
+\begin{enumerate}
+\item 
+($e_1$ is a nontrivial event)
+After $\tilde E\cdot e_1$, $b$ is contained in the tracking set of process
+$p_1$ in exclusive mode and in the extension $\tilde E\cdot e_1 \cdot e_2$, we have that
+$\tau_i$ is invalidated. Thus transaction $T_i$ incurs a tracking set abort forcing
+it to return $A_i$ in any extension of $E\cdot e_1\cdot e_2$---a contradiction
+to the assumption that $\mathcal{M}$ is progressive.   
+\item
+($e_1$ is a trivial event)
+Recall that $e_1$ may be potentially uncached.
+Consider the execution $\tilde E\cdot e_2$ following which $b$ is contained in the tracking set of process
+$p_{\ell}$ in exclusive mode. Clearly, we have an extension $\tilde E\cdot e_2 \cdot e_1$ in which
+$\tau_{\ell}$ is invalidated. Thus transaction $T_{\ell}$ incurs a tracking set abort forcing
+it to return $A_{\ell}$ in any extension of $E\cdot e_2\cdot e_1$---a contradiction
+to the assumption that $\mathcal{M}$ is progressive.   
+\end{enumerate}
+\end{proof}
+%
 \begin{proof}
 Suppose by contradiction that there exists a progressive opaque HyTM implementation $\mathcal{M}$ with invisible reads such that in every execution $E$ of $\mathcal{M}$, any t-read operation $op_k$ performed by some slow-path transaction $T_k \in \ms{txns}(E)$
 performs $\kappa$ steps.
@@ -47,7 +110,7 @@ $(i-1)$ t-reads: $\Read_{\phi}(X_1)\cdots \Read_{\phi}(X_{i-1})$,
 $\rho^i$ is the t-complete step contention-free execution of a fast-path transaction $T_{i}$
 that writes $nv_i\neq v_i$ to $X_i$ and commits,
 \item
-$\alpha_i$ is the complete step contention-free execution fragment of $T_{\phi}$ that performs its $i^{th}$ t-read:
+$\alpha^i$ is the complete step contention-free execution fragment of $T_{\phi}$ that performs its $i^{th}$ t-read:
 $\Read_{\phi}(X_i) \rightarrow nv_i$.
 \end{itemize}
 %
@@ -61,11 +124,11 @@ by Lemma~\ref{lm:hytm}, transactions $T_{\phi}$ and $T_i$ do not contend
 on any base object in execution $\rho^i\cdot \pi^{i-1}$.
 Thus, $\rho^i\cdot \pi^{i-1}$ is also an execution of $M$.
 
-By opacity, $\rho^i\cdot \pi^{i-1} \cdot \alpha_i$ is an execution
+By opacity, $\rho^i\cdot \pi^{i-1} \cdot \alpha^i$ is an execution
 of $M$ in which the t-read of $X_i$ performed by $T_{\phi}$ must return $nv_i$.
-But $\rho^i \cdot \pi^{i-1} \cdot \alpha_i$ is indistinguishable to $T_{\phi}$ from
-$\pi^{i-1}\cdot \rho^i \cdot \alpha_i$.
-Thus, $M$ has an execution of the form $\pi^{i-1}\cdot \rho^i \cdot \alpha_i$.
+But $\rho^i \cdot \pi^{i-1} \cdot \alpha^i$ is indistinguishable to $T_{\phi}$ from
+$\pi^{i-1}\cdot \rho^i \cdot \alpha^i$.
+Thus, $M$ has an execution of the form $\pi^{i-1}\cdot \rho^i \cdot \alpha^i$.
 \end{proof}
 %
 By Claim~\ref{cl:readdap}, for all $i\in \{2,\ldots, m\}$, $M$ has an execution of the form 
@@ -119,62 +182,6 @@ performed by $T_k$ that returns the initial value $v$
 is not legal in this serialization---contradiction.
 \end{proof}
 %
-\begin{claim}
-\label{cl:hytm}
-%
-For all $i\in \{2,\ldots, m\}$, $j\in \{1,2\}$ and $\ell \leq (i-1)$, if fast-path transactions $T_i$ and $T_{\ell}$ do not perform any direct nontrivial accesses of any base object in $\mathbb{E}_{1\ell}^{i}$,
-then they do not contend on the same object.
-\end{claim}
-%
-\begin{proof}
-%
-By the assumption of invisible reads,
-the execution $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$
-is indistinguishable to
-transactions $T_{\ell}$ and $T_{i}$
-from an execution in which transaction $T_{\phi}$ does not participate.
-Thus, we only consider the execution $\beta^{\ell}\cdot \rho^i$ and show that fast-path transactions $T_i$ and $T_{\ell}$ do not contend on the same object.                                                                                                                                                                                                    
-
-Let $E_1\cdot E_2=\beta^{\ell}\cdot \rho^i$. 
-Suppose, by contradiction that $T_i$ and $T_{\ell}$ 
-contend on the same base object in $E_1\cdot E_2$.
-Let $p_i$ (and resp. $p_{\ell}$) be the process executing transaction $T_i$ (and resp. $T_{\ell}$).
-
-If in $E_1$, $T_i$ performs a nontrivial event on a base object on which they contend, let $e_1$ be the last
-event in $E_1$ in which $T_i$ performs such an event to some base object $b$ and $e_2$, the first event
-in $E_2$ that accesses $b$ (note that by assumption, $e_1$ is a cached access).
-Otherwise, $T_i$ only performs trivial events in $E_1$ to base objects (some of which may be uncached) on which it contends with $T_{\ell}$ in $E_1\cdot E_2$:
-let $e_2$ be the first event in $E_2$ in which $E_2$ performs a nontrivial event to some base object $b$
-on which they contend and $e_1$, the last event of $E_1$ in $T_i$ that accesses $b$ (possibly uncached).
-
-Let $E_1'$ (and resp. $E_2'$) be the longest prefix of $E_1$ (and resp. $E_2$) that does not include
-$e_1$ (and resp. $e_2$).
-Since before accessing $b$, the execution is step contention-free for $T_i$, $E \cdot
-E_1'\cdot E_2'$ is an execution of $\mathcal{M}$.
-By assumption of lemma, $T_i$ and $T_{\ell}$ do not conflict in $E_1'\cdot E_2'$.
-By construction, $E_1 \cdot E_2'$ is indistinguishable to $T_{\ell}$ from $E_1' \cdot E_2'$.
-Hence, $T_1$ and $T_{\ell}$ are poised to apply contending events $e_1$ and $e_2$ on $b$ in the execution
-$\tilde E=E_1' \cdot E_2'$.
-
-We now consider two cases:
-\begin{enumerate}
-\item 
-($e_1$ is a nontrivial event)
-After $\tilde E\cdot e_1$, $b$ is contained in the tracking set of process
-$p_1$ in exclusive mode and in the extension $\tilde E\cdot e_1 \cdot e_2$, we have that
-$\tau_i$ is invalidated. Thus transaction $T_i$ incurs a tracking set abort forcing
-it to return $A_i$ in any extension of $E\cdot e_1\cdot e_2$---a contradiction
-to the assumption that $\mathcal{M}$ is progressive.   
-\item
-($e_1$ is a trivial event)
-Recall that $e_1$ may be potentially uncached.
-Consider the execution $\tilde E\cdot e_2$ following which $b$ is contained in the tracking set of process
-$p_{\ell}$ in exclusive mode. Clearly, we have an extension $\tilde E\cdot e_2 \cdot e_1$ in which
-$\tau_{\ell}$ is invalidated. Thus transaction $T_{\ell}$ incurs a tracking set abort forcing
-it to return $A_{\ell}$ in any extension of $E\cdot e_2\cdot e_1$---a contradiction
-to the assumption that $\mathcal{M}$ is progressive.   
-\end{enumerate}
-\end{proof}
 %
 For all $i\in \{2,\ldots, m\}$, $j\in \{1,2\}$ and $\ell \leq (i-1)$, transaction $T_{\phi}$ must access
 $(i-1)$ different base objects during the execution of $\Read_{\phi}(X_i)$ in the execution
@@ -185,7 +192,7 @@ $\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot
 For all $\ell, \ell' \leq (i-1)$;$\ell' \neq \ell$, 
 $M$ has an execution of the form $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \beta^{\ell'}$
 in which transactions $T_{\ell}$ and $T_{\ell'}$ access mutually disjoint data sets.
-By invisible reads and Claim~\ref{cl:hytm}, the pairs of transactions $T_{\ell'}$, $T_{i}$ and $T_{\ell'}$, $T_{\ell}$
+By invisible reads and Lemma~\ref{lm:hytm}, the pairs of transactions $T_{\ell'}$, $T_{i}$ and $T_{\ell'}$, $T_{\ell}$
 do not contend on any base object in this execution.
 This implies that $\pi^{i-1}\cdot \beta^{\ell} \cdot \beta^{\ell'} \cdot \rho^i$ is an execution of $M$ in which
 transactions $T_{\ell}$ and $T_{\ell'}$ each apply nontrivial primitives
