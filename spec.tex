@@ -51,21 +51,21 @@ Thus, we only consider the execution $\beta^{\ell}\cdot \rho^i$ and show that fa
 Let $E_1\cdot E_2=\beta^{\ell}\cdot \rho^i$. 
 Suppose, by contradiction that $T_i$ and $T_{\ell}$ 
 contend on the same base object in $E_1\cdot E_2$.
-Let $p_i$ (and resp. $p_{\ell}$) be the process executing transaction $T_i$ (and resp. $T_{\ell}$).
+Let $p_i$ (and resp. $p_{\ell}$) be the process executing transaction $T_1$ (and resp. $T_2$).
 
-If in $E_1$, $T_i$ performs a nontrivial event on a base object on which they contend, let $e_1$ be the last
-event in $E_1$ in which $T_i$ performs such an event to some base object $b$ and $e_2$, the first event
+If in $E_1$, $T_1$ performs a nontrivial event on a base object on which they contend, let $e_1$ be the last
+event in $E_1$ in which $T_1$ performs such an event to some base object $b$ and $e_2$, the first event
 in $E_2$ that accesses $b$ (note that by assumption, $e_1$ is a cached access).
 Otherwise, $T_i$ only performs trivial events in $E_1$ to base objects (some of which may be uncached) on which it contends with $T_{\ell}$ in $E_1\cdot E_2$:
 let $e_2$ be the first event in $E_2$ in which $E_2$ performs a nontrivial event to some base object $b$
-on which they contend and $e_1$, the last event of $E_1$ in $T_i$ that accesses $b$ (possibly uncached).
+on which they contend and $e_1$, the last event of $E_1$ in $T_1$ that accesses $b$ (possibly uncached).
 
 Let $E_1'$ (and resp. $E_2'$) be the longest prefix of $E_1$ (and resp. $E_2$) that does not include
 $e_1$ (and resp. $e_2$).
-Since before accessing $b$, the execution is step contention-free for $T_i$, $E \cdot
+Since before accessing $b$, the execution is step contention-free for $T_1$, $E \cdot
 E_1'\cdot E_2'$ is an execution of $\mathcal{M}$.
-By assumption of lemma, $T_i$ and $T_{\ell}$ do not conflict in $E_1'\cdot E_2'$.
-By construction, $E_1 \cdot E_2'$ is indistinguishable to $T_{\ell}$ from $E_1' \cdot E_2'$.
+By assumption of lemma, $T_1$ and $T_2$ do not conflict in $E_1'\cdot E_2'$.
+By construction, $E_1 \cdot E_2'$ is indistinguishable to $T_2$ from $E_1' \cdot E_2'$.
 Hence, $T_1$ and $T_{\ell}$ are poised to apply contending events $e_1$ and $e_2$ on $b$ in the execution
 $\tilde E=E_1' \cdot E_2'$.
 
