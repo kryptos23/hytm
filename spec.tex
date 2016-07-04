@@ -16,8 +16,7 @@
 %
 \begin{theorem}
 \label{th:impossibility}
-There does not exist any progressive opaque HyTM implementation $\mathcal{M}$ with invisible reads such that in every execution $E$ of $\mathcal{M}$, any t-read operation $op_k$ performed by some slow-path transaction $T_k \in \ms{txns}(E)$
-performs $O(1)$ steps.
+There does not exist any progressive opaque HyTM implementation $\mathcal{M}$ providing invisible reads with constant time-complexity t-read operations.
 \end{theorem}
 %
 \begin{proofsketch}
@@ -29,14 +28,13 @@ The formal proof follows.
 \begin{lemma}
 \label{lm:hytm}
 %
-Let $\mathcal{M}$ be any fast-path progressive HyTM implementation.
-Let $E\cdot E_1 \cdot E_2$ be an execution of $\mathcal{M}$ where
+Let $\mathcal{M}$ be any progressive HyTM implementation.
+Let $E_1 \cdot E_2$ be an execution of $\mathcal{M}$ where
 $E_1$ (and resp. $E_2$) is the step contention-free
-execution fragment of transaction $T_1 \not\in \ms{txns}(E)$ (and
-resp. $T_2 \not\in \ms{txns}(E)$),
-$T_1$ (and resp. $T_2$) does not conflict with any transaction in $E\cdot E_1 \cdot E_2$, and
+execution fragment of fast-path transaction $T_1$ (and resp. $T_2$),
+$T_1$ and $T_2$ do not conflict in $E_1 \cdot E_2$, and
 at least one of $T_1$ or $T_2$ is a fast-path transaction. 
-Then, $T_1$ and $T_2$ do not contend on any base object in $E\cdot E_1 \cdot E_2$.
+Then, $T_1$ and $T_2$ do not contend on any base object in $E_1 \cdot E_2$.
 \end{lemma}
 %
 \begin{proof}
@@ -48,7 +46,7 @@ Let $p_1$ (and resp. $p_2$) be the process executing transaction $T_1$ (and resp
 If in $E_1$, $T_1$ performs a nontrivial event on a base object on which they contend, let $e_1$ be the last
 event in $E_1$ in which $T_1$ performs such an event to some base object $b$ and $e_2$, the first event
 in $E_2$ that accesses $b$ (note that by assumption, $e_1$ is a cached access).
-Otherwise, $T_i$ only performs trivial events in $E_1$ to base objects (some of which may be uncached) on which it contends with $T_{\ell}$ in $E_1\cdot E_2$:
+Otherwise, $T_i$ only performs trivial events in $E_1$ to base objects (some of which may be uncached) on which it contends with $T_{2}$ in $E_1\cdot E_2$:
 let $e_2$ be the first event in $E_2$ in which $E_2$ performs a nontrivial event to some base object $b$
 on which they contend and $e_1$, the last event of $E_1$ in $T_1$ that accesses $b$ (possibly uncached).
 
@@ -58,7 +56,7 @@ Since before accessing $b$, the execution is step contention-free for $T_1$, $E 
 E_1'\cdot E_2'$ is an execution of $\mathcal{M}$.
 By assumption of lemma, $T_1$ and $T_2$ do not conflict in $E_1'\cdot E_2'$.
 By construction, $E_1 \cdot E_2'$ is indistinguishable to $T_2$ from $E_1' \cdot E_2'$.
-Hence, $T_1$ and $T_{\ell}$ are poised to apply contending events $e_1$ and $e_2$ on $b$ in the execution
+Hence, $T_1$ and $T_{2}$ are poised to apply contending events $e_1$ and $e_2$ on $b$ in the execution
 $\tilde E=E_1' \cdot E_2'$.
 
 We now consider two cases:
@@ -67,16 +65,16 @@ We now consider two cases:
 ($e_1$ is a nontrivial event)
 After $\tilde E\cdot e_1$, $b$ is contained in the tracking set of process
 $p_1$ in exclusive mode and in the extension $\tilde E\cdot e_1 \cdot e_2$, we have that
-$\tau_i$ is invalidated. Thus transaction $T_i$ incurs a tracking set abort forcing
-it to return $A_i$ in any extension of $E\cdot e_1\cdot e_2$---a contradiction
+$\tau_1$ is invalidated. Thus transaction $T_1$ incurs a tracking set abort forcing
+it to return $A_1$ in any extension of $E\cdot e_1\cdot e_2$---a contradiction
 to the assumption that $\mathcal{M}$ is progressive.   
 \item
 ($e_1$ is a trivial event)
 Recall that $e_1$ may be potentially uncached.
 Consider the execution $\tilde E\cdot e_2$ following which $b$ is contained in the tracking set of process
-$p_{\ell}$ in exclusive mode. Clearly, we have an extension $\tilde E\cdot e_2 \cdot e_1$ in which
-$\tau_{\ell}$ is invalidated. Thus transaction $T_{\ell}$ incurs a tracking set abort forcing
-it to return $A_{\ell}$ in any extension of $E\cdot e_2\cdot e_1$---a contradiction
+$p_{2}$ in exclusive mode. Clearly, we have an extension $\tilde E\cdot e_2 \cdot e_1$ in which
+$\tau_{2}$ is invalidated. Thus transaction $T_{2}$ incurs a tracking set abort forcing
+it to return $A_{2}$ in any extension of $E\cdot e_2\cdot e_1$---a contradiction
 to the assumption that $\mathcal{M}$ is progressive.   
 \end{enumerate}
 \end{proof}
@@ -114,16 +112,16 @@ $\mathcal{M}$ has an execution of the form $\rho^i\cdot \pi^{i-1}$.
 Since $\Dset(T_k) \cap \Dset(T_{i}) =\emptyset$ in $\rho^i\cdot \pi^{i-1}$,
 by Lemma~\ref{lm:hytm}, transactions $T_{\phi}$ and $T_i$ do not contend
 on any base object in execution $\rho^i\cdot \pi^{i-1}$.
-Thus, $\rho^i\cdot \pi^{i-1}$ is also an execution of $M$.
+Thus, $\rho^i\cdot \pi^{i-1}$ is also an execution of $\mathcal{M}$.
 
 By opacity, $\rho^i\cdot \pi^{i-1} \cdot \alpha^i$ is an execution
-of $M$ in which the t-read of $X_i$ performed by $T_{\phi}$ must return $nv_i$.
+of $\mathcal{M}$ in which the t-read of $X_i$ performed by $T_{\phi}$ must return $nv_i$.
 But $\rho^i \cdot \pi^{i-1} \cdot \alpha^i$ is indistinguishable to $T_{\phi}$ from
 $\pi^{i-1}\cdot \rho^i \cdot \alpha^i$.
-Thus, $M$ has an execution of the form $\pi^{i-1}\cdot \rho^i \cdot \alpha^i$.
+Thus, $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \rho^i \cdot \alpha^i$.
 \end{proof}
 %
-By Claim~\ref{cl:readdap}, for all $i\in \{2,\ldots, m\}$, $M$ has an execution of the form 
+By Claim~\ref{cl:readdap}, for all $i\in \{2,\ldots, m\}$, $\mathcal{M}$ has an execution of the form 
 $E^{i}=\pi^{i-1}\cdot \rho^i \cdot \alpha_i$.
 
 For each $i\in \{2,\ldots, m\}$, $j\in \{1,2\}$ and $\ell \leq (i-1)$, 
@@ -151,9 +149,9 @@ $\mathbb{E}_{2\ell}^{i}$.
 For all $i \in \{2,\ldots, m\}$, $\pi^{i-1}$
 is an execution of $\mathcal{M}$.
 By assumption of invisible reads, $T_{{\ell}}$ must be committed in $\pi^{i-1}\cdot \rho^{\ell}$
-and $M$ has an execution of the form $\pi^{i-1}\cdot \beta^{\ell}$.
+and $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \beta^{\ell}$.
 By the same reasoning, since $T_i$ and $T_{\ell}$ do not have conflicting data sets,
-$M$ has an execution of the form $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$.
+$\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$.
 
 Since the configuration after $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ is quiescent,
 $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ extended with $\Read_{\phi}(X_i)$
@@ -182,11 +180,11 @@ $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$.
 Consider the $(i-1)$ different executions: 
 $\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot \rho^i$.
 For all $\ell, \ell' \leq (i-1)$;$\ell' \neq \ell$, 
-$M$ has an execution of the form $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \beta^{\ell'}$
+$\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \beta^{\ell'}$
 in which transactions $T_{\ell}$ and $T_{\ell'}$ access mutually disjoint data sets.
 By invisible reads and Lemma~\ref{lm:hytm}, the pairs of transactions $T_{\ell'}$, $T_{i}$ and $T_{\ell'}$, $T_{\ell}$
 do not contend on any base object in this execution.
-This implies that $\pi^{i-1}\cdot \beta^{\ell} \cdot \beta^{\ell'} \cdot \rho^i$ is an execution of $M$ in which
+This implies that $\pi^{i-1}\cdot \beta^{\ell} \cdot \beta^{\ell'} \cdot \rho^i$ is an execution of $\mathcal{M}$ in which
 transactions $T_{\ell}$ and $T_{\ell'}$ each apply nontrivial primitives
 to mutually disjoint sets of base objects in the execution fragments $\beta^{\ell}$ and $\beta^{\ell'}$ respectively.
 
