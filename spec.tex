@@ -41,17 +41,9 @@ Then, $T_1$ and $T_2$ do not contend on any base object in $E\cdot E_1 \cdot E_2
 %
 \begin{proof}
 %
-By the assumption of invisible reads,
-the execution $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$
-is indistinguishable to
-transactions $T_{\ell}$ and $T_{i}$
-from an execution in which transaction $T_{\phi}$ does not participate.
-Thus, we only consider the execution $\beta^{\ell}\cdot \rho^i$ and show that fast-path transactions $T_i$ and $T_{\ell}$ do not contend on the same object.                                                                                                                                                                                                    
-
-Let $E_1\cdot E_2=\beta^{\ell}\cdot \rho^i$. 
-Suppose, by contradiction that $T_i$ and $T_{\ell}$ 
+Suppose, by contradiction that $T_1$ and $T_2$ 
 contend on the same base object in $E_1\cdot E_2$.
-Let $p_i$ (and resp. $p_{\ell}$) be the process executing transaction $T_1$ (and resp. $T_2$).
+Let $p_1$ (and resp. $p_2$) be the process executing transaction $T_1$ (and resp. $T_2$).
 
 If in $E_1$, $T_1$ performs a nontrivial event on a base object on which they contend, let $e_1$ be the last
 event in $E_1$ in which $T_1$ performs such an event to some base object $b$ and $e_2$, the first event
