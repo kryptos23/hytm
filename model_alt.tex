@@ -151,10 +151,12 @@ a direct rmw primitive on a base object.
 
 A fast-path transaction essentially encapsulates a hardware transaction. Specifically, in any execution $E$,
 we say that a transaction $T_k\in \ms{txns}(E)$ is a fast-path transaction if $E|k$ contains at least one cached event.
-A \emph{hardware transaction} is a series of direct and at least one cached rmw primitive(s) performed on $\tau_i$ followed by
-a \emph{cache-commit} primitive. 
-Thus, an event of a fast-path transaction is either an invocation or response of a t-operation, 
-a cached primitive on a base object, or a \emph{cache-commit}.
+A events of a \emph{hardware transaction} includes series of direct trivial accesses and at least one cached access
+followed by a \emph{cache-commit} primitive.
+Note that we specifically allow hardware transactions to perform reads without adding the corresponding base object to
+the process's tracking set, thus modelling the non-speculative accesses inside hardware allowed by 
+IBM Power8 architectures. We remark that Intel Haswell does not support this feature: an event of a hardware transaction
+does not include any direct access.
 We assume that a fast-path transaction $T_k$ returns $A_k$
 as soon an underlying cached primitive or \emph{cache-commit} returns $\bot$. 
 %
