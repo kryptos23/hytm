@@ -83,17 +83,9 @@ then $\delta_{T_k}$ is assigned to the linearization point of the last t-read th
 \end{itemize}
 %
 $<_S$ denotes a total-order on transactions in the t-sequential history $S$.
-%
-\begin{claim}
-\label{cl:seq}
-If $T_i \prec_{H}T_j$, then $T_i <_S T_j$
-\end{claim}
-%
-\begin{proof}
-This follows from the fact that for a given transaction, its
-serialization point is chosen between the first and last event of the transaction
-implying if $T_i \prec_{H} T_j$, then $\delta_{T_i} <_{E} \delta_{T_j}$ implies $T_i <_S T_j$.
-\end{proof}
+Since for a given transaction, its
+serialization point is chosen between the first and last event of the transaction,
+if $T_i \prec_{H} T_j$, then $\delta_{T_i} <_{E} \delta_{T_j}$ implies $T_i <_S T_j$.
 %
 \begin{claim}
 \label{cl:alg1claim}
@@ -223,7 +215,7 @@ The proof follows.
 %
 \end{proof}
 %
-The conjunction of Claims~\ref{cl:seq} and \ref{cl:readfrom} establish that Algorithm~\ref{alg:inswrite} is opaque.
+Since $S$ is legal and respects the real-time ordering of transactions, Algorithm~\ref{alg:inswrite} is opaque.
 %
 \end{proof}
 %

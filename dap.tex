@@ -1,6 +1,6 @@
 \begin{tikzpicture}
 \node (r1) at (3,0) [] {};
-\node (r2) at (7.7,0) [] {};
+\node (r2) at (12.2,0) [] {};
 
 \node (w1) at (-2,0) [] {};
 
@@ -13,11 +13,13 @@
 \draw (w1) node [above] {\normalsize {$W_i(X_i,nv)$}}; 
 \draw (w1) node [below] {\normalsize {$T_i$ commits}};
 
+\node[draw,align=left] at (8,1) {{\large Slow-Path}};
+\node[draw,align=left] at (-2,1) {{\large Fast-Path}};
 
 \begin{scope}   
 \draw [|-|,thick] (0,0) node[left] {$T_{\phi}$} to (6,0);
-\draw [|-|,thick] (6.5,0) node[left] {} to (9,0);
-\draw [-,dotted] (0,0) node[left] {} to (9,0);
+\draw [|-|,thick] (11,0) node[left] {} to (13.5,0);
+\draw [-,dotted] (0,0) node[left] {} to (13.5,0);
 \end{scope}
 %
 %
