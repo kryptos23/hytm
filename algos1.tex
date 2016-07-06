@@ -36,14 +36,11 @@ entire write set by performing \emph{compare-and-set} (\emph{cas})
 primitive that checks if the value of $r_j$, for each $X_j\in \Wset(T_k)$, is unchanged since last reading it during $\Write_k(X.v)$
 If all the locks on the write set were acquired successfully, $T_k$ performs validation of the read set and returns $C_k$ if successful, else $p_i$ aborts the transaction.
 
-\vspace{1mm}\noindent\textbf{Complexity.}
-%
-
 We can now prove the following theorem:
 %
 \begin{theorem}
 \label{th:inswrite}
-Algorithm~\ref{alg:inswrite} an opaque HyTM that provides invisible reads, progressiveness
+Algorithm~\ref{alg:inswrite} implements an opaque HyTM that provides invisible reads, progressiveness
 such that in its every execution $E$, every fast-path transaction $T\in \ms{txns}(E)$
 accesses $m=|\Dset(T_k)|$ distinct metadata base objects.
 \end{theorem}
@@ -73,9 +70,6 @@ that returns $A_k$ in $E$, there exists an updating slow-path transaction $T_m \
 concurrent to $T_k$.
 \end{theorem}
 %
-\begin{proofsketch}
-% 
-\end{proofsketch}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 \input{prog-fp}

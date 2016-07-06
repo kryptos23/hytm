@@ -1,17 +1,11 @@
 %!TEX root = htm.tex
-\section{Correctness proofs}
-\label{app:proofs}
+\subsection{Correctness proofs}
+\label{sec:proofs}
 %
 We will prove the opacity of Algorithm~\ref{alg:inswrite} even if some of accesses performed by fast-path transactions are direct (as indicated in the pseudocode).
 Analogous arguments apply to Algorithm~\ref{alg:inswrite2}.
 %
-\begin{lemma}
-\label{lm:opacityh1}
-Algorithm~\ref{alg:inswrite} implements an opaque TM.
-\end{lemma}
-%
-\begin{proof}
-%
+
 Let $E$ by any execution of Algorithm~\ref{alg:inswrite}. 
 Since opacity is a safety property, it is sufficient to prove that every finite execution is opaque~\cite{icdcs-opacity}.
 Let $<_E$ denote a total-order on events in $E$.
@@ -53,7 +47,7 @@ of Algorithm~\ref{alg:inswrite}, else, $\ell_{op_k}$ is chosen as invocation eve
 $\ell_{op_k}$ is associated with Line~\ref{line:return}
 \end{itemize}
 %
-For all t-operations performed a fast-path transaction $T_k$, linearization points as assigned as follows:
+For all t-operations performed a fast-path transaction $T_k$, linearization points are assigned as follows:
 \begin{itemize}
 \item For every t-read $op_k$ that returns a non-A$_k$ value, $\ell_{op_k}$ is chosen as the event in Line~\ref{line:lin1}
 of Algorithm~\ref{alg:inswrite}, else, $\ell_{op_k}$ is chosen as invocation event of $op_k$
@@ -97,6 +91,11 @@ If process $p_i$ executing transaction $T_k\in \ms{txns}(E)$ holds the lock on $
 %
 \end{proof}
 %
+Throughout this proof, we consider that process $p_i$ executing fast-path transaction $T_k \in \ms{txns}(E)$
+does not include the sequence lock $r_j$ in the tracking set of $p_i$ when accessed in Line~\ref{line:hread}
+(and resp. Lines~\ref{line:m1} and \ref{line:m2}) during
+$\Read_k(X_j)$ (and resp. $\Write_k(X_j)$).
+%
 \begin{claim}
 \label{cl:readfrom}
 $S$ is legal.
@@ -111,7 +110,7 @@ $\Read_j(X_m) \not\prec_H^{RT} \Write_i(X_m,v)$.
 Suppose that $T_i$ is a slow-path transaction:
 since $\Read_j(X_m)$ returns the response $v$, the event in Line~\ref{line:read2}
 succeeds the event in Line~\ref{line:write} performed by $\TryC_i$. 
-Since $\Read_j(X_m)$ can return a non-abort response only after $T_i$ writes $0$ to $r_m$ in
+Since $\Read_j(X_m)$ can return a non-abort response only after $T_i$ releases the lock on $r_m$ in
 Line~\ref{line:rel1}, $T_i$ must be committed in $S$.
 Consequently,
 $\ell_{\TryC_i} <_E \ell_{\Read_j(X_m)}$.
@@ -159,15 +158,15 @@ Consider the following possible sequence of events:
 $T_k$ returns \emph{true} from \emph{acquire} function invocation, 
 updates the value of $X_m$ to shared-memory (Line~\ref{line:write}), 
 $T_j$ reads the base object $v_m$ associated with $X_m$, 
-$T_k$ releases $X_m$ by writing $0$ to $r_{m}$ and finally $T_j$ performs the check in Line~\ref{line:abort0}. 
+$T_k$ releases $X_m$ and finally $T_j$ performs the check in Line~\ref{line:abort0}. 
 But in this case, $\Read_j(X_m)$ is forced to return the value $v'$ written by $T_m$--- 
 contradiction to the assumption that $\Read_j(X_m)$ returns $v$. 
 
-Otherwise suppose that $T_k$ acquires exclusive access to $X_m$ by writing $1$ to $r_{m}$ and returns \emph{true}
+Otherwise suppose that $T_k$ acquires exclusive access to $X_m$ and returns \emph{true}
 from the invocation of \emph{acquire}, updates $v_m$ in Line~\ref{line:write}), 
 $T_j$ reads $v_m$, $T_j$ performs the check in Line~\ref{line:abort0} and finally $T_k$ 
-releases $X_m$ by writing $0$ to $r_{m}$. 
-Again, $\Read_j(X_m)$ must return $A_j$ since $T_j$ reads that $r_{m}$ is $1$---contradiction.
+releases $X_m$. 
+Again, $\Read_j(X_m)$ must return $A_j$ since $X_m$ is locked by $T_k$---contradiction.
 
 A similar argument applies to the case that $T_j$ is a fast-path transaction.
 Indeed, since every \emph{data} base object read by $T_j$ is contained in its tracking set, if any concurrent
@@ -216,6 +215,4 @@ The proof follows.
 \end{proof}
 %
 Since $S$ is legal and respects the real-time ordering of transactions, Algorithm~\ref{alg:inswrite} is opaque.
-%
-\end{proof}
 %

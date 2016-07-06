@@ -30,13 +30,13 @@
 	\Statex
 	%\Comment{What is the best strategy to buffer writes?}
 	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
-		\State $\textit{or}_j := \Read(r_j)$ \Comment{cached read}
+		\State $\textit{or}_j := \Read(r_j)$ \Comment{cached read} \label{line:m1}
 		\If{$\textit{or}_j$ $\mathrel{\&} 1$}  		
 			\Return $A_k$ \EndReturn
 		\EndIf
 		
-		\State $\underline{\Write(r_j,\textit{or}_j+2)}$ \Comment{uncached write}
-		\State $\underline{\Write(v_j,v)}$ \Comment{uncached write} 
+		\State $\underline{\Write(r_j,\textit{or}_j+2)}$ \Comment{uncached write} \label{line:m2}
+		\State $\underline{\Write(v_j,v)}$ \Comment{uncached write} \label{line:lin2} 
 		\Return $\ok$ \EndReturn
 		
    	}\EndPart
