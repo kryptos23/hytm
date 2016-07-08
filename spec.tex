@@ -16,7 +16,9 @@
 %
 \begin{theorem}
 \label{th:impossibility}
-There does not exist any progressive opaque HyTM implementation $\mathcal{M}$ providing invisible reads with constant time-complexity t-read operations.
+Let $\mathcal{M}$ be any progressive opaque HyTM implementation providing invisible reads.
+There exists an execution $E$ of $\mathcal{M}$ and some read-only transaction $T_k \in \ms{txns}(E)$
+that incurs a time complexity of $\Omega (m^2)$; $m=|\Rset(T_k)|$.
 \end{theorem}
 %
 \begin{proofsketch}
