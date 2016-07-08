@@ -895,7 +895,7 @@ std::ostream& operator<<(std::ostream& out, const List& obj) {
 // can be invoked only by a transaction on the software path.
 // writeSet must point to the write-set for this Thread that
 // contains addresses/values of type T.
-__INLINE__ bool validateGSLOrValues(Thread* Self, List* avpairs/*, bool holdingLocks*/) {
+__INLINE__ bool validateGSLOrValues(Thread* Self, List* avpairs, bool holdingLocks) {
     DEBUG3 aout("validateGSLOrValues "<<*avpairs);//<<" "<<debug(holdingLocks));
     assert(Self->isFallback);
 
@@ -912,6 +912,7 @@ __INLINE__ bool validateGSLOrValues(Thread* Self, List* avpairs/*, bool holdingL
         while (currGSL & 1) {
             __asm__ __volatile__("pause;");
             currGSL = gsl;
+            if (holdingLocks) break;
         }
 
         // do value based validation
@@ -931,11 +932,11 @@ __INLINE__ bool validateGSLOrValues(Thread* Self, List* avpairs/*, bool holdingL
     }
 }
 
-__INLINE__ bool validateReadSet(Thread* Self/*, bool holdingLocks*/) {
+__INLINE__ bool validateReadSet(Thread* Self, bool holdingLocks) {
 //    return validateGSLOrValues(Self, &Self->rdSet->locks.list, holdingLocks);
 //    return validateGSLOrValues<long>(Self, &Self->rdSet->l.addresses.list)
 //        && validateGSLOrValues<float>(Self, &Self->rdSet->f.addresses.list);
-    return validateGSLOrValues(Self, Self->rdSet);
+    return validateGSLOrValues(Self, Self->rdSet, holdingLocks);
 }
 
 __INLINE__ intptr_t AtomicAdd(volatile intptr_t* addr, intptr_t dx) {
@@ -1067,7 +1068,7 @@ int TxCommit(void* _Self) {
         esl = 1;
         
         // validate the read-set
-        if (failedFirst && !validateReadSet(Self)) {
+        if (failedFirst && !validateReadSet(Self, true)) {
             // release all locks and abort
             DEBUG2 aout("thread "<<Self->UniqID<<" TxCommit failed validation -> abort");
             esl = 0;
@@ -1174,7 +1175,7 @@ intptr_t TxLoad(void* _Self, volatile intptr_t* addr) {
         Self->rdSet->insertReplace(Self, addr, val, true);
         
         // validate reads
-        if (!validateReadSet(Self)) {
+        if (!validateReadSet(Self, false)) {
             DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting (retries="<<Self->Retries<<")");
             TxAbort(Self);
         }
