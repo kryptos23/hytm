@@ -6,7 +6,7 @@ In this section, we extend the formal model of HyTMs originally proposed in \cit
 The resulting model is sufficiently expressive to capture the executions of existing hardware transactions like \emph{Intel Haswell}~\cite{Rei12},
 \emph{IBM Power8}~\cite{bluegene} and \emph{AMD ASF}~\cite{asf}.
 
-\vspace{1mm}\noindent\textbf{Transactional memory (TM).} 
+\paragraph{Transactional memory (TM).} 
 A \emph{transaction} is a sequence of \emph{transactional operations}
 (or \emph{t-operations}), reads and writes, performed on a set of \emph{transactional objects} 
 (\emph{t-objects}). 
@@ -23,7 +23,7 @@ $\mathit{tryC}_k$ that returns $C_k\notin V$ (\emph{commit}) or $A_k$.
 Additionally, we assume that a transaction $T_k$
 may perform a $\mathit{start_k}$ that is the first t-operation performed by $T_k$ prior to invoking any $\mathit{read}_k$ or $\mathit{write}_k$.
 
-\vspace{1mm}\noindent\textbf{Configurations and executions.} 
+\paragraph{Configurations and executions.} 
 A \emph{configuration} of a TM implementation specifies the state of each base object and each process. 
 In the \emph{initial} configuration, each base object has its initial value and each process is in its initial state. 
 An \emph{event} (or \emph{step}) of a transaction invoked by some process is an invocation of a t-operation, 
@@ -81,7 +81,7 @@ Events $e$ and $e'$ of an execution $E$  \emph{contend} on a base
 object $b$ if they are both primitives on $b$ in $E$ and at least 
 one of them is nontrivial.
 
-\vspace{1mm}\noindent\textbf{Hybrid transactional memory executions.}
+\paragraph{Hybrid transactional memory executions.}
 We now describe the execution model of a \emph{Hybrid transactional memory (HyTM)} implementation.
 In our HyTM model, shared memory configurations may be modified by accessing base objects via two kinds of
 primitives: \emph{direct} and \emph{cached}.
@@ -123,7 +123,7 @@ hardware transaction) or the value of $b$ in the current
 memory configuration, and finally $h(v)$ is returned.
 %
 
-\vspace{1mm}\noindent\textbf{Hardware aborts.}
+\paragraph{Hardware aborts.}
 A tracking set can be \emph{invalidated} by a concurrent process: 
 if, in a configuration $C$ where  $(b,v,\exclusive)\in\tau_i$
 (resp.\ $(b,v,\shared)\in\tau_i)$,  a process $j\neq i$ applies any primitive 
@@ -140,7 +140,7 @@ a valid $\tau_i$ does the following: for each base object $b$ such that $(b,v,\e
 Finally, $\tau_i$ is set to $\emptyset$ and the primitive 
 returns $\textit{commit}$. 
 
-\vspace{1mm}\noindent\textbf{Slow-path and fast-path transactions.}
+\paragraph{Slow-path and fast-path transactions.}
 In the following, we partition HyTM transactions into \emph{fast-path transactions} and \emph{slow-path transactions}.
 Practically, two separate algorithms (fast-path one and slow-path one) 
 are provided for each t-operation. 

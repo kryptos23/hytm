@@ -45,10 +45,6 @@ such that in its every execution $E$, every fast-path transaction $T\in \ms{txns
 accesses $m=|\Dset(T_k)|$ distinct metadata base objects.
 \end{theorem}
 %
-\begin{proofsketch}
-%
-
-\end{proofsketch}
 %
 \input{prog-fp-sp}
 %
@@ -74,3 +70,16 @@ concurrent to $T_k$.
 %
 \input{prog-fp}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Correctness proofs}
+\label{sec:proofs}
+%
+\input{appendix-proof}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Circumventing the need for incremental validation in opaque HyTMs}
+\label{sec:middlepath}
+%
+\paragraph{Sacrificing progressiveness and minimizing contention window.}
+
+\paragraph{Employing non-cached writes inside fast-path.}
+
+\paragraph{Employing a fast fast-path.}
