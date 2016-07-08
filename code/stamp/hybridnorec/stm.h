@@ -44,9 +44,10 @@ typedef struct Thread_void {
     void* wrSet;
 //    void* LocalUndo;
     sigjmp_buf* envPtr;
+    int sequenceLock;
 } Thread_void;
 
-#include "hytm3.h"
+#include "hybridnorec.h"
 #include "util.h"
 
 #define STM_THREAD_T                    void
@@ -76,7 +77,6 @@ typedef struct Thread_void {
 
 #  define STM_BEGIN(isReadOnly)         do { \
                                             STM_JMPBUF_T STM_JMPBUF; \
-                                            /*int STM_RO_FLAG = isReadOnly;*/ \
                                             \
                                             Thread_void* ___Self = (Thread_void*) STM_SELF; \
                                             TxClearRWSets(STM_SELF); \
@@ -90,10 +90,10 @@ typedef struct Thread_void {
                                             /*printf("HTM_ATTEMPT_THRESH=%d\n", HTM_ATTEMPT_THRESH);*/ \
                                             for (___htmattempts = 0 ; ___htmattempts < HTM_ATTEMPT_THRESH; ++___htmattempts) { \
                                                 /*printf("h/w loop iteration\n");*/ \
-                                                while (lockflag) { __asm__ __volatile__("pause;"); } \
+                                                while (esl) { __asm__ __volatile__("pause;"); } \
                                                 ___status = XBEGIN(); \
                                                 if (___status == _XBEGIN_STARTED) { \
-                                                    if (lockflag) XABORT(0); \
+                                                    if (esl) XABORT(0); \
                                                     break; \
                                                 } else { /* if we aborted */ \
                                                     registerHTMAbort(counters, ___Self->UniqID, ___status, PATH_FAST_HTM); \
@@ -111,6 +111,11 @@ typedef struct Thread_void {
                                             ___Self->isFallback = 1; \
                                             if (sigsetjmp(STM_JMPBUF, 1)) { \
                                                 TxClearRWSets(STM_SELF); \
+                                            } \
+                                            ___Self->sequenceLock = gsl; \
+                                            while (___Self->sequenceLock & 1) { \
+                                                ___Self->sequenceLock = gsl; \
+                                                __asm__ __volatile__("pause;"); \
                                             } \
                                             /*TxStart(STM_SELF, &STM_JMPBUF, SETJMP_RETVAL, &STM_RO_FLAG);*/ \
                                             SOFTWARE_BARRIER; \

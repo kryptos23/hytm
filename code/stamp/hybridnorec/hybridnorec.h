@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define TM_NAME "HyTM3"
+#define TM_NAME "Hybrid noREC"
 //#define HTM_ATTEMPT_THRESH 0
 #ifndef HTM_ATTEMPT_THRESH
     #define HTM_ATTEMPT_THRESH 5
@@ -52,7 +52,8 @@ extern struct debugCounters *counters;
 // just for debugging
 extern volatile int globallock;
 
-extern volatile int lockflag;
+extern volatile int gsl;
+extern volatile int esl;
 
 #define BIG_CONSTANT(x) (x##LLU)
 

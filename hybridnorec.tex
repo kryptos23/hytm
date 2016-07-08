@@ -8,7 +8,7 @@
 	\Part{Shared objects}{
 		\State $\ms{gsl}$, global sequence lock 
 		%\Statex ~~~~~allows reads, writes
-		\State $\ms{esl}$, extra sequence lock
+		\State $\ms{esl}$, extra sequence lock-bit
 		
 	}\EndPart	
  	\Statex
@@ -20,8 +20,8 @@
 	\textbf{Code for fast-path transactions}	
 	\Statex
 	\Part{$\textit{start}_k()$}{
-		\State $ \ms{l}   \gets \Read(\ms{esl})$
-		\If {$\ms{l}.\lit{isLocked}()$}
+%		\State $ \ms{l}   \gets \Read(\ms{esl})$
+		\If {$\Read(\ms{esl})$}
 		  \Return $A_k$ \EndReturn
 		\EndIf
 		
@@ -64,7 +64,7 @@
 	\textbf{Code for slow-path transactions}
 	\Statex
 	\Part{$\textit{start}_k()$}{
-		\While {$\ms{sl}.\lit{isLocked}()$}
+		\While {$\ms{sl} \mathrel{\&} 1$}
 		  \State $ \ms{sl}   \gets \Read(\ms{gsl})$
 		\EndWhile
 		
@@ -73,16 +73,16 @@
 	\Part{\Read$_k(X_j)$}\quad\Comment{slow-path}{
 		  \If{$X_j\in \Wset(T_k)$}
 		    \Return $\Wset(T_k).\lit{locate}(X_j)$ \EndReturn
-		  \Else
+		  \EndIf
 		  \State $\textit{ov}_j := \Read(v_j)$ 
 		  
+		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$
 		  \If{$\neg \lit{validate}()$}
 			
 			\Return $A_k$ \EndReturn
 		  \EndIf
-		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$
 		  \Return $\textit{ov}_j$ \EndReturn
-		
+	
    	 }\EndPart
    	\newpage
 	\Part{\Write$_k(X_j,v)$}\quad\Comment{slow-path}{
@@ -99,30 +99,41 @@
 		\If{$\Wset(T_k)= \emptyset$}
 			\Return $C_k$ \EndReturn 
 		\EndIf
-				
-		\If{$\neg\ms{gsl}$.CAS($sl$, $sl+1$)}\Comment{Lock gsl} 
-		  \Return $A_k$  \EndReturn
-		\EndIf
-		\If{$\lit{validate}()$}
-			\State $\ms{gsl}.\lit{write}(\ms{sl}+1)$
+		
+		\While{$\ms{sl} \mathrel{\&} 1 \mbox{ \textbf{or} } \neg\ms{gsl}$.CAS($sl$, $sl+1$)} \Comment{Lock gsl} 
+          \State $\ms{sl} \gets \Read(\ms{gsl})$
+		\EndWhile
+		\State $\ms{esl}.\lit{write}(1)$
+		\If{$\neg\lit{validate}()$}
+    		\State $\ms{esl}.\lit{write}(0)$
+			\State $\ms{gsl}.\lit{write}(\lit{read}(\ms{gsl})+1)$
 			\Return $A_k$ \EndReturn
 		\EndIf
 		\ForAll{$X_j \in \Wset(T_k)$}
 	 		 \State  $v_j.\lit{write}(\textit{nv}_j)$
-			 
-		\EndFor		
-		\State $\ms{gsl}.\lit{write}(\ms{sl}+1)$
-		\State $\ms{esl}.\lit{write}(\ms{sl}+1)$
+		\EndFor
+		\State $\ms{esl}.\lit{write}(0)$
+		\State $\ms{gsl}.\lit{write}(\lit{read}(\ms{gsl})+1)$
   		\Return $C_k$ \EndReturn
    	 }\EndPart		
 	\Statex
 	\Part{Function: $\lit{validate}()$}{
-		
-		\If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$}
-			\Return $\false$ \EndReturn
-		  \EndIf
-		
-		 \Return $\true$ \EndReturn
+        \State $\ms{currGSL} \gets \Read(\ms{gsl})$
+		\If{$\ms{sl} = \ms{currGSL}$}
+            \Return $\true$ \EndReturn
+        \EndIf
+        \While{$true$}
+            \While{$\ms{currGSL} \mathrel{\&} 1$}
+                \State $\ms{currGSL} \gets \Read(\ms{gsl})$
+            \EndWhile
+    		\If{$\exists X_j \in Rset(T_k)$:$(\textit{ov}_j \neq \Read(X_j))$}
+    			\Return $\false$ \EndReturn
+    		\EndIf
+            \If{$\Read(gsl) = \ms{currGSL}$}
+                \State $\ms{sl} \gets \ms{currGSL}$
+        		\Return $\true$ \EndReturn
+            \EndIf
+        \EndWhile
 	}\EndPart
 	
 % 	
