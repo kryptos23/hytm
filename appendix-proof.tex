@@ -78,6 +78,20 @@ $<_S$ denotes a total-order on transactions in the t-sequential history $S$.
 Since for a given transaction, its
 serialization point is chosen between the first and last event of the transaction,
 if $T_i \prec_{H} T_j$, then $\delta_{T_i} <_{E} \delta_{T_j}$ implies $T_i <_S T_j$.
+
+Throughout this proof, we consider that process $p_i$ executing fast-path transaction $T_k \in \ms{txns}(E)$
+does not include the sequence lock $r_j$ in the tracking set of $p_i$ when accessed in Line~\ref{line:hread}
+(and resp. Lines~\ref{line:m1} and \ref{line:m2}) during
+$\Read_k(X_j)$ (and resp. $\Write_k(X_j)$).
+%
+\begin{claim}
+\label{cl:fast}
+If every transaction $T_k \in \ms{txns}(E)$ is fast-path, then $S$ is legal.
+\end{claim}
+%
+\begin{proof}
+%
+\end{proof}
 %
 \begin{claim}
 \label{cl:alg1claim}
@@ -89,10 +103,6 @@ If process $p_i$ executing transaction $T_k\in \ms{txns}(E)$ holds the lock on $
 %
 \end{proof}
 %
-Throughout this proof, we consider that process $p_i$ executing fast-path transaction $T_k \in \ms{txns}(E)$
-does not include the sequence lock $r_j$ in the tracking set of $p_i$ when accessed in Line~\ref{line:hread}
-(and resp. Lines~\ref{line:m1} and \ref{line:m2}) during
-$\Read_k(X_j)$ (and resp. $\Write_k(X_j)$).
 %
 \begin{claim}
 \label{cl:readfrom}
@@ -185,14 +195,9 @@ But then the \emph{cas} on $v_m$ performed by $T_i$ would return $\false$ and $T
 This is analogous to the above case.
 
 (\textit{Case \RNum{4}:}) $T_i$ and $T_k$ are fast-path transactions.
-Thus, $T_k$ returns $C_k$ 
-before the read of the base object associated with $X_m$ by $T_j$ in Line~\ref{line:read2}, but before $T_i$
-returns $C_i$ (this follows from Observation).
-Consequently, $\Read_j(X_m)$ must read the value of $X_m$ to be $v'$ and return $v'$---contradiction.
-%
+Follows immediately from Claim~\ref{cl:fast}.
 
 We now need to prove that $\delta_{T_{j}}$ indeed precedes $\ell_{\TryC_k}$ in $E$.
-
 Consider the two possible cases:
 %
 \begin{itemize}

@@ -36,6 +36,8 @@ entire write set by performing \emph{compare-and-set} (\emph{cas})
 primitive that checks if the value of $r_j$, for each $X_j\in \Wset(T_k)$, is unchanged since last reading it during $\Write_k(X.v)$
 If all the locks on the write set were acquired successfully, $T_k$ performs validation of the read set and returns $C_k$ if successful, else $p_i$ aborts the transaction.
 
+\vspace{1mm}\noindent\textbf{Non-cached accesses inside fast-path.}
+
 We can now prove the following theorem:
 %
 \begin{theorem}
@@ -52,7 +54,9 @@ accesses $m=|\Dset(T_k)|$ distinct metadata base objects.
 \subsection{Instrumentation-optimal HyTM that is progressive only for slow-path reading transactions}
 \label{sec:hytm2}
 %
-We can now prove the following theorem:
+In this section, we describe Algorithm~\ref{alg:inswrite2} which does not incur the linear instrumentation cost
+on the fast-path reading transactions (as in Algorithm~\ref{alg:inswrite}, but provides progressiveness only
+for slow-path reading transactions.
 %
 \begin{theorem}
 \label{th:inswrite2}
@@ -75,11 +79,29 @@ concurrent to $T_k$.
 %
 \input{appendix-proof}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Circumventing the need for incremental validation in opaque HyTMs}
+\subsection{Minimizing the cost for incremental validation in opaque HyTMs}
 \label{sec:middlepath}
 %
+Observe that the lower bound in Theorem~\ref{th:impossibility} assumes progressiveness for both slow-path and fast-path transactions
+along with opacity and invisible reads.
+In this section, we present three concrete means of cirvumventing the lower bound or minimizing the cost incurred
+by implementations due to incremental validation.
+
 \paragraph{Sacrificing progressiveness and minimizing contention window.}
+%
+Algorithm~\ref{alg:inswrite3} is an implementation an opaque HyTM that does not satisfy progressiveness, but mitigates
+the time-complexity cost by performing incremental validation during a transactional read \emph{iff} the global snapshot of the memory locations
+has changed since the start of the transaction.
+%
+\input{hybridnorec}
 
 \paragraph{Employing non-cached writes inside fast-path.}
 
 \paragraph{Employing a fast fast-path.}
+Note that ideally we would like to execute all transactions inside hardware with minimal instrumentation.
+We now describe how every transaction may first be executed in a ``fast'' fast-path with almost no instrumentation
+and if unsuccessful, may be re-attempted in the fast-path and subsequently in slow-path.
+Algorithm~\ref{alg:middle} describes a generic transformation for any opaque HyTM $\mathcal{M}$ to an opaque
+HyTM $\mathcal{M}'$.
+%
+\input{middle}
