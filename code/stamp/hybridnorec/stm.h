@@ -84,13 +84,13 @@ typedef struct Thread_void {
                                             unsigned ___status; \
                                             ___Self->Retries = 0; \
                                             ___Self->isFallback = 0; \
-                                            ___Self->IsRO = 1; \
                                             ___Self->envPtr = &STM_JMPBUF; \
                                             int ___htmattempts; \
                                             /*printf("HTM_ATTEMPT_THRESH=%d\n", HTM_ATTEMPT_THRESH);*/ \
                                             for (___htmattempts = 0 ; ___htmattempts < HTM_ATTEMPT_THRESH; ++___htmattempts) { \
                                                 /*printf("h/w loop iteration\n");*/ \
                                                 while (esl) { __asm__ __volatile__("pause;"); } \
+                                                ___Self->IsRO = 1; \
                                                 ___status = XBEGIN(); \
                                                 if (___status == _XBEGIN_STARTED) { \
                                                     if (esl) XABORT(0); \
@@ -107,11 +107,12 @@ typedef struct Thread_void {
                                             /*DEBUG2 aout("thread "<<___Self->UniqID<<" started s/w tx attempt "<<(___Self->AbortsSW+___Self->CommitsSW)<<"; s/w commits so far="<<___Self->CommitsSW);*/ \
                                             /*DEBUG1 if ((___Self->CommitsSW % 50000) == 0) aout("thread "<<___Self->UniqID<<" has committed "<<___Self->CommitsSW<<" s/w txns");*/ \
                                             DEBUG2 printf("thread %ld started s/w tx; attempts so far=%ld, s/w commits so far=%ld\n", ___Self->UniqID, (___Self->AbortsSW+___Self->CommitsSW), ___Self->CommitsSW); \
-                                            DEBUG1 if ((___Self->CommitsSW % 25000) == 0) printf("thread %ld has committed %ld s/w txns (over all threads so far=%ld)\n", ___Self->UniqID, ___Self->CommitsSW, CommitTallySW); \
+                                            DEBUG1 if ((___Self->CommitsSW % 100) == 0) printf("thread %ld has committed %ld s/w txns (over all threads so far=%ld)\n", ___Self->UniqID, ___Self->CommitsSW, CommitTallySW); \
                                             ___Self->isFallback = 1; \
                                             if (sigsetjmp(STM_JMPBUF, 1)) { \
                                                 TxClearRWSets(STM_SELF); \
                                             } \
+                                            ___Self->IsRO = 1; \
                                             ___Self->sequenceLock = gsl; \
                                             while (___Self->sequenceLock & 1) { \
                                                 ___Self->sequenceLock = gsl; \
@@ -139,7 +140,7 @@ typedef volatile intptr_t               vintp;
                                                 (vintp*)(void*)&(var), \
                                                 (intptr_t)(val))
 /**
- * the following casts do not work when compiled in x64,
+ * the following cast does not work when compiled in x64,
  * since typically 2*sizeof(float) == sizeof(intptr).
  * consequently, writing to a float also writes to the
  * adjacent float...

@@ -892,52 +892,54 @@ std::ostream& operator<<(std::ostream& out, const List& obj) {
     return out;
 }
 
-// can be invoked only by a transaction on the software path.
-// writeSet must point to the write-set for this Thread that
-// contains addresses/values of type T.
-__INLINE__ bool validateGSLOrValues(Thread* Self, List* avpairs, bool holdingLocks) {
-    DEBUG3 aout("validateGSLOrValues "<<*avpairs);//<<" "<<debug(holdingLocks));
-    assert(Self->isFallback);
-
-    // the norec optimization: if the sequence number didn't change, then neither did any memory locations.
-    int currGSL = gsl;
-    if (currGSL == Self->sequenceLock) {
-        return true;
-    }
-    
-    // validation retry loop
-    while (1) {
-        
-        // wait until sequence lock is not held
-        while (currGSL & 1) {
-            __asm__ __volatile__("pause;");
-            currGSL = gsl;
-            if (holdingLocks) break;
-        }
-
-        // do value based validation
-        AVPair* const stop = avpairs->put;
-        for (AVPair* curr = avpairs->head; curr != stop; curr = curr->Next) {
-            if (curr->value != *curr->addr) {
-                return false;
-            }
-        }
-        
-        // if sequence lock has not changed, then our value based validation saw a snapshot
-        if (currGSL == gsl) {
-            // save the new gsl value we read as the last time when we can serialize all reads that we did so far
-            Self->sequenceLock = currGSL;
-            return true;
-        }
-    }
-}
-
-__INLINE__ bool validateReadSet(Thread* Self, bool holdingLocks) {
-//    return validateGSLOrValues(Self, &Self->rdSet->locks.list, holdingLocks);
-//    return validateGSLOrValues<long>(Self, &Self->rdSet->l.addresses.list)
-//        && validateGSLOrValues<float>(Self, &Self->rdSet->f.addresses.list);
-    return validateGSLOrValues(Self, Self->rdSet, holdingLocks);
-}
+//// can be invoked only by a transaction on the software path.
+//// writeSet must point to the write-set for this Thread that
+//// contains addresses/values of type T.
+//__INLINE__ bool validateGSLOrValues(Thread* Self, List* avpairs, bool holdingLocks) {
+//    DEBUG3 aout("validateGSLOrValues "<<*avpairs);//<<" "<<debug(holdingLocks));
+//    assert(Self->isFallback);
+//
+//    // the norec optimization: if the sequence number didn't change, then neither did any memory locations.
+//    int currGSL = gsl;
+//    if (currGSL == Self->sequenceLock) {
+//        return true;
+//    }
+//    
+//    // validation retry loop
+//    while (1) {
+//        
+//        // wait until sequence lock is not held
+//        while (currGSL & 1) {
+//            __asm__ __volatile__("pause;");
+//            currGSL = gsl;
+//            if (holdingLocks) break;
+//        }
+//
+//        // do value based validation
+//        AVPair* const stop = avpairs->put;
+//        for (AVPair* curr = avpairs->head; curr != stop; curr = curr->Next) {
+//            if (curr->value != *curr->addr) {
+//                return false;
+//            }
+//        }
+//        
+//        // if sequence lock has not changed, then our value based validation saw a snapshot
+//        if (currGSL == gsl) {
+//            // save the new gsl value we read as the last time when we can serialize all reads that we did so far
+//            Self->sequenceLock = currGSL;
+//            return true;
+//        } else {
+//            currGSL = gsl;
+//        }
+//    }
+//}
+//
+//__INLINE__ bool validateReadSet(Thread* Self, bool holdingLocks) {
+////    return validateGSLOrValues(Self, &Self->rdSet->locks.list, holdingLocks);
+////    return validateGSLOrValues<long>(Self, &Self->rdSet->l.addresses.list)
+////        && validateGSLOrValues<float>(Self, &Self->rdSet->f.addresses.list);
+//    return validateGSLOrValues(Self, Self->rdSet, holdingLocks);
+//}
 
 __INLINE__ intptr_t AtomicAdd(volatile intptr_t* addr, intptr_t dx) {
     intptr_t v;
@@ -1037,22 +1039,12 @@ int TxCommit(void* _Self) {
         }
         
         // acquire global sequence lock
-        bool failedFirst = false;
-        while ((Self->sequenceLock & 1) || !__sync_bool_compare_and_swap(&gsl, Self->sequenceLock, Self->sequenceLock + 1)) {
+        int oldval = Self->sequenceLock;
+        while ((oldval & 1) || !__sync_bool_compare_and_swap(&gsl, oldval, oldval + 1)) {
             __asm__ __volatile__("pause;");
-            Self->sequenceLock = gsl;
-            failedFirst = true;
+            oldval = gsl;
         }
         countersProbStartTime(counters, Self->UniqID, 0.);
-        
-//        if (Self->sequenceLock & 1) {
-//            cout<<"ERROR"<<endl;
-//            exit(-1);
-//        }
-//        if ((gsl & 1) == 0) {
-//            cout<<"ERROR2"<<endl;
-//            exit(-1);
-//        }
         
         // acquire extra sequence lock
         // note: the original alg writes sequenceLock+1, where sequenceLock was read from gsl, 
@@ -1065,25 +1057,35 @@ int TxCommit(void* _Self) {
         //      by the stm path.
         //      realizing this, we can just use a single bit.
         //      the paper notes this in footnote 7.
-        esl = 1;
         
         // validate the read-set
-        if (failedFirst && !validateReadSet(Self, true)) {
-            // release all locks and abort
-            DEBUG2 aout("thread "<<Self->UniqID<<" TxCommit failed validation -> abort");
-            esl = 0;
-            ++gsl;
-            __sync_synchronize();
-            TxAbort(Self);
+//        if (failedFirst && !validateReadSet(Self, true)) {
+//            // release all locks and abort
+//            DEBUG2 aout("thread "<<Self->UniqID<<" TxCommit failed validation -> abort");
+//            esl = 0;
+//            ++gsl;
+//            __sync_synchronize();
+//            TxAbort(Self);
+//        }
+        
+        // the norec optimization: if the sequence number didn't change, then neither did any memory locations.
+        // do value based validation
+        AVPair* const stop = Self->rdSet->put;
+        for (AVPair* curr = Self->rdSet->head; curr != stop; curr = curr->Next) {
+            if (curr->value != *curr->addr) {
+                esl = 0;
+                gsl = oldval + 2;
+                TxAbort(Self);
+            }
         }
         
         // perform the actual writes
+        esl = 1;
         //__sync_synchronize(); // not needed on x86/64 since the write to esl cannot be moved after these writes
         Self->wrSet->writeForward();
-
         // release gsl and esl
         esl = 0;
-        ++gsl;
+        gsl = oldval + 2;
 
         countersProbEndTime(counters, Self->UniqID, counters->timingOnFallback);
         ++Self->CommitsSW;
@@ -1172,13 +1174,47 @@ intptr_t TxLoad(void* _Self, volatile intptr_t* addr) {
         intptr_t val = *addr;
 
         // add the value we read to the read-set
+        // note: if addr changed, it was not changed by us (since we write only in commit)
         Self->rdSet->insertReplace(Self, addr, val, true);
         
         // validate reads
-        if (!validateReadSet(Self, false)) {
-            DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting (retries="<<Self->Retries<<")");
-            TxAbort(Self);
+
+        // the norec optimization: if the sequence number didn't change, then neither did any memory locations.
+        AVPair* stop = NULL;
+        int currGSL = gsl;
+        if (currGSL == Self->sequenceLock) {
+            goto validated;
         }
+        // validation retry loop
+        while (1) {
+            // wait until sequence lock is not held
+            while (currGSL & 1) {
+                __asm__ __volatile__("pause;");
+                currGSL = gsl;
+            }
+            // do value based validation
+            stop = Self->rdSet->put;
+            for (AVPair* curr = Self->rdSet->head; curr != stop; curr = curr->Next) {
+                if (curr->value != *curr->addr) {
+                    DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting (retries="<<Self->Retries<<")");
+                    TxAbort(Self);
+                }
+            }
+            // if sequence lock has not changed, then our value based validation saw a snapshot
+            if (currGSL == gsl) {
+                // save the new gsl value we read as the last time when we can serialize all reads that we did so far
+                Self->sequenceLock = currGSL; // assert: even number (unlocked)
+                break;
+            } else {
+                currGSL = gsl;
+            }
+        }
+validated:
+        
+//        if (!validateReadSet(Self, false)) {
+//            DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting (retries="<<Self->Retries<<")");
+//            TxAbort(Self);
+//        }
 
         //        printf("    txLoad(id=%ld, ...) success\n", Self->UniqID);
         return val;
@@ -1194,6 +1230,7 @@ intptr_t TxLoad(void* _Self, volatile intptr_t* addr) {
 /*__INLINE__*/
 void TxStore(void* _Self, volatile intptr_t* addr, intptr_t value) {
     Thread* Self = (Thread*) _Self;
+    Self->IsRO = false; // txn is not read-only
     
     // software path
     if (Self->isFallback) {
@@ -1201,10 +1238,14 @@ void TxStore(void* _Self, volatile intptr_t* addr, intptr_t value) {
         
         // add addr to the write-set
         Self->wrSet->insertReplace(Self, addr, value, false);
-        Self->IsRO = false; // txn is not read-only
 
 //        printf("    txStore(id=%ld, ...) success\n", Self->UniqID);
 //        return value;
+        
+        // think through 2 writes
+        // think through write then read
+        // validate after reading from write-set??
+        // add new testing.cpp kernel that is like a double or triple increment with multiple reads and writes... but still easy to verify...
         
     // hardware path
     } else {

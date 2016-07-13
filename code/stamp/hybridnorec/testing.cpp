@@ -17,10 +17,10 @@ using namespace std;
 #include <execinfo.h>
 
 volatile bool start;
+long globaln;
 long globaliters;
 long globalx;
 long globaly;
-long globaln;
 long* globalarr;
 long globalsz;
 #define CHUNK 8
@@ -81,6 +81,71 @@ void ntest0_validate() {
     cout << "x=" << globalx << " y=" << globaly << "... ";
     if (globalx != globaly || globalx != globaln * globaliters) {
         cout << "TEST FAILED (expected x=y=" << (globaln * globaliters) << ")" << endl;
+        exit(-1);
+    }
+    cout << "success." << endl;
+}
+
+void ntest2_init(long n, long iters) {
+    globaln = n;
+    globaliters = iters;
+    globalsz = 8;
+    globalarr = (long*) malloc(sizeof (long) * globalsz);
+    for (int i=0;i<globalsz;++i) globalarr[i] = 0;
+    cout << "n=" << n << " iters=" << iters << " sz=" << globalsz << endl;
+}
+
+void *ntest2_kernel(void* arg) {
+    STM_THREAD_T* STM_SELF = (STM_THREAD_T*) arg;
+    while (!start) {
+        __sync_synchronize();
+    }
+
+    for (int i = 0; i < globaliters; ++i) {
+        STM_BEGIN_WR();
+        long temp;
+        for (int j=0;j<globalsz;++j) {
+            temp = STM_READ_L(globalarr[j]);
+            temp = STM_READ_L(globalarr[j]);
+            temp = STM_READ_L(globalarr[j]);
+            STM_WRITE_L(globalarr[j], temp+1);
+            STM_WRITE_L(globalarr[j], temp+10);
+            temp = STM_READ_L(globalarr[j]) - 10;
+            STM_WRITE_L(globalarr[j], temp+100);
+            temp = STM_READ_L(globalarr[j]) - 100;
+            STM_WRITE_L(globalarr[j], temp+1);
+            temp = STM_READ_L(globalarr[j]);
+            temp = STM_READ_L(globalarr[j]);
+            temp = STM_READ_L(globalarr[j]);
+            temp = STM_READ_L(globalarr[j]);
+            temp = STM_READ_L(globalarr[j]);
+            STM_WRITE_L(globalarr[j], temp+1000);
+            temp = STM_READ_L(globalarr[j]) - 1000;
+            STM_WRITE_L(globalarr[j], temp+10);
+            temp = STM_READ_L(globalarr[j]) - 10;
+            STM_WRITE_L(globalarr[j], temp+100);
+            temp = STM_READ_L(globalarr[j]) - 100;
+            STM_WRITE_L(globalarr[j], temp+1);
+        }
+        STM_END();
+//#if defined(DEBUG_PRINT) || defined(DEBUG_PRINT_LOCK)
+//        printf("id=%ld x=%ld y=%ld\n", *((long*) arg), x, y);
+//#endif
+    }
+}
+
+void ntest2_validate() {
+    const long exp = globaln * globaliters * 2;
+    for (int i=0;i<globalsz;++i) {
+        cout << " arr[i]=" << globalarr[i];
+        if (i+1 < globalsz && globalarr[i] != globalarr[i+1]) {
+            cout << "TEST FAILED (expected arr["<<i<<"]=arr["<<i+1<<"])" << endl;
+            exit(-1);
+        }
+    }
+    cout<<"... ";
+    if (globalarr[0] != exp) {
+        cout << "TEST FAILED (expected arr[0]=" << exp << ")" << endl;
         exit(-1);
     }
     cout << "success." << endl;
@@ -241,6 +306,7 @@ int main(int argc, char** argv) {
 //    test0(1000000);
 //    test0(5000000);
 //    test0(10000000);
+    cout<<"HTM_ATTEMPT_THRESH="<<HTM_ATTEMPT_THRESH<<endl;
     cout<<"Spawned-thread test 0."<<endl;
     for (int n=1;n<=NPROCESSORS;++n) {
         cout<<n<<" threads"<<endl;
@@ -253,6 +319,19 @@ int main(int argc, char** argv) {
         ntest0_init(n, 100000); run_test(n, ntest0_validate, ntest0_kernel);
         if (n <= 8) { ntest0_init(n, 1000000/n); run_test(n, ntest0_validate, ntest0_kernel); }
         if (n <= 2) { ntest0_init(n, 10000000/n); run_test(n, ntest0_validate, ntest0_kernel); }
+    }
+    cout<<"Spawned-thread test 2."<<endl;
+    for (int n=1;n<=NPROCESSORS;++n) {
+        cout<<n<<" threads"<<endl;
+        ntest2_init(n, 0); run_test(n, ntest2_validate, ntest2_kernel);
+        ntest2_init(n, 1); run_test(n, ntest2_validate, ntest2_kernel);
+        ntest2_init(n, 10); run_test(n, ntest2_validate, ntest2_kernel);
+        ntest2_init(n, 100); run_test(n, ntest2_validate, ntest2_kernel);
+        ntest2_init(n, 1000); run_test(n, ntest2_validate, ntest2_kernel);
+        ntest2_init(n, 10000); run_test(n, ntest2_validate, ntest2_kernel);
+        ntest2_init(n, 100000); run_test(n, ntest2_validate, ntest2_kernel);
+        if (n <= 8) { ntest2_init(n, 1000000/n); run_test(n, ntest2_validate, ntest2_kernel); }
+        if (n <= 2) { ntest2_init(n, 10000000/n); run_test(n, ntest2_validate, ntest2_kernel); }
     }
 //    cout<<"Spawned-thread test 1."<<endl;
 //    for (int n=1;n<=NPROCESSORS;++n) {

@@ -40,9 +40,11 @@ void countersClear(struct debugCounters *cs) {
     int j=0;
     for (;j<NUMBER_OF_PATHS;++j) {
         int i=0;
+#ifdef RECORD_ABORTS
         for (;i<MAX_ABORT_STATUS;++i) {
             counterClear(cs->htmAbort[j*MAX_ABORT_STATUS+i]);
         }
+#endif
         counterClear(cs->htmCommit[j]);
     }
     counterClear(cs->garbage);
@@ -55,10 +57,12 @@ void countersInit(struct debugCounters *cs, const int numProcesses) {
     int j=0;
     for (;j<NUMBER_OF_PATHS;++j) {
         int i=0;
+#ifdef RECORD_ABORTS
         for (;i<MAX_ABORT_STATUS;++i) {
             cs->htmAbort[j*MAX_ABORT_STATUS+i] = (struct debugCounter *) malloc(sizeof(struct debugCounter));
             counterInit(cs->htmAbort[j*MAX_ABORT_STATUS+i], cs->NUM_PROCESSES);
         }
+#endif
         cs->htmCommit[j] = (struct debugCounter *) malloc(sizeof(struct debugCounter));
         counterInit(cs->htmCommit[j], cs->NUM_PROCESSES);
     }
@@ -74,10 +78,12 @@ void countersDestroy(struct debugCounters *cs) {
     int j=0;
     for (;j<NUMBER_OF_PATHS;++j) {
         int i=0;
+#ifdef RECORD_ABORTS
         for (;i<MAX_ABORT_STATUS;++i) {
             counterDestroy(cs->htmAbort[j*MAX_ABORT_STATUS+i]);
             free(cs->htmAbort[j*MAX_ABORT_STATUS+i]);
         }
+#endif
         counterDestroy(cs->htmCommit[j]);
         free(cs->htmCommit[j]);
     }

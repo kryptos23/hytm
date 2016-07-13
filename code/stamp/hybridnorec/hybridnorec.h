@@ -12,7 +12,7 @@ extern "C" {
 #endif
 #define TXNL_MEM_RECLAMATION
 
-#define MAX_RETRIES 100000
+#define MAX_RETRIES 1000000
     
 #include "../hytm1/counters/debugcounters.h"
 extern struct debugCounters *counters;
