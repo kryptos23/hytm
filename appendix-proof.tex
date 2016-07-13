@@ -85,6 +85,12 @@ does not include the sequence lock $r_j$ in the tracking set of $p_i$ when acces
 $\Read_k(X_j)$ (and resp. $\Write_k(X_j)$).
 %
 \begin{claim}
+\label{cl:aborts}
+%
+For any fast-path transaction $T_k \in \ms{txns}(E)$ executed by process $p_i$ 
+\end{claim}
+%
+\begin{claim}
 \label{cl:fast}
 If every transaction $T_k \in \ms{txns}(E)$ is fast-path, then $S$ is legal.
 \end{claim}

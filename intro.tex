@@ -2,17 +2,6 @@
 \section{Introduction}
 \label{sec:intro}
 %
-The \emph{Transactional Memory (TM)} abstraction is a synchronization mechanism 
-that allows the programmer to \emph{speculatively} execute sequences of shared-memory
-operations as \emph{atomic transactions}.
-Most popular TM designs, subsequent to the original proposal in \cite{HM93} 
-have implemented all the functionality in software~\cite{norec, ST95,HLM+03, astm, fraser}.
-However, TM designs are implemented entirely in software which typically incurs significant performance overhead.
-Thus, current CPUs have included instructions to mark a block of memory accesses as transactional~\cite{Rei12, asf, bluegene}, allowing them to be executed \emph{atomically} in hardware.
-However, hardware transactions may be spuriously aborted due to several reasons: cache capacity overflows, interrupts etc., thus leading to \emph{hybrid} TMs 
-in which the \emph{fast} hardware transactions are complemented with \emph{slower} software transactions that do not experience spurious aborts.
-To allow hardware transactions in a HyTM to detect conflicts with software transactions, hardware transactions must be \emph{instrumented} to perform additional metadata accesses, which introduces overhead.
-
 \begin{figure*}[!ht]
       
      \scalebox{1}[1]{
@@ -29,3 +18,18 @@ To allow hardware transactions in a HyTM to detect conflicts with software trans
 \caption{Table}\label{fig:main}    
 }
 \end{figure*}
+%
+The \emph{Transactional Memory (TM)} abstraction is a synchronization mechanism 
+that allows the programmer to \emph{speculatively} execute sequences of shared-memory
+operations as \emph{atomic transactions}.
+Most popular TM designs, subsequent to the original proposal in \cite{HM93} 
+have implemented all the functionality in software~\cite{norec, ST95,HLM+03, astm, fraser}.
+However, TM designs are implemented entirely in software which typically incurs significant performance overhead.
+Thus, current CPUs have included instructions to mark a block of memory accesses as transactional~\cite{Rei12, asf, bluegene}, allowing them to be executed \emph{atomically} in hardware.
+However, hardware transactions may be spuriously aborted due to several reasons: cache capacity overflows, interrupts etc., thus leading to \emph{hybrid} TMs 
+in which the \emph{fast} hardware transactions are complemented with \emph{slower} software transactions that do not experience spurious aborts.
+
+To allow hardware transactions in a HyTM to detect conflicts with software transactions, 
+hardware transactions must be \emph{instrumented} to perform additional metadata accesses, which introduces overhead.
+
+\paragraph{Roadmap.}

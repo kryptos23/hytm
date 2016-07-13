@@ -13,6 +13,21 @@
 		%\State $L$, multi-trylock
 	}\EndPart	
  	\Statex
+ 	\Statex
+ 	\textbf{Code for slow-path transactions}
+	\Statex
+	\Part{$\textit{tryC}_k$()}{\quad\Comment{slow-path}
+		\If{$\Wset(T_k)= \emptyset$}
+			\Return $C_k$ \EndReturn 
+		\EndIf
+		\State $F.\lit{fetch-add}(1)$
+		\State \textbf{Invoke updating slow-path $\TryC_k()$; let $r_k$ be the response}
+		
+		\State $F.\lit{fetch-add}(-1)$
+		\Return $r_k$ \EndReturn
+   		
+   	 }\EndPart		
+	\newpage
 	\textbf{Code for fast fast-path transactions}	
 	\Statex
 	\Part{$\textit{start}_k()$}{
@@ -47,22 +62,8 @@
 		
    		
    	 }\EndPart		
-   	\newpage
-   	
-	\textbf{Code for slow-path transactions}
-	\Statex
-	\Part{$\textit{tryC}_k$()}{\quad\Comment{slow-path}
-		\If{$\Wset(T_k)= \emptyset$}
-			\Return $C_k$ \EndReturn 
-		\EndIf
-		\State $F.\lit{fetch-add}(1)$
-		\State \Comment{Execute code for updating slow-path $\TryC_k()$ and let $r_k$ be the response}
-		
-		\State $F.\lit{fetch-add}(-1)$
-		\Return $r_k$ \EndReturn
-   		
-   	 }\EndPart		
-
+   	   	
+	
 	}
 	\end{multicols}
   \end{algorithmic}

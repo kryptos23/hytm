@@ -6,15 +6,12 @@
   	{
   	\footnotesize
 	\Part{Shared objects}{
-		\State $v_j$, for each t-object $X_j$ 
-		%\Statex ~~~~~allows reads, writes
-		\State $r_{j}$, sequence lock for each t-object $X_j$
 		\State $L$, global single-bit lock
 		%\Statex ~~~~~allows reads, writes 
 		%\State implemented from reads and writes
 		%\State $L$, multi-trylock
 	}\EndPart	
-% 	\Statex
+ 	\Statex
 % 	\Part{Process local objects}{
 % 		\State $\Rset(T_k)$, storing $\{X_j,r_j\}$
 % 		\State $\Wset(T_k)$, storing $\{X_j, v_j\}$
@@ -57,37 +54,12 @@
 		
    		
    	 }\EndPart		
-   	 \Statex
-	\Statex
+   	
+	\newpage
 	\textbf{Code for slow-path transactions}
 	
 	\Statex
-	\Part{\Read$_k(X_j)$}\quad\Comment{slow-path}{
-		  \If{$X_j\in \Wset(T_k)$}
-		    \Return $\Wset(T_k).\lit{locate}(X_j)$ \EndReturn
-		  \Else
-		  \State $\textit{ov}_j := \Read(v_j)$ 
-		  \State $\textit{or}_j := \Read(r_j)$ 
-		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$ 
-		  \If{$\textit{or}_j$ $\mathrel{\&} 1$}  	
-			\Return $A_k$ \EndReturn
-		  \EndIf
-		  \If{$\neg \lit{validate}()$}
-			\Return $A_k$ \EndReturn
-		  \EndIf
-		  \EndIf
-		  \Return $\textit{ov}_j$ \EndReturn
-		
-   	 }\EndPart
-   	\newpage
-	\Part{\Write$_k(X_j,v)$}\quad\Comment{slow-path}{
-		
-			\State $\textit{nv}_j := v$
-			\State $\Wset(T_k) := \Wset(T_k)\cup\{X_j,nv_j\}$
-			\Return $\ok$ \EndReturn
-		
-   	}\EndPart
-	\Statex
+	
 	
 	%\Statex	
 	\Part{\TryC$_k$()}\quad\Comment{slow-path}{
@@ -124,15 +96,7 @@
  		
    		\Return $C_k$ \EndReturn
    	 }\EndPart		
-	\Statex
-	\Part{Function: $\lit{validate}()$}{
-		
-		\If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$}
-			\Return $\false$ \EndReturn
-		  \EndIf
-		
-		 \Return $\true$ \EndReturn
-	}\EndPart
+	
 	\Statex
  	\Part{Function: $\lit{release}(Q)$}{
 		\ForAll{$X_j \in Q$}	

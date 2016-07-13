@@ -101,7 +101,14 @@ has changed since the start of the transaction.
 Note that ideally we would like to execute all transactions inside hardware with minimal instrumentation.
 We now describe how every transaction may first be executed in a ``fast'' fast-path with almost no instrumentation
 and if unsuccessful, may be re-attempted in the fast-path and subsequently in slow-path.
-Algorithm~\ref{alg:middle} describes a generic transformation for any opaque HyTM $\mathcal{M}$ to an opaque
-HyTM $\mathcal{M}'$.
+Specifically, Algorithm~\ref{alg:middle} describes a generic transformation for any opaque HyTM $\mathcal{M}$ to an opaque
+HyTM $\mathcal{M}'$ by employing a shared \emph{fetch-and-add} metadata $F$ that slow-path updating transactions
+increment (and resp. decrement) at the start (and resp. end). The fast fast-path checks first checks if $F$ is $0$
+and if not, aborts the transaction; otherwise the transaction is continued as an uninstrumented hardware transaction.
+Since there is no concurrency between fast fast-path and slow-path, the following result is immediate:
 %
 \input{middle}
+%
+\begin{theorem}
+Given any opaque HyTM $\mathcal{M}$, Algorithm~\ref{middle} implements an opaque HyTM $\mathcal{M}'$
+\end{theorem}
