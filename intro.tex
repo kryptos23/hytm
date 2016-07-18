@@ -24,6 +24,23 @@ that allows the programmer to \emph{speculatively} execute sequences of shared-m
 operations as \emph{atomic transactions}.
 Most popular TM designs, subsequent to the original proposal in \cite{HM93} 
 have implemented all the functionality in software~\cite{norec, ST95,HLM+03, astm, fraser}.
+The original dynamic STM implementation \emph{DSTM}~\cite{HLM+03} ensures \emph{progressiveness}: 
+a transaction aborts only if there is a read-write \emph{data conflict} with a concurrent
+transaction. However, read operations in DSTM must \emph{incrementally} validate
+every next read operation. This results in a quadratic  (in the size of the transaction's read
+set) step-complexity bound. Subsequent state-of-the-art STM 
+implementations like \emph{NOrec}~\cite{norec} and \emph{TL2}~\cite{DSS06}
+minimize the impact on performance due to incremental validation.
+NOrec uses a global sequence lock that is read at the start of a transaction and performs \emph{value-based}
+validation during read operations only if the value of the global lock has changed since reading it.
+TL2 eliminates incremental validation completely by associating a global sequence lock
+value with each data item updated: any read of a data item returns
+a value only if the sequence value associated with it is the same as the 
+value of the sequence lock read at the start of the transaction. 
+
+One common property that is satisfied by most state-of-the-art progressive TM implementations is \emph{invisible reads},
+which intuitively means that the TM implementation is unaware of the number of readers accessing a given data item.
+
 However, TM designs are implemented entirely in software which typically incurs significant performance overhead.
 Thus, current CPUs have included instructions to mark a block of memory accesses as transactional~\cite{Rei12, asf, bluegene}, allowing them to be executed \emph{atomically} in hardware.
 However, hardware transactions may be spuriously aborted due to several reasons: cache capacity overflows, interrupts etc., thus leading to \emph{hybrid} TMs 
