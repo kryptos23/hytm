@@ -198,22 +198,16 @@ This is analogous to the above case.
 Follows immediately from Claim~\ref{cl:fast}.
 
 We now need to prove that $\delta_{T_{j}}$ indeed precedes $\ell_{\TryC_k}$ in $E$.
-Consider the two possible cases:
-%
-\begin{itemize}
-\item
+Consider the two possible cases.
 Suppose that $T_j$ is a read-only transaction. 
 Then, $\delta_{T_j}$ is assigned to the last t-read performed by $T_j$ that returns a non-A$_j$ value. 
 If $\Read_j(X_m)$ is not the last t-read that returned a non-A$_j$ value, then there exists a $\Read_j(X')$ such that 
 $\ell_{\Read_j(X_m)} <_{E} \ell_{\TryC_k} <_E \ell_{read_j(X')}$.
 But then this t-read of $X'$ must abort by performing the checks in Line~\ref{line:abort0} or incur a tracking set abort---contradiction.
-\item
-Suppose that $T_j$ is an updating transaction that commits, then $\delta_{T_j}=\ell_{\TryC_j}$ which implies that
+
+Otherwise suppose that $T_j$ is an updating transaction that commits, then $\delta_{T_j}=\ell_{\TryC_j}$ which implies that
 $\ell_{read_j(X)} <_{E} \ell_{\TryC_k} <_E \ell_{\TryC_j}$. Then, $T_j$ must neccesarily perform the checks
-in Line~\ref{line:abort3} and return $A_j$ or incur a tracking set abort---contradiction to the assumption that $T_j$ is a committed transaction.
-\end{itemize}
-%
-The proof follows.
+in Line~\ref{line:abort3} and return $A_j$ or incur a tracking set abort---contradiction to the assumption that $T_j$ is a committed transaction.%
 %
 \end{proof}
 %

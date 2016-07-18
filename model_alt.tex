@@ -128,7 +128,7 @@ A tracking set can be \emph{invalidated} by a concurrent process:
 if, in a configuration $C$ where  $(b,v,\exclusive)\in\tau_i$
 (resp.\ $(b,v,\shared)\in\tau_i)$,  a process $j\neq i$ applies any primitive 
 (resp.\ any \emph{nontrivial} primitive) to $b$, then $\tau_i$ becomes
-\emph{invalid} and any subsequent cached primitive invoked by $i$
+\emph{invalid} and any subsequent event invoked by $i$
 sets $\tau_i$ to $\emptyset$ and returns $\bot$. We refer to this event as a \emph{tracking set abort}.
 
 Note that hardware transactions may also abort spuriously, or because of unsupported operations~\cite{Rei12}, or due to \emph{capacity} aborts. 
@@ -151,7 +151,7 @@ a direct rmw primitive on a base object.
 
 A fast-path transaction essentially encapsulates a hardware transaction. Specifically, in any execution $E$,
 we say that a transaction $T_k\in \ms{txns}(E)$ is a fast-path transaction if $E|k$ contains at least one cached event.
-A events of a \emph{hardware transaction} includes series of direct trivial accesses and at least one cached access
+An event of a \emph{hardware transaction} includes series of direct trivial accesses and at least one cached access
 followed by a \emph{cache-commit} primitive.
 Note that we specifically allow hardware transactions to perform reads without adding the corresponding base object to
 the process's tracking set, thus modelling the non-speculative accesses inside hardware allowed by 
@@ -165,7 +165,9 @@ This implies the following lemma:
 \begin{lemma}
 \label{lm:traborts}
 %
-For any t-incomplete transaction $T_k \in \ms{txns}(E)$ and $(b,v,\exclusive)\in\tau_i$ after execution $E$,
+For any t-incomplete transaction $T_k \in \ms{txns}(E)$ executed by process $i$ and $(b,v,\exclusive)\in\tau_i$ (and resp. $(b,v,\shared)\in\tau_i$) after execution $E$
+and let $e$ be any event (and resp. nontrivial event) that some process $j\neq i$ is poised to apply after $E$, then the next event of $T_k$ in any extension of $E\cdot e$
+is $A_k$.
 \end{lemma}
 %
 %
