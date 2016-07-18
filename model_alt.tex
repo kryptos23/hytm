@@ -157,7 +157,17 @@ Note that we specifically allow hardware transactions to perform reads without a
 the process's tracking set, thus modelling the non-speculative accesses inside hardware allowed by 
 IBM Power8 architectures. We remark that Intel Haswell does not support this feature: an event of a hardware transaction
 does not include any direct access.
+
 We assume that a fast-path transaction $T_k$ returns $A_k$
-as soon an underlying cached primitive or \emph{cache-commit} returns $\bot$. 
+as soon an underlying cached primitive or \emph{cache-commit} returns $\bot$.
+This implies the following lemma:
+%
+\begin{lemma}
+\label{lm:traborts}
+%
+For any t-incomplete transaction $T_k \in \ms{txns}(E)$ and $(b,v,\exclusive)\in\tau_i$ after execution $E$,
+\end{lemma}
 %
 %
+
+\paragraph{HyTM properties.}
