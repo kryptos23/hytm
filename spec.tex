@@ -16,9 +16,15 @@
 \end{center}
 \end{figure*}
 %
-In this section, we show that it is impossible to implement opaque proressive HyTMs with invisible reads
+In this section, we show that it is impossible to implement opaque \emph{progressive} HyTMs with \emph{invisible reads}
 with $O$(1) step-complexity read operations. This result holds even if fast-path transactions may perform
 direct trivial accesses.
+
+Formally, we say that a HyTM implementation $\mathcal{M}$ is progressive
+for a set $\mathcal{T}$ of transactions
+if in any execution $E$ of $\mathcal{M}$; $\mathcal{T} \subseteq \ms{txns}(E)$, 
+if any transaction $T_k \in \mathcal{T}$ returns $A_k$ in $E$, there exists 
+another transaction $T_m$ that conflicts with $T_k$ in $E$>
 %
 \begin{theorem}
 \label{th:impossibility}
@@ -210,4 +216,5 @@ However, this contradicts the assumption that in every execution $E$ of $\mathca
 performs $\kappa$ steps. This completes the proof.
 \end{proof}
 %
+\paragraph{How STM implementations avoid the lower bound.}
 %

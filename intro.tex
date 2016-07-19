@@ -28,7 +28,7 @@ The original dynamic STM implementation \emph{DSTM}~\cite{HLM+03} ensures \emph{
 a transaction aborts only if there is a read-write \emph{data conflict} with a concurrent
 transaction. However, read operations in DSTM must \emph{incrementally} validate
 every next read operation. This results in a quadratic  (in the size of the transaction's read
-set) step-complexity bound. Subsequent state-of-the-art STM 
+set) step-complexity bound. Subsequent STM 
 implementations like \emph{NOrec}~\cite{norec} and \emph{TL2}~\cite{DSS06}
 minimize the impact on performance due to incremental validation.
 NOrec uses a global sequence lock that is read at the start of a transaction and performs \emph{value-based}
@@ -38,15 +38,26 @@ value with each data item updated: any read of a data item returns
 a value only if the sequence value associated with it is the same as the 
 value of the sequence lock read at the start of the transaction. 
 
-One common property that is satisfied by most state-of-the-art progressive TM implementations is \emph{invisible reads},
-which intuitively means that the TM implementation is unaware of the number of readers accessing a given data item.
+In fact, state-of-the-art STM implementations ensure progress in the absence of conflicts with 
+$O$(1) complexity read operations while still satisfying \emph{invisible reads}.
+Intuitively, this means that read-only transactions do not
+apply any nontrivial primitives on the shared memory which is considered importance for performance in
+read-dominated workloads.
 
-However, TM designs are implemented entirely in software which typically incurs significant performance overhead.
+Nonetheless, TM designs that are implemented entirely in software still incur significant performance overhead.
 Thus, current CPUs have included instructions to mark a block of memory accesses as transactional~\cite{Rei12, asf, bluegene}, allowing them to be executed \emph{atomically} in hardware.
-However, hardware transactions may be spuriously aborted due to several reasons: cache capacity overflows, interrupts etc., thus leading to \emph{hybrid} TMs 
-in which the \emph{fast} hardware transactions are complemented with \emph{slower} software transactions that do not experience spurious aborts.
+Hardware transactions promise even better performance, but they offer no progress guarantees 
+since they may experience %\emph{conflict aborts} and
+\emph{spurious} aborts. This motivates the need for
+\emph{hybrid} TMs in which the \emph{fast} hardware transactions are 
+complemented with \emph{slower} software transactions that do not experience spurious aborts.
 
 To allow hardware transactions in a HyTM to detect conflicts with software transactions, 
 hardware transactions must be \emph{instrumented} to perform additional metadata accesses, which introduces overhead.
+Hardware transactions typically provide automatic contention detection for every memory location accessed within one.
+This is at least the case with the Intel Haswell's Transactional Synchronization Extensions~\cite{haswell}.
+However, the IBM Power8 ISA allows hardware transactions to access metadata non-speculatively, thus not providing
+contention detection for all memory locations accessed. While this has the advantage of potentially reducing aborts
+in hardware, this makes the design of HyTM implementations potentially harder to prove correct.
 
 \paragraph{Roadmap.}

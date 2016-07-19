@@ -160,25 +160,10 @@ Line~\ref{line:acq} only after $T_i$ writes $0$ to $r_{m}$ in Line~\ref{line:rel
 If $T_j$ is a slow-path transaction, 
 recall that $\Read_j(X_m)$ checks if $X_j$ is locked by a concurrent transaction, 
 then performs read-validation (Line~\ref{line:abort0}) before returning a matching response. 
-We claim that $\Read_j(X_m)$ must return $A_j$ in any such execution.
+Indeed, $\Read_j(X_m)$ must return $A_j$ in any such execution.
 
-Consider the following possible sequence of events: 
-$T_k$ returns \emph{true} from \emph{acquire} function invocation, 
-updates the value of $X_m$ to shared-memory (Line~\ref{line:write}), 
-$T_j$ reads the base object $v_m$ associated with $X_m$, 
-$T_k$ releases $X_m$ and finally $T_j$ performs the check in Line~\ref{line:abort0}. 
-But in this case, $\Read_j(X_m)$ is forced to return the value $v'$ written by $T_m$--- 
-contradiction to the assumption that $\Read_j(X_m)$ returns $v$. 
-
-Otherwise suppose that $T_k$ acquires exclusive access to $X_m$ and returns \emph{true}
-from the invocation of \emph{acquire}, updates $v_m$ in Line~\ref{line:write}), 
-$T_j$ reads $v_m$, $T_j$ performs the check in Line~\ref{line:abort0} and finally $T_k$ 
-releases $X_m$. 
-Again, $\Read_j(X_m)$ must return $A_j$ since $X_m$ is locked by $T_k$---contradiction.
-
-A similar argument applies to the case that $T_j$ is a fast-path transaction.
-Indeed, since every \emph{data} base object read by $T_j$ is contained in its tracking set, if any concurrent
-transaction updates any t-object in its read set, $T_j$ is aborted immediately by our model(cf. Section~\ref{sec:hytm}).
+If $T_j$ is a fast-path transaction, it follows that $\Read_j(X_m)$ must return $A_j$
+immediately from Lemma~\ref{lm:traborts}.
 
 Thus, $\ell_{\TryC_i} <_E \ell_{\Read_j(X)} <_{E} \ell_{\TryC_k}$.
 

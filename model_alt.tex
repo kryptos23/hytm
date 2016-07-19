@@ -171,5 +171,17 @@ is $A_k$.
 \end{lemma}
 %
 %
-
 \paragraph{HyTM properties.}
+Throughout this paper, we consider the TM-correctness property of \emph{opacity}~\cite{tm-book}: an execution
+$E$ is opaque if there exists a \emph{legal} sequential execution $S$ equivalent to some t-completion of $E$
+that respects the \emph{real-time ordering} of transactions in $E$.
+
+We also assume a weak TM-liveness property for t-operations in this paper: every t-operation returns a matching
+response within a finite number of its own steps if running step-contention free from a \emph{quiescent} configuration,
+\emph{i.e.}, a configuration in which every transaction is t-complete.
+
+Algorithms and lower bounds presented in this paper concern HyTMs that provide \emph{invisible reads}: t-read operations do not perform
+nontrivial primitives in any execution.
+%
+%
+

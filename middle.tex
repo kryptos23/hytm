@@ -6,11 +6,9 @@
   	{
   	\footnotesize
 	\Part{Shared objects}{
-		\State $v_j$, for each t-object $X_j$ 
+		%\State $v_j$, for each t-object $X_j$ 
 		\State $F$, fetch-and-increment object
-		%\Statex ~~~~~allows reads, writes 
-		%\State implemented from reads and writes
-		%\State $L$, multi-trylock
+		
 	}\EndPart	
  	\Statex
  	\Statex
@@ -58,7 +56,7 @@
 	%\Statex	
 	\Part{$\textit{tryC}_k$()}{\quad\Comment{fast fast-path}
 		%\Return $C_k$ \EndReturn
-		\State $\ms{commit-cache}_i$ \Comment{returns $C_k$}
+		\State $\ms{commit-cache}_i$ \Comment{returns $C_k$ or $A_k$}
 		
    		
    	 }\EndPart		

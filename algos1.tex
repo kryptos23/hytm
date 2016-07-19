@@ -51,7 +51,7 @@ accesses $m=|\Dset(T_k)|$ distinct metadata base objects.
 \input{prog-fp-sp}
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Instrumentation-optimal HyTM that is progressive only for slow-path reading transactions}
+\subsection{Instrumentation-optimal HyTMs that are progressive only for a subset of transactions}
 \label{sec:hytm2}
 %
 In this section, we describe Algorithm~\ref{alg:inswrite2} which does not incur the linear instrumentation cost
@@ -84,20 +84,23 @@ concurrent to $T_k$.
 %
 Observe that the lower bound in Theorem~\ref{th:impossibility} assumes progressiveness for both slow-path and fast-path transactions
 along with opacity and invisible reads.
-In this section, we present three concrete means of cirvumventing the lower bound or minimizing the cost incurred
+In this section, we present algorithmic ideas for cirvumventing the lower bound or minimizing the cost incurred
 by implementations due to incremental validation.
 
 \paragraph{Sacrificing progressiveness and minimizing contention window.}
 %
-Algorithm~\ref{alg:inswrite3} is an implementation an opaque HyTM that does not satisfy progressiveness, but mitigates
-the time-complexity cost by performing incremental validation during a transactional read \emph{iff} the global snapshot of the memory locations
-has changed since the start of the transaction.
+\emph{Hybrid Norec}~\cite{hybridnorec} is a HyTM implementation that does not satisfy progressiveness
+(unlike its STM counterpart Norec), but mitigates
+the step-complexity cost on slow-path transactions by performing incremental validation during a transactional read \emph{iff} 
+the global snapshot of the memory locations has changed since the start of the transaction.
 %
-\input{hybridnorec}
+%\input{hybridnorec}
 
 \paragraph{Employing non-cached writes inside fast-path.}
 
-\paragraph{Employing a fast fast-path.}
+\paragraph{Performing short fast-path transactions inside slow-path.}
+
+\paragraph{Employing an uninstrumented fast fast-path.}
 Note that ideally we would like to execute all transactions inside hardware with minimal instrumentation.
 We now describe how every transaction may first be executed in a ``fast'' fast-path with almost no instrumentation
 and if unsuccessful, may be re-attempted in the fast-path and subsequently in slow-path.
@@ -110,6 +113,6 @@ Since there is no concurrency between fast fast-path and slow-path, the followin
 \input{middle}
 %
 \begin{theorem}
-Given any opaque HyTM $\mathcal{M}$ with a fast-path and slow-path, Algorithm~\ref{middle} implements an opaque HyTM $\mathcal{M}'$
+Given any opaque HyTM $\mathcal{M}$ with a fast-path and slow-path, Algorithm~\ref{alg:middle} implements an opaque HyTM $\mathcal{M}'$
 with a fast fast-path, fast-path and a slow-path.
 \end{theorem}
