@@ -11,7 +11,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-#include "../rtm.h"
+#include "../platform.h"
 using namespace std;
 
 #include "debugcounter_impl.h"

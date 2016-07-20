@@ -11,8 +11,12 @@
 #ifndef PLATFORM_X86_H
 #define PLATFORM_X86_H 1
 
+#ifndef PLATFORM_H
+#  error include "platform.h" for "platform_x86.h"
+#endif
 
 #include <stdint.h>
+#include "rtm_x86.h"
 #include "common.h"
 
 

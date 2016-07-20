@@ -58,9 +58,9 @@ extern volatile int globallock;
 
 
 
-    
+
 #include <stdint.h>
-#include "rtm.h"
+#include "platform.h"
 #include "tmalloc.h"
 
 #  include <setjmp.h>

@@ -8,14 +8,12 @@
  */
 
 
-#ifndef PLATFORM_X86_H
-#define PLATFORM_X86_H 1
-
+#ifndef PLATFORM_P8_H
+#define PLATFORM_P8_H 1
 
 #ifndef PLATFORM_H
-#  error include "platform.h" for "platform_x86.h"
+#  error include "platform.h" for "platform_p8.h"
 #endif
-
 
 #include <stdint.h>
 #include "common.h"
@@ -46,21 +44,7 @@
 __INLINE__ intptr_t
 cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr)
 {
-    intptr_t prevVal;
-
-    __asm__ __volatile__ (
-        "lock \n"
-#ifdef __LP64__
-        "cmpxchgq %1,%2 \n"
-#else
-        "cmpxchgl %k1,%2 \n"
-#endif
-        : "=a" (prevVal)
-        : "q"(newVal), "m"(*ptr), "0" (oldVal)
-        : "memory"
-    );
-
-    return prevVal;
+	return __sync_val_compare_and_swap(ptr, oldVal, newVal);
 }
 
 
@@ -70,9 +54,11 @@ cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr)
  * http://mail.nl.linux.org/kernelnewbies/2002-11/msg00127.html
  * =============================================================================
  */
-#define MEMBARLDLD()                    /* nothing */
-#define MEMBARSTST()                    /* nothing */
-#define MEMBARSTLD()                    __asm__ __volatile__ ("" : : :"memory")
+
+// TODO: FIX THIS TO USE LESS EXPENSIVE BARRIERS
+#define MEMBARLDLD()                    __sync_synchronize()
+#define MEMBARSTST()                    __sync_synchronize()
+#define MEMBARSTLD()                    __sync_synchronize()
 
 
 /* =============================================================================
@@ -112,12 +98,12 @@ prefetchw (volatile void* x)
  * =============================================================================
  */
 /* CCM: low overhead timer; also works with simulator */
-#define TL2_TIMER_READ() ({ \
+/*#define TL2_TIMER_READ() ({ \
     unsigned int lo; \
     unsigned int hi; \
     __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi)); \
     ((TL2_TIMER_T)hi) << 32 | lo; \
-})
+})*/
 
 /*
 Version with clock_gettime:
@@ -148,12 +134,4 @@ Version with gettimeofday:
 */
 
 
-#endif /* PLATFORM_X86_H */
-
-
-/* =============================================================================
- *
- * End of platform_x86.h
- *
- * =============================================================================
- */
+#endif /* PLATFORM_P8_H */

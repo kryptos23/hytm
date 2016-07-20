@@ -4,33 +4,31 @@
 #
 # ==============================================================================
 
+LIBNAME=hytm1
 
 # ==============================================================================
 # Variables
 # ==============================================================================
 
 EXTRAFLAGS := $(EXTRAFLAGS1) $(EXTRAFLAGS2) $(EXTRAFLAGS3) $(EXTRAFLAGS4)
-CC       := gcc
-CFLAGS   := -g -Wall -Winline -O3 $(EXTRAFLAGS)
+CC       := /opt/at9.0/bin/powerpc64le-linux-gnu-g++
+CFLAGS   := -O3 -g3 -Wall -fmessage-length=0 -mcpu=power8 -mtune=power8 -mcmodel=medium $(EXTRAFLAGS)
+CFLAGS   += -DRECORD_ABORTS
+CFLAGS   += -std=c++11
 CPP      := $(CC)
 CPPFLAGS := $(CFLAGS)
 LD       := $(CC)
 LDFLAGS  += $(EXTRAFLAGS)
 
-LIBTL2 := libtl2.a
+LIBHYTM  := lib$(LIBNAME).a
 
-SRCS := \
-	tl2.c \
-	tmalloc.c \
-#
-OBJS := ${SRCS:.c=.o}
-
-AR      := ar
-RANLIB  := ranlib
+AR       := ar
+RANLIB   := ranlib
 
 RM := rm -f
 
 # ADD GPROF INSTRUMENTATION
+#CPPFLAGS += -pg
 #CFLAGS += -pg
 #LDFLAGS += -pg -Winline
 
@@ -43,34 +41,21 @@ default: lazy
 
 .PHONY: clean
 clean:
-	$(RM) $(LIBTL2) $(OBJS)
+	$(RM) $(LIBHYTM) $(LIBNAME).o tmalloc.o
 
-%.o: %.c
+$(LIBHYTM).o: $(LIBHYTM).cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(LIBTL2): $(OBJS)
+tmalloc.o: tmalloc.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(LIBHYTM): $(LIBNAME).o tmalloc.o
 	$(AR) cru $@ $^
 	$(RANLIB) $@
 
 .PHONY: lazy
-lazy: $(LIBTL2)
+lazy: $(LIBHYTM)
 
-.PHONY: eager
-eager: CFLAGS += -DTL2_EAGER
-eager: $(LIBTL2)
-
-.PHONY: lazy-nocm
-lazy-nocm: CFLAGS += -DTL2_NOCM
-lazy-nocm: $(LIBTL2)
-
-.PHONY: eager-nocm
-eager-nocm: CFLAGS += -DTL2_EAGER
-eager-nocm: CFLAGS += -DTL2_NOCM
-eager-nocm: $(LIBTL2)
-
-.PHONY: otm
-otm: CFLAGS += -m32
-otm: $(LIBTL2)
 
 
 # ==============================================================================

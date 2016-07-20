@@ -40,8 +40,8 @@ do
         cd hytm2
         echo "Compiling TM library: $t"
         xflags3="-DHTM_ATTEMPT_THRESH=-1"
-        make clean
-        make EXTRAFLAGS1=$xflags1 EXTRAFLAGS2=$xflags2 EXTRAFLAGS3=$xflags3
+        make -f Makefile${makefileSuffix} clean
+        make -f Makefile${makefileSuffix} EXTRAFLAGS1=$xflags1 EXTRAFLAGS2=$xflags2 EXTRAFLAGS3=$xflags3
         if [ $? -ne 0 ]; then echo "ERROR: failed to compile TM library $t"; exit -1; fi
         cd ..
         echo "Success."
@@ -53,8 +53,8 @@ do
         xflags3="-DHTM_ATTEMPT_THRESH=20"
         cd $t
         echo "Compiling TM library: $t"
-        make clean
-        make EXTRAFLAGS1=$xflags1 EXTRAFLAGS2=$xflags2 EXTRAFLAGS3=$xflags3
+        make -f Makefile${makefileSuffix} clean
+        make -f Makefile${makefileSuffix} EXTRAFLAGS1=$xflags1 EXTRAFLAGS2=$xflags2 EXTRAFLAGS3=$xflags3
         if [ $? -ne 0 ]; then echo "ERROR: failed to compile TM library $t"; exit -1; fi
         cd ..
         echo "Success."
