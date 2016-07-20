@@ -138,11 +138,9 @@ transaction $T_k$ that returns $C_k$ in $S$ and performs $\Write_k(X_m,v')$; $v'
 %
 
 $T_i$ and $T_k$ are both updating transactions that commit. Thus, 
-%
-\begin{center}
-($T_i <_S T_k$) $\Longleftrightarrow$ ($\delta_{T_i} <_{E} \delta_{T_k}$) \\
+($T_i <_S T_k$) $\Longleftrightarrow$ ($\delta_{T_i} <_{E} \delta_{T_k}$) and
 ($\delta_{T_i} <_{E} \delta_{T_k}$) $\Longleftrightarrow$ ($\ell_{\TryC_i} <_{E} \ell_{\TryC_k}$) 
-\end{center}
+
 %
 Since, $T_j$ reads the value of $X$ written by $T_i$, one of the following is true:
 $\ell_{\TryC_i} <_{E} \ell_{\TryC_k} <_{E} \ell_{\Read_j(X_m)}$ or

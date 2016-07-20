@@ -24,7 +24,7 @@ Formally, we say that a HyTM implementation $\mathcal{M}$ is progressive
 for a set $\mathcal{T}$ of transactions
 if in any execution $E$ of $\mathcal{M}$; $\mathcal{T} \subseteq \ms{txns}(E)$, 
 if any transaction $T_k \in \mathcal{T}$ returns $A_k$ in $E$, there exists 
-another transaction $T_m$ that conflicts with $T_k$ in $E$>
+another transaction $T_m$ that conflicts with $T_k$ in $E$.
 %
 \begin{theorem}
 \label{th:impossibility}
@@ -35,6 +35,10 @@ that incurs a time complexity of $\Omega (m^2)$; $m=|\Rset(T_k)|$.
 %
 \begin{proofsketch}
 %
+We construct an execution of a read-only slow-path transaction $T_{\phi}$ that performs $m \in \mathbb{N}$
+distinct t-reads of t-objects $X_1,\ldots , X_m$. We show inductively that for each 
+$i\in \{1,\ldots , m\}$; $m \in \mathbb{N}$, the $i^{\ms{th}}$ t-read must access $i-1$ distinct base objects
+during its execution. The (partial) steps in our execution are depicted in Figure~\ref{fig:indis}.
 \end{proofsketch}
 %
 The formal proof follows.
@@ -94,10 +98,11 @@ to the assumption that $\mathcal{M}$ is progressive.
 \end{proof}
 %
 \begin{proof}
-Suppose by contradiction that there exists a progressive opaque HyTM implementation $\mathcal{M}$ with invisible reads such that in every execution $E$ of $\mathcal{M}$, any t-read operation $op_k$ performed by some slow-path transaction $T_k \in \ms{txns}(E)$
-performs $\kappa$ steps.
+We construct an execution of a progressive opaque HyTM in which every t-read performed by a read-only slow-path transaction
+must access linear (in the size of the read set) number of distinct base objects.
 
-Let $m \in \mathbb{N}$ be a constant such that $m \gg \kappa$ and for all $i\in \{1,\ldots , m\}$, let $v$ be the initial value of t-object $X_i$.
+For all $i\in \{1,\ldots , m\}$; $m \in \mathbb{N}$, let 
+$v$ be the initial value of t-object $X_i$.
 Let $\pi^{m}$ denote the complete step contention-free execution of a slow-path transaction
 $T_{\phi}$ that performs ${m}$ t-reads: $\Read_{\phi}(X_1)\cdots \Read_{\phi}(X_{m})$
 such that for all $i\in \{1,\ldots , m \}$, $\Read_{\phi}(X_i) \rightarrow v$.

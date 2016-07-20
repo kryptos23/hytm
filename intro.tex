@@ -54,10 +54,12 @@ complemented with \emph{slower} software transactions that do not experience spu
 
 To allow hardware transactions in a HyTM to detect conflicts with software transactions, 
 hardware transactions must be \emph{instrumented} to perform additional metadata accesses, which introduces overhead.
-Hardware transactions typically provide automatic contention detection for every memory location accessed within one.
+Hardware transactions typically provide automatic contention detection for every memory location accessed within one,
+thus ensuring that the transaction itself would be aborted.
 This is at least the case with the Intel Haswell's Transactional Synchronization Extensions~\cite{haswell}.
-However, the IBM Power8 ISA allows hardware transactions to access metadata non-speculatively, thus not providing
-contention detection for all memory locations accessed. While this has the advantage of potentially reducing aborts
+The IBM Power8 ISA additionally allows hardware transactions to access metadata \emph{non-speculatively}, thus precluding
+contention detection for all memory locations accessed. While this has the advantage of potentially reducing contention aborts
 in hardware, this makes the design of HyTM implementations potentially harder to prove correct.
+
 
 \paragraph{Roadmap.}
