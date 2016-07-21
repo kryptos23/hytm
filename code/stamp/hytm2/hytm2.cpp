@@ -17,8 +17,8 @@
 #include <assert.h>
 #include <pthread.h>
 #include <signal.h>
-#include "platform.h"
 #include "hytm2.h"
+#include "../hytm1/platform_impl.h"
 #include "stm.h"
 #include "tmalloc.h"
 #include "util.h"
@@ -29,7 +29,9 @@
 using namespace std;
 
 #include "../hytm1/counters/debugcounters_cpp.h"
-struct debugCounters *counters;
+struct c_debugCounters *c_counters;
+
+#define _XABORT_EXPLICIT_LOCKED 1
 
 #define USE_FULL_HASHTABLE
 //#define USE_BLOOM_FILTER
@@ -87,7 +89,7 @@ void initSighandler() {
 void acquireLock(volatile int *lock) {
     while (1) {
         if (*lock) {
-            __asm__ __volatile__("pause;");
+            PAUSE();
             continue;
         }
         if (__sync_bool_compare_and_swap(lock, 0, 1)) {
@@ -1453,35 +1455,35 @@ void TxClearRWSets(void* _Self) {
 //    Self->LocalUndo->clear();
 }
 
-void TxStart(void* _Self, sigjmp_buf* envPtr, int aborted_in_software, int* ROFlag) {
-    Thread* Self = (Thread*) _Self;
-    Self->wrSet->clear();
-    Self->rdSet->clear();
-//    Self->LocalUndo->clear();
-
-    unsigned status;
-    if (aborted_in_software) goto software;
-
-//    Self->Starts++;
-    Self->Retries = 0;
-    Self->isFallback = 0;
-//    Self->ROFlag = ROFlag;
-    Self->IsRO = true;
-    Self->envPtr = envPtr;
-    if (HTM_ATTEMPT_THRESH <= 0) goto software;
-htmretry:
-    status = XBEGIN();
-    if (status != _XBEGIN_STARTED) { // if we aborted
-        ++Self->AbortsHW;
-        if (++Self->Retries < HTM_ATTEMPT_THRESH) goto htmretry;
-        else goto software;
-    }
-    return;
-software:
-    DEBUG2 aout("thread "<<Self->UniqID<<" started s/w tx attempt "<<(Self->AbortsSW+Self->CommitsSW)<<"; s/w commits so far="<<Self->CommitsSW);
-    DEBUG1 if ((Self->CommitsSW % 50000) == 0) aout("thread "<<Self->UniqID<<" has committed "<<Self->CommitsSW<<" s/w txns");
-    Self->isFallback = 1;
-}
+//void TxStart(void* _Self, sigjmp_buf* envPtr, int aborted_in_software, int* ROFlag) {
+//    Thread* Self = (Thread*) _Self;
+//    Self->wrSet->clear();
+//    Self->rdSet->clear();
+////    Self->LocalUndo->clear();
+//
+//    unsigned status;
+//    if (aborted_in_software) goto software;
+//
+////    Self->Starts++;
+//    Self->Retries = 0;
+//    Self->isFallback = 0;
+////    Self->ROFlag = ROFlag;
+//    Self->IsRO = true;
+//    Self->envPtr = envPtr;
+//    if (HTM_ATTEMPT_THRESH <= 0) goto software;
+//htmretry:
+//    status = XBEGIN();
+//    if (status != _XBEGIN_STARTED) { // if we aborted
+//        ++Self->AbortsHW;
+//        if (++Self->Retries < HTM_ATTEMPT_THRESH) goto htmretry;
+//        else goto software;
+//    }
+//    return;
+//software:
+//    DEBUG2 aout("thread "<<Self->UniqID<<" started s/w tx attempt "<<(Self->AbortsSW+Self->CommitsSW)<<"; s/w commits so far="<<Self->CommitsSW);
+//    DEBUG1 if ((Self->CommitsSW % 50000) == 0) aout("thread "<<Self->UniqID<<" has committed "<<Self->CommitsSW<<" s/w txns");
+//    Self->isFallback = 1;
+//}
 
 int TxCommit(void* _Self) {
     Thread* Self = (Thread*) _Self;
@@ -1517,14 +1519,14 @@ int TxCommit(void* _Self) {
         DEBUG2 aout("thread "<<Self->UniqID<<" committed -> release locks");
         releaseWriteSet(Self);
         ++Self->CommitsSW;
-        counterInc(counters->htmCommit[PATH_FALLBACK], Self->UniqID);
-        countersProbEndTime(counters, Self->UniqID, counters->timingOnFallback);
+        counterInc(c_counters->htmCommit[PATH_FALLBACK], Self->UniqID);
+        countersProbEndTime(c_counters, Self->UniqID, c_counters->timingOnFallback);
         
     // hardware path
     } else {
         XEND();
         ++Self->CommitsHW;
-        counterInc(counters->htmCommit[PATH_FAST_HTM], Self->UniqID);
+        counterInc(c_counters->htmCommit[PATH_FAST_HTM], Self->UniqID);
     }
     
 success:
@@ -1555,8 +1557,8 @@ void TxAbort(void* _Self) {
             aout("END DEBUG ADDRESS MAPPING.");
             exit(-1);
         }
-        registerHTMAbort(counters, Self->UniqID, 0, PATH_FALLBACK);
-        countersProbEndTime(counters, Self->UniqID, counters->timingOnFallback);
+        registerHTMAbort(c_counters, Self->UniqID, 0, PATH_FALLBACK);
+        countersProbEndTime(c_counters, Self->UniqID, c_counters->timingOnFallback);
         
 #ifdef TXNL_MEM_RECLAMATION
         // "abort" speculative allocations and speculative frees
@@ -1684,8 +1686,8 @@ void TxOnce() {
     CTASSERT((_TABSZ & (_TABSZ - 1)) == 0); /* must be power of 2 */
     
     initSighandler(); /**** DEBUG CODE ****/
-    counters = (debugCounters *) malloc(sizeof(debugCounters));
-    countersInit(counters, MAX_TID_POW2);
+    c_counters = (c_debugCounters *) malloc(sizeof(c_debugCounters));
+    countersInit(c_counters, MAX_TID_POW2);
                 
     printf("%s %s\n", TM_NAME, "system ready\n");
     memset(LockTab, 0, _TABSZ*sizeof(vLock));
@@ -1699,9 +1701,9 @@ void TxShutdown() {
                 //CommitTallySW, AbortTallySW
                 );
 
-    countersPrint(counters);
-    countersDestroy(counters);
-    free(counters);
+    countersPrint(c_counters);
+    countersDestroy(c_counters);
+    free(c_counters);
 }
 
 void* TxNewThread() {

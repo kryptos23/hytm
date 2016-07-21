@@ -75,7 +75,7 @@ typedef volatile intptr_t               vintp;
 #else
 #define STM_READ_L(var)                 TxLoadl(STM_SELF, (volatile long*)(void*)&(var))
 #define STM_READ_F(var)                 TxLoadf(STM_SELF, (volatile float*)&(var))
-#define STM_READ_P(var)                 TxLoadp(STM_SELF, (vintp*)(void*)&(var))
+#define STM_READ_P(var)                 ((void*) TxLoadp(STM_SELF, (vintp*)(void*)&(var)))
 #endif
 
 

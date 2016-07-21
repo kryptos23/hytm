@@ -81,7 +81,7 @@ typedef struct Thread_void {
                                             Thread_void* ___Self = (Thread_void*) STM_SELF; \
                                             TxClearRWSets(STM_SELF); \
                                             \
-                                            unsigned ___status; \
+                                            XBEGIN_ARG_T ___xarg; \
                                             ___Self->Retries = 0; \
                                             ___Self->isFallback = 0; \
                                             ___Self->IsRO = 1; \
@@ -90,13 +90,12 @@ typedef struct Thread_void {
                                             /*printf("HTM_ATTEMPT_THRESH=%d\n", HTM_ATTEMPT_THRESH);*/ \
                                             for (___htmattempts = 0 ; ___htmattempts < HTM_ATTEMPT_THRESH; ++___htmattempts) { \
                                                 /*printf("h/w loop iteration\n");*/ \
-                                                while (lockflag) { __asm__ __volatile__("pause;"); } \
-                                                ___status = XBEGIN(); \
-                                                if (___status == _XBEGIN_STARTED) { \
+                                                while (lockflag) { PAUSE(); } \
+                                                if (XBEGIN(___xarg)) { \
                                                     if (lockflag) XABORT(0); \
                                                     break; \
                                                 } else { /* if we aborted */ \
-                                                    registerHTMAbort(counters, ___Self->UniqID, ___status, PATH_FAST_HTM); \
+                                                    registerHTMAbort(c_counters, ___Self->UniqID, X_ABORT_GET_STATUS(___xarg), PATH_FAST_HTM); \
                                                     ++___Self->AbortsHW; \
                                                 } \
                                             } \

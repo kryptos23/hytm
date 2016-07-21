@@ -18,21 +18,13 @@
 static pthread_key_t pthreadkey;
 static struct sigaction ___act;
 static void *___singleton = NULL;
-extern pthread_key_t pthreadkey;
-extern struct sigaction ___act;
-extern void *___singleton;
 
 static pthread_t registeredThreads[MAX_TID_POW2];
 static void *errnoThreads[MAX_TID_POW2];
 static sigjmp_buf *setjmpbuffers;
-extern pthread_t registeredThreads[MAX_TID_POW2];
-extern void *errnoThreads[MAX_TID_POW2];
-extern sigjmp_buf *setjmpbuffers;
 
 static debugCounter countInterrupted(MAX_TID_POW2);
 static debugCounter countLongjmp(MAX_TID_POW2);
-extern debugCounter countInterrupted;
-extern debugCounter countLongjmp;
 #define MAX_THREAD_ADDR 10000
 
 #ifdef CRASH_RECOVERY_USING_SETJMP

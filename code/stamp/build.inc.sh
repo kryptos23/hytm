@@ -1,18 +1,18 @@
 #!/bin/bash
 
-#PROGS="dsbench"
-#TARGETS="tle"
+#TARGETS="hytm2 hytm3 hybridnorec tl2"
 #TARGETS="tl2 hytm2sw hytm1 hytm2"
+#PROGS="dsbench"
 
-#PROGS="bayes genome intruder kmeans labyrinth ssca2 vacation yada"
-#TARGETS="seq seqtm tl2 hytm1 hytm2"
+TARGETS="seq seqtm tl2 hytm1 hytm2 hytm3 hybridnorec"
+PROGS="dsbench bayes genome intruder kmeans labyrinth ssca2 vacation yada"
 
-PROGS="bayes"
 #TARGETS="hytm3 hytm2"
 #TARGETS="tl2"
-TARGETS="hytm1"
+#TARGETS="hytm1"
 #TARGETS="hytm1 hytm2 hytm3"
 #TARGETS="tl2 hytm2sw hytm1 hytm2"
+#PROGS="bayes"
 xflags2=-DNDEBUG
 
 echo "Precompilation work..."

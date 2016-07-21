@@ -12,7 +12,14 @@
 using namespace std;
 
 #include "recordmgr/machineconstants.h"
-#include "common/rtm.h"
+
+extern string PATH_NAMES[];
+
+#define NUMBER_OF_PATHS 3
+#define PATH_FAST_HTM 0
+#define PATH_SLOW_HTM 1
+#define PATH_FALLBACK 2
+
 #include "recordmgr/debugcounter.h"
 #include "debugcounters.h" // needed for __rtm_force_inline
 #include <atomic>
@@ -42,11 +49,6 @@ extern std::atomic_bool ___validateops;
 #define COUTATOMIC(coutstr) cout<<coutstr
 #define COUTATOMICTID(coutstr) cout<<"tid="<<(tid<10?" ":"")<<tid<<": "<<coutstr
 
-#ifndef IF_ALWAYS_RETRY_WHEN_BIT_SET
-//#define IF_ALWAYS_RETRY_WHEN_BIT_SET if(1)
-#define IF_ALWAYS_RETRY_WHEN_BIT_SET if(0)
-#endif
-
 extern double INS;
 extern double DEL;
 extern double RQ;
@@ -66,12 +68,6 @@ extern int MAX_SLOW_HTM_RETRIES;
 extern bool PRINT_TREE;
 
 extern bool ALLOWABLE_PATH_CONCURRENCY[14][14];
-extern string PATH_NAMES[];
-
-#define NUMBER_OF_PATHS 3
-#define PATH_FAST_HTM 0
-#define PATH_SLOW_HTM 1
-#define PATH_FALLBACK 2
 
 #if defined(BST)
 

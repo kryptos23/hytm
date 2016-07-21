@@ -3,7 +3,7 @@ EXTRAFLAGS := $(EXTRAFLAGS1) $(EXTRAFLAGS2) $(EXTRAFLAGS3) $(EXTRAFLAGS4)
 STM := ../$(TARGET)
 LIB := ../lib
 
-FLAGS = -std=c++0x -mcx16 -mrtm
+FLAGS = -std=c++0x
 FLAGS += -DSTM -I$(STM) -I$(LIB)
 FLAGS += -g
 FLAGS += $(EXTRAFLAGS)

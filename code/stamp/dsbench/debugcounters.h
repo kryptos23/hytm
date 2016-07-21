@@ -12,7 +12,6 @@
 #include <sstream>
 #include "globals_extern.h"
 #include "recordmgr/debugcounter.h"
-#include "common/rtm.h"
 using namespace std;
 
 // note: max abort code is 31
@@ -50,40 +49,43 @@ int getStatusExplicitAbortCode(const int status) {
 }
 
 string getAutomaticAbortNames(const int compressedStatus) {
-    stringstream ss;
-    if (compressedStatus & _XABORT_EXPLICIT) ss<<" explicit";
-    if (compressedStatus & _XABORT_RETRY) ss<<" retry";
-    if (compressedStatus & _XABORT_CONFLICT) ss<<" conflict";
-    if (compressedStatus & _XABORT_CAPACITY) ss<<" capacity";
-    if (compressedStatus & _XABORT_DEBUG) ss<<" __debug";
-    if (compressedStatus & _XABORT_NESTED) ss<<" nested";
-    return ss.str();
+//    stringstream ss;
+//    if (compressedStatus & _XABORT_EXPLICIT) ss<<" explicit";
+//    if (compressedStatus & _XABORT_RETRY) ss<<" retry";
+//    if (compressedStatus & _XABORT_CONFLICT) ss<<" conflict";
+//    if (compressedStatus & _XABORT_CAPACITY) ss<<" capacity";
+//    if (compressedStatus & _XABORT_DEBUG) ss<<" __debug";
+//    if (compressedStatus & _XABORT_NESTED) ss<<" nested";
+//    return ss.str();
+    return "";
 }
 
 string getExplicitAbortName(const int compressedStatus) {
-    int explicitCode = getCompressedStatusExplicitAbortCode(compressedStatus);
-    if (explicitCode == ABORT_NODE_POINTER_CHANGED) return "node_pointer_changed";
-    if (explicitCode == ABORT_SCXRECORD_POINTER_CHANGED6) return "scxrecord_pointer_changed6";
-    if (explicitCode == ABORT_SCXRECORD_POINTER_CHANGED5) return "scxrecord_pointer_changed5";
-    if (explicitCode == ABORT_SCXRECORD_POINTER_CHANGED4) return "scxrecord_pointer_changed4";
-    if (explicitCode == ABORT_SCXRECORD_POINTER_CHANGED3) return "scxrecord_pointer_changed3";
-    if (explicitCode == ABORT_SCXRECORD_POINTER_CHANGED2) return "scxrecord_pointer_changed2";
-    if (explicitCode == ABORT_SCXRECORD_POINTER_CHANGED1) return "scxrecord_pointer_changed1";
-    if (explicitCode == ABORT_SCXRECORD_POINTER_CHANGED0) return "scxrecord_pointer_changed0";
-    if (explicitCode == ABORT_SCXRECORD_POINTER_CHANGED_FASTHTM) return "scxrecord_pointer_changed_fasthtm";
-    if (explicitCode == ABORT_PROCESS_ON_FALLBACK) return "process_on_fallback";
-    if (explicitCode == ABORT_UPDATE_FAILED) return "update_failed";
-    if (explicitCode == ABORT_MARKED) return "marked";
-    if (explicitCode == ABORT_LLX_FAILED) return "llx_failed";
-    if (explicitCode == ABORT_SCX_FAILED) return "scx_failed";
-    if (explicitCode >= 42) return "ASSERTION_FAILED";
+//    int explicitCode = getCompressedStatusExplicitAbortCode(compressedStatus);
+//    if (explicitCode == ABORT_NODE_POINTER_CHANGED) return "node_pointer_changed";
+//    if (explicitCode == ABORT_SCXRECORD_POINTER_CHANGED6) return "scxrecord_pointer_changed6";
+//    if (explicitCode == ABORT_SCXRECORD_POINTER_CHANGED5) return "scxrecord_pointer_changed5";
+//    if (explicitCode == ABORT_SCXRECORD_POINTER_CHANGED4) return "scxrecord_pointer_changed4";
+//    if (explicitCode == ABORT_SCXRECORD_POINTER_CHANGED3) return "scxrecord_pointer_changed3";
+//    if (explicitCode == ABORT_SCXRECORD_POINTER_CHANGED2) return "scxrecord_pointer_changed2";
+//    if (explicitCode == ABORT_SCXRECORD_POINTER_CHANGED1) return "scxrecord_pointer_changed1";
+//    if (explicitCode == ABORT_SCXRECORD_POINTER_CHANGED0) return "scxrecord_pointer_changed0";
+//    if (explicitCode == ABORT_SCXRECORD_POINTER_CHANGED_FASTHTM) return "scxrecord_pointer_changed_fasthtm";
+//    if (explicitCode == ABORT_PROCESS_ON_FALLBACK) return "process_on_fallback";
+//    if (explicitCode == ABORT_UPDATE_FAILED) return "update_failed";
+//    if (explicitCode == ABORT_MARKED) return "marked";
+//    if (explicitCode == ABORT_LLX_FAILED) return "llx_failed";
+//    if (explicitCode == ABORT_SCX_FAILED) return "scx_failed";
+//    if (explicitCode >= 42) return "ASSERTION_FAILED";
+//    return "";
     return "";
 }
 
 string getAllAbortNames(const int compressedStatus) {
-    stringstream ss;
-    ss<<getExplicitAbortName(compressedStatus)<<getAutomaticAbortNames(compressedStatus);
-    return ss.str();
+//    stringstream ss;
+//    ss<<getExplicitAbortName(compressedStatus)<<getAutomaticAbortNames(compressedStatus);
+//    return ss.str();
+    return "";
 }
 
 #define MAX_ABORT_STATUS 4096

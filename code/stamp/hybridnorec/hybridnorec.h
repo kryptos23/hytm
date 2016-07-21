@@ -15,7 +15,7 @@ extern "C" {
 #define MAX_RETRIES 1000000
     
 #include "../hytm1/counters/debugcounters.h"
-extern struct debugCounters *counters;
+extern struct c_debugCounters *c_counters;
 
 //#define DEBUG_PRINT
 #define DEBUG_PRINT_LOCK
@@ -63,7 +63,7 @@ extern volatile int esl;
 
     
 #include <stdint.h>
-#include "rtm.h"
+#include "../hytm1/platform.h"
 #include "tmalloc.h"
 
 #  include <setjmp.h>

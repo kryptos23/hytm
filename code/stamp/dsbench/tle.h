@@ -9,14 +9,14 @@
 #define	TLE_H
 
 #include "debugcounters.h"
+#include "../hytm1/platform_impl.h"
 #include "globals_extern.h"
-#include "common/rtm.h"
 #include "globals.h"
 
 void ds_acquireLock(volatile int *lock) {
     while (1) {
         if (*lock) {
-            __asm__ __volatile__("pause;");
+            PAUSE();
             continue;
         }
         if (__sync_bool_compare_and_swap(lock, false, true)) {
@@ -53,31 +53,30 @@ public:
         ended = false;
 
         // try transactions
-        int status;
+        XBEGIN_ARG_T status;
         while (full_attempts++ < maxAttempts) {
             int attempts = MAX_FAST_HTM_RETRIES;
 TXN1: (0);
-            status = XBEGIN();
-            if (status == _XBEGIN_STARTED) {
+            if (XBEGIN(status)) {
                 if (*lock > 0) XABORT(ABORT_TLE_LOCKED);
                 // run the critical section
                 goto criticalsection;
             } else {
 aborthere:      (0); // aborted
 #ifdef RECORD_ABORTS
-                chtmabort[PATH_FAST_HTM*MAX_ABORT_STATUS+getCompressedStatus(status)]->inc(tid);
+                //chtmabort[PATH_FAST_HTM*MAX_ABORT_STATUS+getCompressedStatus(status)]->inc(tid);
                 //chtmabort->registerHTMAbort(tid, status, PATH_FAST_HTM);
 #endif
-                IF_ALWAYS_RETRY_WHEN_BIT_SET if (status & _XABORT_RETRY) { _fail[PATH_FAST_HTM]->inc(tid); goto TXN1; }
+                //IF_ALWAYS_RETRY_WHEN_BIT_SET if (status & _XABORT_RETRY) { _fail[PATH_FAST_HTM]->inc(tid); goto TXN1; }
                 while (*lock) {
-                    __asm__ __volatile__("pause;");
+                    PAUSE();
                 }
             }
         }
         // acquire lock
         while (1) {
             if (*lock) {
-                __asm__ __volatile__("pause;");
+                PAUSE();
                 continue;
             }
             if (__sync_bool_compare_and_swap(lock, false, true)) {

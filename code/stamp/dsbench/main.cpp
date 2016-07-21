@@ -23,12 +23,11 @@ typedef long test_type; // really want compile-time assert that this is the same
 #include <typeinfo>
 #include <pthread.h>
 #include <atomic>
+#include <tm.h>
 #include "common/random.h"
-#include "debugcounters.h"
 #include "globals.h"
 #include "globals_extern.h"
 #include "recordmgr/machineconstants.h"
-#include <tm.h>
 #include <thread.h>
 
 #ifndef EXPERIMENT_FN
@@ -777,9 +776,9 @@ template <class Reclaim, class Alloc>
 void performExperiment() {
     // determine the correct pool class
     
-    if (strcmp(POOL_TYPE, "perthread_and_shared") == 0) {
+/*    if (strcmp(POOL_TYPE, "perthread_and_shared") == 0) {
         performExperiment<Reclaim, Alloc, pool_perthread_and_shared<test_type> >();
-    } else if (strcmp(POOL_TYPE, "none") == 0) {
+    } else*/ if (strcmp(POOL_TYPE, "none") == 0) {
         performExperiment<Reclaim, Alloc, pool_none<test_type> >();
     } else {
         cout<<"bad pool type"<<endl;

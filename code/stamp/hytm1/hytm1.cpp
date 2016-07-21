@@ -31,7 +31,7 @@
 using namespace std;
 
 #include "counters/debugcounters_cpp.h"
-struct debugCounters *counters;
+struct c_debugCounters *c_counters;
 
 //#define USE_FULL_HASHTABLE
 //#define USE_BLOOM_FILTER
@@ -792,13 +792,13 @@ int TxCommit(void* _Self) {
         releaseLock(&tleLock);
         tmalloc_clear(Self->allocPtr);
         tmalloc_releaseAllForward(Self->freePtr, NULL);
-        counterInc(counters->htmCommit[PATH_FALLBACK], Self->UniqID);
-        countersProbEndTime(counters, Self->UniqID, counters->timingOnFallback);
+        counterInc(c_counters->htmCommit[PATH_FALLBACK], Self->UniqID);
+        countersProbEndTime(c_counters, Self->UniqID, c_counters->timingOnFallback);
     } else {
         tmalloc_releaseAllForward(Self->freePtr, NULL);
         XEND();
         tmalloc_clear(Self->allocPtr);
-        counterInc(counters->htmCommit[PATH_FAST_HTM], Self->UniqID);
+        counterInc(c_counters->htmCommit[PATH_FAST_HTM], Self->UniqID);
     }
     return true;
 }
@@ -810,7 +810,7 @@ void TxAbort(void* _Self) {
         Self->wrSet->writeBackward();
         
         // release global lock
-        countersProbEndTime(counters, Self->UniqID, counters->timingOnFallback);
+        countersProbEndTime(c_counters, Self->UniqID, c_counters->timingOnFallback);
         releaseLock(&tleLock);
 
         ++Self->Retries;
@@ -827,7 +827,7 @@ void TxAbort(void* _Self) {
             aout("END DEBUG ADDRESS MAPPING.");
             exit(-1);
         }
-        registerHTMAbort(counters, Self->UniqID, 0, PATH_FALLBACK);
+        registerHTMAbort(c_counters, Self->UniqID, 0, PATH_FALLBACK);
         
 #ifdef TXNL_MEM_RECLAMATION
         // "abort" speculative allocations and speculative frees
@@ -874,8 +874,8 @@ void TxStore(void* _Self, volatile intptr_t* addr, intptr_t value) {
 
 void TxOnce() {
     initSighandler(); /**** DEBUG CODE ****/
-    counters = (debugCounters *) malloc(sizeof(debugCounters));
-    countersInit(counters, MAX_TID_POW2);
+    c_counters = (c_debugCounters *) malloc(sizeof(c_debugCounters));
+    countersInit(c_counters, MAX_TID_POW2);
     printf("%s %s\n", TM_NAME, "system ready\n");
 //    memset(LockTab, 0, _TABSZ*sizeof(vLock));
 }
@@ -888,9 +888,9 @@ void TxShutdown() {
                 //CommitTallySW, AbortTallySW
                 );
 
-    countersPrint(counters);
-    countersDestroy(counters);
-    free(counters);
+    countersPrint(c_counters);
+    countersDestroy(c_counters);
+    free(c_counters);
 }
 
 void* TxNewThread() {

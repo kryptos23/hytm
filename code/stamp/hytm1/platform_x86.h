@@ -42,8 +42,7 @@
  *     return prev;
  * =============================================================================
  */
-inline intptr_t
-cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr);
+intptr_t cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr);
 
 
 /* =============================================================================
@@ -65,8 +64,7 @@ cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr);
  * =============================================================================
  */
 #ifndef ARCH_HAS_PREFETCHW
-inline void
-prefetchw (volatile void* x);
+void prefetchw (volatile void* x);
 #endif
 
 

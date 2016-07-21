@@ -23,7 +23,7 @@ extern "C" {
 #define DEBUG3 DEBUG2 if(0)
 
 #include "counters/debugcounters.h"
-extern struct debugCounters *counters;
+extern struct c_debugCounters *c_counters;
     
 #ifdef DEBUG_PRINT
     #define aout(x) { \

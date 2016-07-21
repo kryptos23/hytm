@@ -42,7 +42,7 @@
  *     return prev;
  * =============================================================================
  */
-__INLINE__ intptr_t
+inline intptr_t
 cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr)
 {
 	return __sync_val_compare_and_swap(ptr, oldVal, newVal);
@@ -56,7 +56,7 @@ cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr)
  * =============================================================================
  */
 #ifndef ARCH_HAS_PREFETCHW
-__INLINE__ void
+inline void
 prefetchw (volatile void* x)
 {
     /* nothing */

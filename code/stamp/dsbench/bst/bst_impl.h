@@ -27,11 +27,11 @@ using namespace std;
 #define IFREBALANCING if (1)
 #endif
 
-#ifdef NO_TXNS
-    #define XBEGIN() _XBEGIN_STARTED
-    #define XEND() ;
-    #define XABORT(_status) { status = (_status); goto aborthere; }
-#endif
+//#ifdef NO_TXNS
+//    #define XBEGIN() _XBEGIN_STARTED
+//    #define XEND() ;
+//    #define XABORT(_status) { status = (_status); goto aborthere; }
+//#endif
 
 #ifdef POSIX_SYSTEM
 #ifdef CRASH_RECOVERY_USING_SETJMP
@@ -313,8 +313,8 @@ int bst<K,V,Compare,RecManager>::rangeQuery_txn(ReclamationInfo<K,V> * const inf
     
     int attempts = MAX_FAST_HTM_RETRIES;
 TXN1: (0);
-    int status = XBEGIN();
-    if (status == _XBEGIN_STARTED) {
+    XBEGIN_ARG_T status;
+    if (XBEGIN(status)) {
         // depth first traversal (of interesting subtrees)
         stack.push(root);
         while (!stack.isEmpty()) {
@@ -347,16 +347,14 @@ TXN1: (0);
         }
         XEND();
     } else {
+        long long statusCode = X_ABORT_GET_STATUS(status);
 #ifdef RECORD_ABORTS
-        this->counters->registerHTMAbort(tid, status, info->path);
+        this->counters->registerHTMAbort(tid, statusCode, info->path);
 #endif
-//        if (status & _XABORT_CAPACITY) info->capacityAborted[info->path] = true;
-        info->lastAbort = status;
-        IF_ALWAYS_RETRY_WHEN_BIT_SET if (status & _XABORT_RETRY) { this->counters->htmRetryAbortRetried[info->path]->inc(tid); goto TXN1; }
+        info->lastAbort = statusCode;
         return false;
     }
     // success
-//    if (info->capacityAborted[info->path]) this->counters->htmCapacityAbortThenCommit[info->path]->inc(tid);
     return true;
 }
 
@@ -883,8 +881,8 @@ inline bool bst<K,V,Compare,RecManager>::updateInsert_txn_search_inplace(
 
     initializeNode(tid, GET_ALLOCATED_NODE_PTR(tid, 0), key, val, /*1,*/ NULL, NULL);
 TXN1: int attempts = MAX_FAST_HTM_RETRIES;
-    int status = XBEGIN();
-    if (status == _XBEGIN_STARTED) {
+    XBEGIN_ARG_T status;
+    if (XBEGIN(status)) {
         if (info->path == PATH_FAST_HTM && !ALLOWABLE_PATH_CONCURRENCY[P1NUM][P3NUM] && numFallback.load(memory_order_relaxed) > 0) XABORT(ABORT_PROCESS_ON_FALLBACK);
         Node<K,V> *p = root, *l;
         l = root->left;
@@ -946,12 +944,11 @@ TXN1: int attempts = MAX_FAST_HTM_RETRIES;
         }
     } else {
 aborthere:
+        long long statusCode = X_ABORT_GET_STATUS(status);
 #ifdef RECORD_ABORTS
-        this->counters->registerHTMAbort(tid, status, info->path);
+        this->counters->registerHTMAbort(tid, statusCode, info->path);
 #endif
-//        if (status & _XABORT_CAPACITY) info->capacityAborted[info->path] = true;
-        info->lastAbort = status;
-        IF_ALWAYS_RETRY_WHEN_BIT_SET if (status & _XABORT_RETRY) { this->counters->pathFail[info->path]->inc(tid); this->counters->htmRetryAbortRetried[info->path]->inc(tid); goto TXN1; }
+        info->lastAbort = statusCode;
         return false;
     }
 }
@@ -968,8 +965,8 @@ inline bool bst<K,V,Compare,RecManager>::updateInsert_txn_search_replace_marking
     
     SCXRecord<K,V>* scx = (SCXRecord<K,V>*) NEXT_VERSION_NUMBER(tid);
 TXN1: int attempts = MAX_FAST_HTM_RETRIES;
-    int status = XBEGIN();
-    if (status == _XBEGIN_STARTED) {
+    XBEGIN_ARG_T status;
+    if (XBEGIN(status)) {
         if (info->path == PATH_FAST_HTM && !ALLOWABLE_PATH_CONCURRENCY[P1NUM][P3NUM] && numFallback.load(memory_order_relaxed) > 0) XABORT(ABORT_PROCESS_ON_FALLBACK);
         Node<K,V> *p = root, *l;
         l = root->left;
@@ -1047,12 +1044,11 @@ TXN1: int attempts = MAX_FAST_HTM_RETRIES;
         }
     } else {
 aborthere:
+        long long statusCode = X_ABORT_GET_STATUS(status);
 #ifdef RECORD_ABORTS
-        this->counters->registerHTMAbort(tid, status, info->path);
+        this->counters->registerHTMAbort(tid, statusCode, info->path);
 #endif
-//        if (status & _XABORT_CAPACITY) info->capacityAborted[info->path] = true;
-        info->lastAbort = status;
-        IF_ALWAYS_RETRY_WHEN_BIT_SET if (status & _XABORT_RETRY) { this->counters->pathFail[info->path]->inc(tid); this->counters->htmRetryAbortRetried[info->path]->inc(tid); goto TXN1; }
+        info->lastAbort = statusCode;
         return false;
     }
 }
@@ -1229,8 +1225,8 @@ inline bool bst<K,V,Compare,RecManager>::updateErase_txn_search_inplace(
     TRACE COUTATOMICTID("updateErase_txn_search_inplace(tid="<<tid<<", key="<<key<<")"<<endl);
 
 TXN1: int attempts = MAX_FAST_HTM_RETRIES;
-    int status = XBEGIN();
-    if (status == _XBEGIN_STARTED) {
+    XBEGIN_ARG_T status;
+    if (XBEGIN(status)) {
         if (info->path == PATH_FAST_HTM && !ALLOWABLE_PATH_CONCURRENCY[P1NUM][P3NUM] && numFallback.load(memory_order_relaxed) > 0) XABORT(ABORT_PROCESS_ON_FALLBACK);
         Node<K,V> *gp, *p, *l;
         l = root->left;
@@ -1291,12 +1287,11 @@ TXN1: int attempts = MAX_FAST_HTM_RETRIES;
         }
     } else { // transaction failed
 aborthere:
+        long long statusCode = X_ABORT_GET_STATUS(status);
 #ifdef RECORD_ABORTS
-        this->counters->registerHTMAbort(tid, status, info->path);
+        this->counters->registerHTMAbort(tid, statusCode, info->path);
 #endif
-//        if (status & _XABORT_CAPACITY) info->capacityAborted[info->path] = true;
-        info->lastAbort = status;
-        IF_ALWAYS_RETRY_WHEN_BIT_SET if (status & _XABORT_RETRY) { this->counters->pathFail[info->path]->inc(tid); this->counters->htmRetryAbortRetried[info->path]->inc(tid); goto TXN1; }
+        info->lastAbort = statusCode;
         return false;
     }
 }
@@ -1313,8 +1308,8 @@ inline bool bst<K,V,Compare,RecManager>::updateErase_txn_search_replace_markingw
     SCXRecord<K,V>* scx = (SCXRecord<K,V>*) NEXT_VERSION_NUMBER(tid);
     Node<K,V> *gp, *p, *l;
 TXN1: int attempts = MAX_FAST_HTM_RETRIES;
-    int status = XBEGIN();
-    if (status == _XBEGIN_STARTED) {
+    XBEGIN_ARG_T status;
+    if (XBEGIN(status)) {
         if (info->path == PATH_FAST_HTM && !ALLOWABLE_PATH_CONCURRENCY[P1NUM][P3NUM] && numFallback.load(memory_order_relaxed) > 0) XABORT(ABORT_PROCESS_ON_FALLBACK);
         l = root->left;
         if (l->left == NULL) {
@@ -1387,12 +1382,11 @@ TXN1: int attempts = MAX_FAST_HTM_RETRIES;
         }
     } else {
 aborthere:
+        long long statusCode = X_ABORT_GET_STATUS(status);
 #ifdef RECORD_ABORTS
-        this->counters->registerHTMAbort(tid, status, info->path);
+        this->counters->registerHTMAbort(tid, statusCode, info->path);
 #endif
-//        if (status & _XABORT_CAPACITY) info->capacityAborted[info->path] = true;
-        info->lastAbort = status;
-        IF_ALWAYS_RETRY_WHEN_BIT_SET if (status & _XABORT_RETRY) { this->counters->pathFail[info->path]->inc(tid); this->counters->htmRetryAbortRetried[info->path]->inc(tid); goto TXN1; }
+        info->lastAbort = statusCode;
         return false;
     }
 }
@@ -1894,8 +1888,8 @@ __rtm_force_inline bool bst<K,V,Compare,RecManager>::scx_htm(
     SCXRecord<K,V>* scx = (SCXRecord<K,V>*) NEXT_VERSION_NUMBER(tid);
     const int n = info->numberOfNodesToFreeze;
 TXN1: int attempts = MAX_FAST_HTM_RETRIES;
-    int status = XBEGIN();
-    if (status == _XBEGIN_STARTED) {
+    XBEGIN_ARG_T status;
+    if (XBEGIN(status)) {
         // abort if someone on the fastHTM or fallback path
         // changed nodes[i]->scxRecord since we last performed LLX on nodes[i].
         // note: the following switch block is just a manual unrolling of the following loop
@@ -1937,12 +1931,11 @@ TXN1: int attempts = MAX_FAST_HTM_RETRIES;
 //        this->counters->updateChange[info->path]->inc(tid);
         return true;
     } else {
+        long long statusCode = X_ABORT_GET_STATUS(status);
 #ifdef RECORD_ABORTS
-        this->counters->registerHTMAbort(tid, status, info->path);
+        this->counters->registerHTMAbort(tid, statusCode, info->path);
 #endif
-//        if (status & _XABORT_CAPACITY) info->capacityAborted[info->path] = true;
-        info->lastAbort = status;
-        IF_ALWAYS_RETRY_WHEN_BIT_SET if (status & _XABORT_RETRY) { this->counters->pathFail[info->path]->inc(tid); this->counters->htmRetryAbortRetried[info->path]->inc(tid); goto TXN1; }
+        info->lastAbort = statusCode;
         return false;
     }
 }

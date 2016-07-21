@@ -15,7 +15,7 @@
 #include <assert.h>
 #include <pthread.h>
 #include <signal.h>
-#include "platform.h"
+#include "../hytm1/platform_impl.h"
 #include "seqtm.h"
 #include "util.h"
 

@@ -26,7 +26,7 @@
  *
  * =============================================================================
  */
-__INLINE__ intptr_t
+inline intptr_t
 cas (intptr_t newVal, intptr_t oldVal, intptr_t* ptr)
 {
     intptr_t prevVal;
@@ -62,7 +62,7 @@ cas (intptr_t newVal, intptr_t oldVal, intptr_t* ptr)
  * directly into M-state, avoiding RTS->RTO upgrade txns.
  * =============================================================================
  */
-__INLINE__ void
+inline void
 prefetchw (volatile void* x)
 {
     __asm__ __volatile__ ("prefetch %0,2" :: "m" (x));
@@ -73,7 +73,7 @@ prefetchw (volatile void* x)
  * Non-faulting load
  * =============================================================================
  */
-__INLINE__ intptr_t
+inline intptr_t
 LDNF (volatile intptr_t* a)
 {
     intptr_t x;

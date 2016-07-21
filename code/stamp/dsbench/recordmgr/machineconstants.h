@@ -9,10 +9,10 @@
 #define	MACHINECONSTANTS_H
 
 #ifndef MAX_TID_POW2
-    #define MAX_TID_POW2 128 // MUST BE A POWER OF TWO, since this is used for some bitwise operations
+    #define MAX_TID_POW2 512 // MUST BE A POWER OF TWO, since this is used for some bitwise operations
 #endif
 #ifndef PHYSICAL_PROCESSORS
-    #define PHYSICAL_PROCESSORS 8
+    #define PHYSICAL_PROCESSORS 512
 #endif
 
 // the following definition is only used to pad data to avoid false sharing.

@@ -18,8 +18,8 @@
 #include <assert.h>
 #include <pthread.h>
 #include <signal.h>
-#include "platform.h"
 #include "hybridnorec.h"
+#include "../hytm1/platform_impl.h"
 #include "stm.h"
 #include "tmalloc.h"
 #include "util.h"
@@ -30,7 +30,7 @@
 using namespace std;
 
 #include "../hytm1/counters/debugcounters_cpp.h"
-struct debugCounters *counters;
+struct c_debugCounters *c_counters;
 
 #define PREFETCH_SIZE_BYTES 192
 #define USE_FULL_HASHTABLE
@@ -95,7 +95,7 @@ void initSighandler() {
 void acquireLock(volatile int *lock) {
     while (1) {
         if (*lock) {
-            __asm__ __volatile__("pause;");
+            PAUSE();
             continue;
         }
         if (__sync_bool_compare_and_swap(lock, 0, 1)) {
@@ -910,7 +910,7 @@ std::ostream& operator<<(std::ostream& out, const List& obj) {
 //        
 //        // wait until sequence lock is not held
 //        while (currGSL & 1) {
-//            __asm__ __volatile__("pause;");
+//            PAUSE();
 //            currGSL = gsl;
 //            if (holdingLocks) break;
 //        }
@@ -1041,10 +1041,10 @@ int TxCommit(void* _Self) {
         // acquire global sequence lock
         int oldval = Self->sequenceLock;
         while ((oldval & 1) || !__sync_bool_compare_and_swap(&gsl, oldval, oldval + 1)) {
-            __asm__ __volatile__("pause;");
+            PAUSE();
             oldval = gsl;
         }
-        countersProbStartTime(counters, Self->UniqID, 0.);
+        countersProbStartTime(c_counters, Self->UniqID, 0.);
         
         // acquire extra sequence lock
         // note: the original alg writes sequenceLock+1, where sequenceLock was read from gsl, 
@@ -1087,9 +1087,9 @@ int TxCommit(void* _Self) {
         esl = 0;
         gsl = oldval + 2;
 
-        countersProbEndTime(counters, Self->UniqID, counters->timingOnFallback);
+        countersProbEndTime(c_counters, Self->UniqID, c_counters->timingOnFallback);
         ++Self->CommitsSW;
-        counterInc(counters->htmCommit[PATH_FALLBACK], Self->UniqID);
+        counterInc(c_counters->htmCommit[PATH_FALLBACK], Self->UniqID);
         
     // hardware path
     } else {
@@ -1102,7 +1102,7 @@ int TxCommit(void* _Self) {
         }
         XEND();
         ++Self->CommitsHW;
-        counterInc(counters->htmCommit[PATH_FAST_HTM], Self->UniqID);
+        counterInc(c_counters->htmCommit[PATH_FAST_HTM], Self->UniqID);
     }
     
 success:
@@ -1133,8 +1133,8 @@ void TxAbort(void* _Self) {
             aout("END DEBUG ADDRESS MAPPING.");
             exit(-1);
         }
-        registerHTMAbort(counters, Self->UniqID, 0, PATH_FALLBACK);
-        countersProbEndTime(counters, Self->UniqID, counters->timingOnFallback);
+        registerHTMAbort(c_counters, Self->UniqID, 0, PATH_FALLBACK);
+        countersProbEndTime(c_counters, Self->UniqID, c_counters->timingOnFallback);
         
 #ifdef TXNL_MEM_RECLAMATION
         // "abort" speculative allocations and speculative frees
@@ -1189,7 +1189,7 @@ intptr_t TxLoad(void* _Self, volatile intptr_t* addr) {
         while (1) {
             // wait until sequence lock is not held
             while (currGSL & 1) {
-                __asm__ __volatile__("pause;");
+                PAUSE();
                 currGSL = gsl;
             }
             // do value based validation
@@ -1273,8 +1273,8 @@ void TxOnce() {
 //    CTASSERT((_TABSZ & (_TABSZ - 1)) == 0); /* must be power of 2 */
     
     initSighandler(); /**** DEBUG CODE ****/
-    counters = (debugCounters *) malloc(sizeof(debugCounters));
-    countersInit(counters, MAX_TID_POW2);                
+    c_counters = (c_debugCounters *) malloc(sizeof(c_debugCounters));
+    countersInit(c_counters, MAX_TID_POW2);                
     printf("%s %s\n", TM_NAME, "system ready\n");
 //    memset(LockTab, 0, _TABSZ*sizeof(vLock));
 }
@@ -1287,9 +1287,9 @@ void TxShutdown() {
                 //CommitTallySW, AbortTallySW
                 );
 
-    countersPrint(counters);
-    countersDestroy(counters);
-    free(counters);
+    countersPrint(c_counters);
+    countersDestroy(c_counters);
+    free(c_counters);
 }
 
 void* TxNewThread() {
