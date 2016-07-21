@@ -56,9 +56,9 @@ cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr)
  */
 
 // TODO: FIX THIS TO USE LESS EXPENSIVE BARRIERS
-#define MEMBARLDLD()                    __sync_synchronize()
-#define MEMBARSTST()                    __sync_synchronize()
-#define MEMBARSTLD()                    __sync_synchronize()
+#define MEMBARLDLD()                    /* nothing */
+#define MEMBARSTST()                    /* nothing */
+#define MEMBARSTLD()                    __asm__ __volatile__ ("" : : :"memory")
 
 
 /* =============================================================================
