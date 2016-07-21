@@ -16,18 +16,12 @@ the execution of $op$ using the following procedure.
 
 \vspace{1mm}\noindent\textbf{Completions.}
 First, we obtain a completion of $E$ by removing some pending
-invocations or adding responses to the remaining pending invocations
-as follows:
-%
-\begin{itemize}
-\item
-incomplete $\Read_k$, $\Write_k$ operation performed by a slow-path transaction $T_k$ is removed from $E$;
+invocations or adding responses to the remaining pending invocations.
+Incomplete $\Read_k$, $\Write_k$ operation performed by a slow-path transaction $T_k$ is removed from $E$;
 an incomplete $\TryC_k$ is removed from $E$ if $T_k$ has not performed any write to a base object $r_j$; $X_j \in \Wset(T_k)$
 in Line~\ref{line:write}, otherwise it is completed by including $C_k$ after $E$.
-\item
-every incomplete $\Read_k$, $\TryA_k$, $\Write_k$ and $\TryC_k$ performed by a fast-path transaction $T_k$ is removed from $E$.
-\end{itemize}
-%
+Every incomplete $\Read_k$, $\TryA_k$, $\Write_k$ and $\TryC_k$ performed by a fast-path transaction $T_k$ is removed from $E$.
+
 \vspace{1mm}\noindent\textbf{Linearization points.}
 Now a linearization $H$ of $E$ is obtained by associating linearization points to
 t-operations in the obtained completion of $E$.
@@ -67,13 +61,10 @@ A serialization $S$ is obtained by associating serialization points to transacti
 for every transaction $T_k$ in $H$ that is complete, but not t-complete, 
 we insert $\textit{tryC}_k\cdot A_k$ immediately 
 after the last event of $T_k$ in $H$. 
-%
-\begin{itemize}
-\item If $T_k$ is an updating transaction that commits, then $\delta_{T_k}$ is $\ell_{\TryC_k}$
-\item If $T_k$ is a read-only or aborted transaction,
-then $\delta_{T_k}$ is assigned to the linearization point of the last t-read that returned a non-A$_k$ value in $T_k$
-\end{itemize}
-%
+If $T_k$ is an updating transaction that commits, then $\delta_{T_k}$ is $\ell_{\TryC_k}$.
+If $T_k$ is a read-only or aborted transaction,
+then $\delta_{T_k}$ is assigned to the linearization point of the last t-read that returned a non-A$_k$ value in $T_k$.
+
 $<_S$ denotes a total-order on transactions in the t-sequential history $S$.
 Since for a given transaction, its
 serialization point is chosen between the first and last event of the transaction,
@@ -139,7 +130,7 @@ transaction $T_k$ that returns $C_k$ in $S$ and performs $\Write_k(X_m,v')$; $v'
 
 $T_i$ and $T_k$ are both updating transactions that commit. Thus, 
 ($T_i <_S T_k$) $\Longleftrightarrow$ ($\delta_{T_i} <_{E} \delta_{T_k}$) and
-($\delta_{T_i} <_{E} \delta_{T_k}$) $\Longleftrightarrow$ ($\ell_{\TryC_i} <_{E} \ell_{\TryC_k}$) 
+($\delta_{T_i} <_{E} \delta_{T_k}$) $\Longleftrightarrow$ ($\ell_{\TryC_i} <_{E} \ell_{\TryC_k}$).
 
 %
 Since, $T_j$ reads the value of $X$ written by $T_i$, one of the following is true:

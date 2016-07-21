@@ -1,5 +1,6 @@
 %!TEX root = htm.tex
 \section{Lower bound}
+\label{sec:lb}
 %
 %
 \begin{figure*}[!ht]
@@ -24,7 +25,7 @@ Formally, we say that a HyTM implementation $\mathcal{M}$ is progressive
 for a set $\mathcal{T}$ of transactions
 if in any execution $E$ of $\mathcal{M}$; $\mathcal{T} \subseteq \ms{txns}(E)$, 
 if any transaction $T_k \in \mathcal{T}$ returns $A_k$ in $E$, there exists 
-another transaction $T_m$ that conflicts with $T_k$ in $E$.
+another concurrent transaction $T_m$ that \emph{conflicts} (both access the same t-object and at least one writes) with $T_k$ in $E$.
 %
 \begin{theorem}
 \label{th:impossibility}
@@ -83,16 +84,15 @@ We now consider two cases:
 ($e_1$ is a nontrivial event)
 After $\tilde E\cdot e_1$, $b$ is contained in the tracking set of process
 $p_1$ in exclusive mode and in the extension $\tilde E\cdot e_1 \cdot e_2$, we have that
-$\tau_1$ is invalidated. Thus transaction $T_1$ incurs a tracking set abort forcing
-it to return $A_1$ in any extension of $E\cdot e_1\cdot e_2$---a contradiction
+$\tau_1$ is invalidated. Thus, by Lemma~\ref{lm:traborts}, transaction $T_1$ must return $A_1$ 
+in any extension of $E\cdot e_1\cdot e_2$---a contradiction
 to the assumption that $\mathcal{M}$ is progressive.   
 \item
 ($e_1$ is a trivial event)
 Recall that $e_1$ may be potentially uncached.
 Consider the execution $\tilde E\cdot e_2$ following which $b$ is contained in the tracking set of process
 $p_{2}$ in exclusive mode. Clearly, we have an extension $\tilde E\cdot e_2 \cdot e_1$ in which
-$\tau_{2}$ is invalidated. Thus transaction $T_{2}$ incurs a tracking set abort forcing
-it to return $A_{2}$ in any extension of $E\cdot e_2\cdot e_1$---a contradiction
+$\tau_{2}$ is invalidated. Thus transaction $T_{2}$ must return $A_{2}$ in any extension of $E\cdot e_2\cdot e_1$---a contradiction
 to the assumption that $\mathcal{M}$ is progressive.   
 \end{enumerate}
 \end{proof}
@@ -222,4 +222,14 @@ performs $\kappa$ steps. This completes the proof.
 \end{proof}
 %
 \paragraph{How STM implementations avoid the lower bound.}
+NOrec~\cite{norec} is a progressive opaque STM that minimizes the average step-complexity resulting from incremental 
+validation of t-reads. Transactions read a global versioned lock at the start, and perform value-based validation
+during t-read operations \emph{iff} the global version has changed.
+\emph{TL2}~\cite{DSS06} improves over NOrec by circumventing the lower bound
+of Theorem~\ref{th:impossibility}. Concretely, TL2 associates a global version with each t-object updated during
+a transaction and performs validation with $O$(1) complexity during t-reads by simply verifying if the version
+of the t-object is greater than the global version read at the start of the transaction. Technically,
+NOrec and algorithms in this paper provide a stronger definition of progressiveness: a transaction may abort
+only if there is a prefix in which it conflicts with another transaction and both are t-incomplete. TL2 on the other hand allows
+a transaction to abort due to a concurrent conflicting transaction.
 %

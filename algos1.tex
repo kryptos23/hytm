@@ -1,4 +1,7 @@
 %!TEX root = htm.tex
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{prog-fp-sp}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Instrumentation-optimal progressive HyTM }
 \label{sec:hytm1}
 %
@@ -46,30 +49,29 @@ such that in its every execution $E$, every fast-path transaction $T\in \ms{txns
 accesses $m=|\Dset(T_k)|$ distinct metadata base objects.
 \end{theorem}
 %
-%
-\input{prog-fp-sp}
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\input{prog-fp}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Instrumentation-optimal HyTMs that are progressive only for a subset of transactions}
 \label{sec:hytm2}
+%
+\begin{figure*}[!ht]
+      
+     \scalebox{1}[1]{
+     \begin{tabularx}{\textwidth}{c|c|c|c|c}
+%	\hline
+	~~~~~ & Algorithm~\ref{alg:inswrite} & Algorithm~\ref{alg:inswrite2} & TLE & HybridNorec\\ \hline
+	Metadata accesses in read-only h/w & No & yes & Yes & Yes \\ \hline
+	Metadata accesses in read-only s/f & No & yes & Yes & Yes \\ \hline
+	Metadata accesses in updating h/w & No & yes & Yes & Yes \\ \hline
+	h/w-s/f concurrency & No & yes & Yes & Yes \\ \hline
+	opacity & No & yes & Yes & Yes \\  \hline
+	%    \hline
+   \end{tabularx}
+\caption{Table}\label{fig:main}    
+}
+\end{figure*}
 %
 In this section, we describe Algorithm~\ref{alg:inswrite2} which does not incur the linear instrumentation cost
 on the fast-path reading transactions (as in Algorithm~\ref{alg:inswrite}, but provides progressiveness only
 for slow-path reading transactions.
-%
-\begin{theorem}
-\label{th:inswrite2}
-Algorithm~\ref{alg:inswrite2} implements an opaque HyTM that provides invisible reads
-such that (1) in every execution $E$,
-every fast-path transaction $T\in \ms{txns}(E)$
-accesses one metadata base object,
-(2) every execution $E$ is fast-path progressive or for
-every fast-path transaction $T\in \ms{txns}(E)$
-that returns $A_k$ in $E$, there exists an updating slow-path transaction $T_m \in \ms{txns}(E)$
-concurrent to $T_k$.
-\end{theorem}
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Correctness proofs}
@@ -77,10 +79,10 @@ concurrent to $T_k$.
 %
 \input{appendix-proof}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{prog-fp}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-\input{middle}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Minimizing the cost for incremental validation in opaque HyTMs}
 \label{sec:middlepath}
 %
@@ -118,3 +120,7 @@ Since there is no concurrency between fast fast-path and slow-path, the followin
 Given any opaque HyTM $\mathcal{M}$ with a fast-path and slow-path, Algorithm~\ref{alg:middle} implements an opaque HyTM $\mathcal{M}'$
 with a fast fast-path, fast-path and a slow-path.
 \end{theorem}
+%
+\input{middle}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%

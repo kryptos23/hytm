@@ -148,28 +148,29 @@ are provided for each t-operation.
 A slow-path transaction models a regular software transaction.
 An event of a slow-path transaction is either an invocation or response of a t-operation, or
 a direct rmw primitive on a base object. 
-
 A fast-path transaction essentially encapsulates a hardware transaction. Specifically, in any execution $E$,
 we say that a transaction $T_k\in \ms{txns}(E)$ is a fast-path transaction if $E|k$ contains at least one cached event.
 An event of a \emph{hardware transaction} includes series of direct trivial accesses and at least one cached access
 followed by a \emph{cache-commit} primitive.
+
+We assume that a fast-path transaction $T_k$ returns $A_k$
+as soon an underlying cached primitive or \emph{cache-commit} returns $\bot$.
+This implies the following observation:
+%
+\begin{observation}
+\label{ob:traborts}
+%
+For any t-incomplete transaction $T_k \in \ms{txns}(E)$ executed by process $i$ and $(b,v,\exclusive)\in\tau_i$ (and resp. $(b,v,\shared)\in\tau_i$) after execution $E$
+and let $e$ be any event (and resp. nontrivial event) that some process $j\neq i$ is poised to apply after $E$, then the next event of $T_k$ in any extension of $E\cdot e$
+is $A_k$.
+\end{observation}
+%
+\paragraph{Non-cached reads inside fast-path.}
 Note that we specifically allow hardware transactions to perform reads without adding the corresponding base object to
 the process's tracking set, thus modelling the non-speculative accesses inside hardware allowed by 
 IBM Power8 architectures. We remark that Intel Haswell does not support this feature: an event of a hardware transaction
 does not include any direct access.
 
-We assume that a fast-path transaction $T_k$ returns $A_k$
-as soon an underlying cached primitive or \emph{cache-commit} returns $\bot$.
-This implies the following lemma:
-%
-\begin{lemma}
-\label{lm:traborts}
-%
-For any t-incomplete transaction $T_k \in \ms{txns}(E)$ executed by process $i$ and $(b,v,\exclusive)\in\tau_i$ (and resp. $(b,v,\shared)\in\tau_i$) after execution $E$
-and let $e$ be any event (and resp. nontrivial event) that some process $j\neq i$ is poised to apply after $E$, then the next event of $T_k$ in any extension of $E\cdot e$
-is $A_k$.
-\end{lemma}
-%
 %
 \paragraph{HyTM properties.}
 Throughout this paper, we consider the TM-correctness property of \emph{opacity}~\cite{tm-book}: an execution
@@ -184,4 +185,16 @@ Algorithms and lower bounds presented in this paper concern HyTMs that provide \
 nontrivial primitives in any execution.
 %
 %
-
+\begin{figure*}[!ht]
+\begin{center}
+	\subfloat[\label{sfig:ob-01}]{\scalebox{0.5}[0.5]{\input{ob01}}}
+	\hspace{10mm}
+	\subfloat[\label{sfig:ob-02}]{\scalebox{0.5}[0.5]{\input{ob11}}}
+	 
+\end{center}
+\caption{
+\label{fig:ob1}
+Execution $E$ in Figure~\ref{sfig:ob-01} is indistinguishable
+to $T_1$ from the execution $E'$ in Figure~\ref{sfig:ob-02}}
+\end{figure*}
+%

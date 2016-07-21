@@ -1,7 +1,25 @@
 %!TEX root = htm.tex
 \section{Related work}
-\label{sec:related}
+\label{sec:rel}
 %
 \paragraph{HyTM complexity bounds.}
 
-\paragraph{HyTM algorithms.} 
+\paragraph{HyTM algorithms.}
+Herlihy and Moss introduced \emph{hardware transactional memory (HTM)}
+and showed that \emph{bounded-size} atomic transactions could be supported in hardware
+with simple modifications to the cache mechanism of existing processors~\cite{HM93}.
+To overcome the limitations of bounded HTMs, there have been proposals for ``unbounded HTMs''
+that allow transactions to commit even if they exceed the hardware resources~\cite{hammondhytm,unboundedhtm1}.
+Damron \emph{et al.}~\cite{damronhytm} and Kumar \emph{et al.}~\cite{kumarhytm} proposed HyTM designs
+that integrated HTMs with a variant of \emph{DSTM}~\cite{HLM+03} in which
+every t-read operation incurs at least one extra access to a metadata base object, just as Algorithm~\ref{alg:inswrite}.
+
+HyTM implementations like \emph{PhTM}~\cite{phasedtm} and Hybrid NOrec~\cite{hybridnorec}
+employ a single metadata check at the start of a hardware transaction to allow
+hardware transactions to abort due to \emph{any} concurrent non-conflicting software writer.
+Detailed coverage on HyTM implementation design can be found in \cite{HLR10}
+and \cite{riegel-thesis}.
+
+Alternatives to STM fallback, such as sandboxing~\cite{ALM14,CTGM14}.
+fallback to \emph{reduced} hardware transactions~\cite{MS13}. 
+

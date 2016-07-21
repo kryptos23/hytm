@@ -1,18 +1,6 @@
 %!TEX root = htm.tex
 \section{Hybrid transactional memory algorithms}\label{sec:hytmalgos}
 %
-\begin{figure*}[!ht]
-\begin{center}
-	\subfloat[\label{sfig:ob-01}]{\scalebox{0.5}[0.5]{\input{ob01}}}
-	\hspace{10mm}
-	\subfloat[\label{sfig:ob-02}]{\scalebox{0.5}[0.5]{\input{ob11}}}
-	 
-\end{center}
-\caption{
-\label{fig:ob1}
-Execution $E$ in Figure~\ref{sfig:ob-01} is indistinguishable
-to $T_1$ from the execution $E'$ in Figure~\ref{sfig:ob-02}}
-\end{figure*}
 %
 In this section, we first identify some invariants that follow from the HyTM execution model presented in the previous section.
 We then describe two HyTM implementations: \cref{sec:hytm1} describes a progressive opaque TM while \cref{sec:hytm2} describes an opaque HyTM that is progressive only for read-only slow-path transactions.
