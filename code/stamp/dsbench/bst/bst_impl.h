@@ -1789,7 +1789,7 @@ void bst<K,V,Compare,RecManager>::htmWrapper(
                             info.path = PATH_SLOW_HTM;
                         }
                     /* MOVE TO THE MIDDLE PATH IMMEDIATELY IF SOMEONE IS ON THE FALLBACK PATH */ \
-                    } else if ((info.lastAbort >> 24) == ABORT_PROCESS_ON_FALLBACK && MAX_SLOW_HTM_RETRIES >= 0) { /* DS_DEBUG */
+                    } else if (X_ABORT_STATUS_USERCODE(info.lastAbort) == ABORT_PROCESS_ON_FALLBACK && MAX_SLOW_HTM_RETRIES >= 0) { /* DS_DEBUG */
                         attempts = 0;
                         info.path = PATH_SLOW_HTM;
                         //continue;

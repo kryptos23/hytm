@@ -80,7 +80,9 @@
 
 typedef struct learner_task learner_task_t;
 
+#ifndef CACHE_LINE_SIZE
 #define CACHE_LINE_SIZE (64)
+#endif
 
 typedef struct learner {
     adtree_t* adtreePtr;

@@ -16,6 +16,7 @@
 #endif
 
 #include <stdint.h>
+#include "rtm_p8.h"
 #include "common.h"
 
 
@@ -42,10 +43,7 @@
  * =============================================================================
  */
 __INLINE__ intptr_t
-cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr)
-{
-	return __sync_val_compare_and_swap(ptr, oldVal, newVal);
-}
+cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr);
 
 
 /* =============================================================================
@@ -70,10 +68,7 @@ cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr)
  */
 #ifndef ARCH_HAS_PREFETCHW
 __INLINE__ void
-prefetchw (volatile void* x)
-{
-    /* nothing */
-}
+prefetchw (volatile void* x);
 #endif
 
 

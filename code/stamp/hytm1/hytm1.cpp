@@ -19,7 +19,7 @@
 #include <assert.h>
 #include <pthread.h>
 #include <signal.h>
-#include "platform.h"
+#include "platform_impl.h"
 #include "hytm1.h"
 #include "stm.h"
 #include "tmalloc.h"
@@ -89,7 +89,7 @@ void initSighandler() {
 __INLINE__ void acquireLock(volatile int *lock) {
     while (1) {
         if (*lock) {
-            __asm__ __volatile__("pause;");
+            PAUSE();
             continue;
         }
         if (__sync_bool_compare_and_swap(lock, 0, 1)) {

@@ -1,8 +1,6 @@
 #ifndef _RTM_H
 #define _RTM_H 1
 
-//#include <immintrin.h>
-
 /*
  * Copyright (c) 2012,2013 Intel Corporation
  * Author: Andi Kleen
@@ -19,10 +17,7 @@
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-/* Official RTM intrinsics interface matching gcc/icc, but works
-   on older gcc compatible compilers and binutils. */
-
-//#define _XBEGIN_STARTED		(~0u)
+#define _XBEGIN_STARTED		(~0u)
 //#define _XABORT_EXPLICIT	(1 << 0)
 //#define _XABORT_RETRY		(1 << 1)
 //#define _XABORT_CONFLICT	(1 << 2)
@@ -30,8 +25,8 @@
 //#define _XABORT_DEBUG		(1 << 4)
 //#define _XABORT_NESTED		(1 << 5)
 //#define _XABORT_CODE(x)		(((x) >> 24) & 0xff)
-//
-//#define __rtm_force_inline __attribute__((__always_inline__)) inline
+
+#define __rtm_force_inline __attribute__((__always_inline__)) inline
 
 #ifndef SOFTWARE_BARRIER
 #define SOFTWARE_BARRIER asm volatile("": : :"memory")
@@ -47,17 +42,11 @@
     #define XTEST() false
 #else
     #define XBEGIN_ARG_T int
-    #define XBEGIN(arg) (((arg) = ___XBEGIN()) == (~0u))
+    #define XBEGIN(arg) (((arg) = ___XBEGIN()) == _XBEGIN_STARTED)
     #define XEND() (___XEND())
     #define XABORT(arg) (___XABORT((arg)))
     #define XSUSPEND()
     #define XRESUME()
-//    #define X_IS_ABORT_USER(arg, code) ({ (code) = _XABORT_CODE((arg)); (arg) & _XABORT_EXPLICIT; })
-//    #define X_IS_ABORT_CAPACITY(arg) ((arg) & _XABORT_CAPACITY)
-//    #define X_IS_ABORT_NESTING(arg) ((arg) & _XABORT_NESTED)
-//    #define X_IS_ABORT_CONFLICT(arg) ((arg) & _XABORT_CONFLICT)
-//    #define X_IS_ABORT_RETRY(arg) ((arg) & _XABORT_RETRY)
-//    #define X_IS_ABORT_ILLEGAL(arg) false
     #define X_ABORT_GET_STATUS(arg) ((arg))
     #define X_ABORT_COMPRESS_STATUS(status) (((status)&0x3f) | ((((status)>>24)&0xff)<<6))
     #define X_ABORT_DECOMPRESS_STATUS(cstatus) (((cstatus)&0x3f) | (((cstatus)&(~0x3f))<<24))
@@ -67,6 +56,12 @@
     #define X_ABORT_STATUS_IS_NESTING(status) (((status)>>5)&0x1)
     #define X_ABORT_STATUS_IS_CONFLICT(status) (((status)>>2)&0x1)
     #define X_ABORT_STATUS_IS_RETRY(status) (!(((status)>>1)&0x1))
+//    #define X_IS_ABORT_USER(arg, code) ({ (code) = _XABORT_CODE((arg)); (arg) & _XABORT_EXPLICIT; })
+//    #define X_IS_ABORT_CAPACITY(arg) ((arg) & _XABORT_CAPACITY)
+//    #define X_IS_ABORT_NESTING(arg) ((arg) & _XABORT_NESTED)
+//    #define X_IS_ABORT_CONFLICT(arg) ((arg) & _XABORT_CONFLICT)
+//    #define X_IS_ABORT_RETRY(arg) ((arg) & _XABORT_RETRY)
+//    #define X_IS_ABORT_ILLEGAL(arg) false
 
     static __rtm_force_inline int ___XBEGIN(void)
     {

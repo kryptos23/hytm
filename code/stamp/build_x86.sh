@@ -1,4 +1,5 @@
 #!/bin/bash
 
-makefileSuffix="_p8"
+makefileSuffix=""
+xargs1=-mx32
 source build.inc.sh

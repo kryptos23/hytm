@@ -42,25 +42,8 @@
  *     return prev;
  * =============================================================================
  */
-__INLINE__ intptr_t
-cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr)
-{
-    intptr_t prevVal;
-
-    __asm__ __volatile__ (
-        "lock \n"
-#ifdef __LP64__
-        "cmpxchgq %1,%2 \n"
-#else
-        "cmpxchgl %k1,%2 \n"
-#endif
-        : "=a" (prevVal)
-        : "q"(newVal), "m"(*ptr), "0" (oldVal)
-        : "memory"
-    );
-
-    return prevVal;
-}
+inline intptr_t
+cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr);
 
 
 /* =============================================================================
@@ -82,11 +65,8 @@ cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr)
  * =============================================================================
  */
 #ifndef ARCH_HAS_PREFETCHW
-__INLINE__ void
-prefetchw (volatile void* x)
-{
-    /* nothing */
-}
+inline void
+prefetchw (volatile void* x);
 #endif
 
 
@@ -103,7 +83,7 @@ prefetchw (volatile void* x)
  * Ideally we would like to drop the priority of our CMT strand.
  * =============================================================================
  */
-#define PAUSE()                         /* nothing */
+#define PAUSE()                         __asm__ __volatile__("pause;")
 
 
 /* =============================================================================

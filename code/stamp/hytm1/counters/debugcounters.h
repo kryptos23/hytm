@@ -31,7 +31,7 @@ int getCompressedStatusAutomaticAbortCode(const int compressedStatus);
 
 int getCompressedStatusExplicitAbortCode(const int compressedStatus);
 
-int getStatusExplicitAbortCode(const int status);
+//int getStatusExplicitAbortCode(const int status);
 
 #define MAX_ABORT_STATUS 4096
 

@@ -14,25 +14,25 @@ extern "C" {
 
 #include "debugcounters.h"
     
-int getCompressedStatus(const int status) {
-    return (status & 63) | ((status >> 24)<<6);
-}
-
-int getCompressedStatusAutomaticAbortCode(const int compressedStatus) {
-    return compressedStatus & 63;
-}
-
-int getCompressedStatusExplicitAbortCode(const int compressedStatus) {
-    return compressedStatus >> 6;
-}
-
-int getStatusExplicitAbortCode(const int status) {
-    return status >> 24;
-}
+//int getCompressedStatus(const int status) {
+//    return (status & 63) | ((status >> 24)<<6);
+//}
+//
+//int getCompressedStatusAutomaticAbortCode(const int compressedStatus) {
+//    return compressedStatus & 63;
+//}
+//
+//int getCompressedStatusExplicitAbortCode(const int compressedStatus) {
+//    return compressedStatus >> 6;
+//}
+//
+//int getStatusExplicitAbortCode(const int status) {
+//    return status >> 24;
+//}
 
 void registerHTMAbort(struct debugCounters *cs, const int tid, const int status, const int path) {
 #ifdef RECORD_ABORTS
-    counterInc(cs->htmAbort[path*MAX_ABORT_STATUS+getCompressedStatus(status)], tid);
+//    counterInc(cs->htmAbort[path*MAX_ABORT_STATUS+getCompressedStatus(status)], tid);
 #endif
 }
 

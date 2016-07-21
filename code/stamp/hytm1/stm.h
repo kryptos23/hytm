@@ -79,22 +79,21 @@ typedef struct Thread_void {
                                             Thread_void* ___Self = (Thread_void*) STM_SELF; \
                                             TxClearRWSets(STM_SELF); \
                                             \
-                                            unsigned ___status; \
+                                            XBEGIN_ARG_T ___xarg; \
                                             ___Self->Retries = 0; \
                                             ___Self->isFallback = 0; \
                                             ___Self->IsRO = 1; \
                                             ___Self->envPtr = &STM_JMPBUF; \
                                             unsigned ___htmattempts; \
                                             for (___htmattempts = 0; ___htmattempts < HTM_ATTEMPT_THRESH; ++___htmattempts) { \
-                                                ___status = XBEGIN(); \
-                                                if (tleLock) XABORT(1); \
-                                                if (___status == _XBEGIN_STARTED) { \
+                                                if (XBEGIN(___xarg)) { \
+                                                    if (tleLock) XABORT(1); \
                                                     break; \
                                                 } else { /* if we aborted */ \
                                                     ++___Self->AbortsHW; \
-                                                    registerHTMAbort(counters, ___Self->UniqID, ___status, PATH_FAST_HTM); \
+                                                    registerHTMAbort(counters, ___Self->UniqID, X_ABORT_GET_STATUS(___xarg), PATH_FAST_HTM); \
                                                     while (tleLock) { \
-                                                        __asm__ __volatile__("pause;"); \
+                                                        PAUSE(); \
                                                     } \
                                                 } \
                                             } \
@@ -113,7 +112,7 @@ typedef struct Thread_void {
                                             /** acquire global lock **/ \
                                             while (1) { \
                                                 if (tleLock) { \
-                                                    __asm__ __volatile__("pause;"); \
+                                                    PAUSE(); \
                                                     continue; \
                                                 } \
                                                 if (__sync_bool_compare_and_swap(&tleLock, 0, 1)) { \

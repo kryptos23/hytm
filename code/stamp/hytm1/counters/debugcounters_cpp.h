@@ -19,28 +19,29 @@ using namespace std;
 
 string PATH_NAMES[] = {"fast htm", "slow htm", "fallback"};
 
-string getAutomaticAbortNames(const int compressedStatus) {
-    stringstream ss;
-    if (compressedStatus & _XABORT_EXPLICIT) ss<<" explicit";
-    if (compressedStatus & _XABORT_RETRY) ss<<" retry";
-    if (compressedStatus & _XABORT_CONFLICT) ss<<" conflict";
-    if (compressedStatus & _XABORT_CAPACITY) ss<<" capacity";
-    if (compressedStatus & _XABORT_DEBUG) ss<<" __debug";
-    if (compressedStatus & _XABORT_NESTED) ss<<" nested";
-    return ss.str();
-}
-
-string getExplicitAbortName(const int compressedStatus) {
-    int explicitCode = getCompressedStatusExplicitAbortCode(compressedStatus);
-    if (explicitCode == ABORT_PROCESS_ON_FALLBACK) return "process_on_fallback";
-    if (explicitCode >= 42) return "ASSERTION_FAILED";
-    return "";
-}
-
+//string getAutomaticAbortNames(const int compressedStatus) {
+//    stringstream ss;
+//    if (compressedStatus & _XABORT_EXPLICIT) ss<<" explicit";
+//    if (compressedStatus & _XABORT_RETRY) ss<<" retry";
+//    if (compressedStatus & _XABORT_CONFLICT) ss<<" conflict";
+//    if (compressedStatus & _XABORT_CAPACITY) ss<<" capacity";
+//    if (compressedStatus & _XABORT_DEBUG) ss<<" __debug";
+//    if (compressedStatus & _XABORT_NESTED) ss<<" nested";
+//    return ss.str();
+//}
+//
+//string getExplicitAbortName(const int compressedStatus) {
+//    int explicitCode = getCompressedStatusExplicitAbortCode(compressedStatus);
+//    if (explicitCode == ABORT_PROCESS_ON_FALLBACK) return "process_on_fallback";
+//    if (explicitCode >= 42) return "ASSERTION_FAILED";
+//    return "";
+//}
+//
 string getAllAbortNames(const int compressedStatus) {
-    stringstream ss;
-    ss<<getExplicitAbortName(compressedStatus)<<getAutomaticAbortNames(compressedStatus);
-    return ss.str();
+//    stringstream ss;
+//    ss<<getExplicitAbortName(compressedStatus)<<getAutomaticAbortNames(compressedStatus);
+//    return ss.str();
+    return "";
 }
 
 void countersPrint(struct debugCounters *cs) {

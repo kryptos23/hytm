@@ -79,8 +79,11 @@
 #include "types.h"
 #include "vector.h"
 
+#ifndef CACHE_LINE_SIZE
+#define CACHE_LINE_SIZE 64
+#endif
 
-const unsigned long CACHE_LINE_SIZE = 32UL;
+//const unsigned long CACHE_LINE_SIZE = 32UL;
 
 
 /* =============================================================================
