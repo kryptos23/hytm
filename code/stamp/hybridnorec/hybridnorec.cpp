@@ -564,7 +564,7 @@ enum hytm_config {
             e->hashTableEntry = &data[ix];
 //            e->hashTableIx = ix;
 #endif
-            VALIDATE ++sz;
+            ++sz;
             VALIDATE_INV(this);
         }
         
@@ -841,7 +841,7 @@ public:
             e = append(Self, addr, value);
 #ifdef USE_FULL_HASHTABLE
             // insert in hash table
-//            if (tab.requiresExpansion()) tab.expandAndRehashFromList(head, put);
+            if (tab.requiresExpansion()) tab.expandAndRehashFromList(head, put);
             tab.insertFresh(e);
 #elif defined(USE_BLOOM_FILTER)
             tab.insertFresh(addr);
