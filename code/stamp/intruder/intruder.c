@@ -228,7 +228,7 @@ processPackets (void* argPtr)
         TM_END();
         if (data) {
             error_t error = PDETECTOR_PROCESS(detectorPtr, data);
-            P_FREE(data);
+            //P_FREE(data);
             if (error) {
                 bool_t status = PVECTOR_PUSHBACK(errorVectorPtr,
                                                  (void*)decodedFlowId);

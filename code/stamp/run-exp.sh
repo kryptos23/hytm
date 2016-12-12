@@ -45,6 +45,7 @@ do
         fname="${outdir}/$benchmark-$alg-$n-$x-$params.out"
         echo -n "${benchmark},${alg},$n,$x" >> $fsummary
 ######## TODO: ADD ENV LD_PRELOAD PREFIX FOR SOME FAST MALLOC, E.G., JEMALLOC
+        #fullcmd="env LD_PRELOAD=./lib/libjemalloc.so.2 $fullcmd"
         echo $fullcmd > $fname
         $fullcmd >> $fname
 
@@ -62,7 +63,7 @@ do
         elif [ "$benchmark" == "labyrinth" ]; then
             echo -n ,`cat $fname | grep "Elapsed time" | cut -d"=" -f2 | cut -d" " -f2` >> $fsummary
         elif [ "$benchmark" == "ssca2" ]; then
-            echo -n ,`cat $fname | grep "Time taken for all is" | cut -d" " -f6` >> $fsummary
+            echo -n ,`cat $fname | grep "Time taken for all is" | cut -d"s" -f2 | tr -d " "` >> $fsummary
         elif [ "$benchmark" == "vacation" ]; then
             echo -n ,`cat $fname | grep "Time" | cut -d" " -f3` >> $fsummary
         elif [ "$benchmark" == "yada" ]; then

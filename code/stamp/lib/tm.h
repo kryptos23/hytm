@@ -116,9 +116,9 @@
 #      define TM_THREAD_EXIT()          STM_FREE_THREAD(TM_ARG_ALONE)
 
 #      define P_MALLOC(size)            malloc(size)
-#      define P_FREE(ptr)               free(ptr)
+#      define P_FREE(ptr)               /*free(ptr)*/
 #      define TM_MALLOC(size)           STM_MALLOC(size)
-#      define TM_FREE(ptr)              STM_FREE(ptr)
+#      define TM_FREE(ptr)              /*STM_FREE(ptr)*/
 
 #    define TM_BEGIN()                  STM_BEGIN_WR()
 #    define TM_BEGIN_RO()               STM_BEGIN_RD()

@@ -4,16 +4,16 @@
 #TARGETS="tl2 hytm2sw hytm1 hytm2"
 #PROGS="dsbench"
 
-TARGETS="seq seqtm tl2 hytm1 hytm2 hytm3 hybridnorec"
+TARGETS="seqtm tl2 hytm1 hytm2 hytm3 hybridnorec"
 PROGS="dsbench bayes genome intruder kmeans labyrinth ssca2 vacation yada"
 
 #TARGETS="hytm3 hytm2"
 #TARGETS="tl2"
-#TARGETS="hytm1"
-#TARGETS="hytm1 hytm2 hytm3"
+#TARGETS="hytm1 hytm2 hytm3 hybridnorec"
+#TARGETS="hytm1 hytm2 hytm3 hybridnorec"
 #TARGETS="tl2 hytm2sw hytm1 hytm2"
-#PROGS="bayes"
-xflags2=-DNDEBUG
+#PROGS="vacation yada"
+#xflags2=-DNDEBUG
 
 echo "Precompilation work..."
 mkdir bin

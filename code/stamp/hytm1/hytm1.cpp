@@ -784,20 +784,26 @@ void TxClearRWSets(void* _Self) {
     Thread* Self = (Thread*) _Self;
     Self->wrSet->clear();
     Self->rdSet->clear();
+    tmalloc_clear(Self->allocPtr);
+    tmalloc_clear(Self->freePtr);
 }
 
 int TxCommit(void* _Self) {
     Thread* Self = (Thread*) _Self;
     if (Self->isFallback) {
         releaseLock(&tleLock);
+#ifdef TXNL_MEM_RECLAMATION
         tmalloc_clear(Self->allocPtr);
         tmalloc_releaseAllForward(Self->freePtr, NULL);
+#endif
         counterInc(c_counters->htmCommit[PATH_FALLBACK], Self->UniqID);
         countersProbEndTime(c_counters, Self->UniqID, c_counters->timingOnFallback);
     } else {
-        tmalloc_releaseAllForward(Self->freePtr, NULL);
-        XEND();
+#ifdef TXNL_MEM_RECLAMATION
         tmalloc_clear(Self->allocPtr);
+        tmalloc_releaseAllForward(Self->freePtr, NULL);
+#endif
+        XEND();
         counterInc(c_counters->htmCommit[PATH_FAST_HTM], Self->UniqID);
     }
     return true;

@@ -10,7 +10,7 @@ extern "C" {
 #ifndef HTM_ATTEMPT_THRESH
     #define HTM_ATTEMPT_THRESH 5
 #endif
-#define TXNL_MEM_RECLAMATION
+//#define TXNL_MEM_RECLAMATION
 
 #define MAX_RETRIES 100000
     

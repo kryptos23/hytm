@@ -1340,7 +1340,7 @@ void TxFree(void* _Self, void* ptr) {
     Thread* Self = (Thread*) _Self;
     tmalloc_append(Self->freePtr, ptr);
 #else
-    free(ptr);
+//    free(ptr);
 #endif
 }
 
