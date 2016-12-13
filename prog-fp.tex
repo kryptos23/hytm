@@ -1,113 +1,55 @@
 \begin{algorithm*}[!ht]
 \caption{Opaque HyTM implementation with sequential slow-path and progressive fast-path TM-progress; code for $T_k$ by process $p_i$}
 \label{alg:inswrite2}
-\begin{algorithmic}[1]
-  	\begin{multicols}{2}
-  	{
-  	\footnotesize
-	\Part{Shared objects}{
-		\State $L$, global single-bit lock
-		%\Statex ~~~~~allows reads, writes 
-		%\State implemented from reads and writes
-		%\State $L$, multi-trylock
-	}\EndPart	
- 	\Statex
-% 	\Part{Process local objects}{
-% 		\State $\Rset(T_k)$, storing $\{X_j,r_j\}$
-% 		\State $\Wset(T_k)$, storing $\{X_j, v_j\}$
-% 	}\EndPart
-	\Statex
-	\textbf{Code for fast-path transactions}	
-	\Statex
-	\Part{$\textit{start}_k()$}{
-		
-		\State $l \gets \Read(\ms{L})$ \Comment{cached read} 
-		\If{$\ms{l} \mathrel{\&} 1\neq 0$}
-			    \Return $A_k$ \EndReturn
-		\EndIf
-		
-	}\EndPart
-	\Statex
-	%\Comment{In general, would it better to buffer writes in tryC?}
-	\Part{$\textit{read}_k(X_j)$}{\quad\Comment{fast-path}
-		
-		\State $\textit{ov}_j := v_j.\Read()$ \Comment{cached read} 
-		
-		\Return $\textit{ov}_j$ \EndReturn
-		
-   	 }\EndPart
-	\Statex
-	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
-	
-	\State $\underline{\textit{or}_j := \Read(r_j)}$ \Comment{uncached read}
-	\State $\underline{r_j.\Write({or}_j+2)}$ \Comment{uncached write}
-	\State $v_j.\Write(v)$ \Comment{cached write}
-	\Return $\ok$ \EndReturn
-		
-   	}\EndPart
-	\Statex
-	
-	%\Statex	
-	\Part{$\textit{tryC}_k$()}{\quad\Comment{fast-path}
-		%\Return $C_k$ \EndReturn
-		\State $\ms{commit-cache}_i$ \Comment{returns $C_k$ or $A_k$}
-		
-   		
-   	 }\EndPart		
-   	
-	\newpage
-	\textbf{Code for slow-path transactions}
-	
-	\Statex
-	
-	
-	%\Statex	
-	\Part{\TryC$_k$()}\quad\Comment{slow-path}{
-		\If{$\Wset(T_k)= \emptyset$}
-			\Return $C_k$ \EndReturn 
-		\EndIf
-				
-		\While {$\neg flag$}
-		  \State $flag \gets L.\lit{cas}(0,1)$
-		\EndWhile
-		\ForAll{$X_j \in \Wset(T_k)$}	
-			\State $nr_j\gets r_j.\lit{read}()$
-			\If{$or_j \neq nr_j$}
-			  \State $\lit{release}(\Wset(T_k))$
-			\EndIf
-			\Return $A_k$ \EndReturn
-			 		
-		\EndFor
-		\ForAll{$X_j \in \Wset(T_k)$}	
-			\State $r_j.\lit{write}(nr_j + 1)$ 
-			 		
-		\EndFor
-		\If{$\lit{validate}()$}
-			\State $\lit{release}(\Wset(T_k))$
-			\Return $A_k$ \EndReturn
-		\EndIf
-		
-		\ForAll{$X_j \in \Wset(T_k)$}
-	 		 \State  $v_j.\lit{write}(\textit{nv}_j)$
-			 
-		\EndFor		
-		
-  		\State $\lit{release}(\Wset(T_k))$	
- 		
-   		\Return $C_k$ \EndReturn
-   	 }\EndPart		
-	
-	\Statex
- 	\Part{Function: $\lit{release}(Q)$}{
-		\ForAll{$X_j \in Q$}	
-			\State $r_j.\lit{ write}(nr_j + 1)$ 
-			 		
-		\EndFor
-		\State $L.\lit{write}(0)$ 
-		\Return $ok$ \EndReturn
-	}\EndPart
-% 	
-	}
-	\end{multicols}
-  \end{algorithmic}
+\vspace{-1mm}
+\noindent\lstset{style=customc}
+\begin{minipage}{0.49\textwidth}
+\begin{lstlisting}[frame=none,firstnumber=1,mathescape=true]
+//\textbf{Shared objects}
+    //L, global single-bit lock
+
+//\textbf{Code for fast-path transactions}
+start$_k$()
+    l := L //\medcom cached read
+    if l & 1 $\neq$ 0 then return $A_k$
+
+read$_k$(X$_j$)
+    ov$_j$ := v$_j$ //\medcom cached read
+    return ov$_j$
+
+write$_k$(X$_j$, v)
+    or$_j$ := r$_j$ //\medcom uncached read
+    r$_j$ := or$_j$ + 2 //\medcom uncached write
+    v$_j$ := v //\medcom cached write
+    return OK
+
+try$C_k$()
+    return commitCache$_i$() //\medcom returns $C_k$ or $A_k$
+\end{lstlisting}
+\end{minipage}
+\begin{minipage}{0.49\textwidth}
+\begin{lstlisting}[frame=none,firstnumber=last,mathescape=true]
+//\textbf{Code for slow-path transactions}
+tryC$_k$()
+    if Wset(T$_k$) = $\emptyset$ then return $C_k$
+    while not flag do flag := CAS(L, 0, 1)
+    for each X$_j \in$ Wset(T$_k$)
+        nr$_j$ := r$_j$
+        if or$_j \neq$ nr$_j$ then
+            release(Wset(T$_k$))
+            return $A_k$
+    for each X$_j \in$ Wset(T$_k$) do r$_j$ := nr$_j$ + 1
+    if validate() then
+        release(Wset(T$_k$))
+        return $A_k$
+    for each X$_j \in$ Wset(T$_k$) do v$_j$ := nv$_j$
+    release(Wset(T$_k$))
+    return $C_k$
+release(Q)
+    for each X$_j \in$ Q do r$_j$ := nr$_j$ + 1
+    L := 0
+    return OK
+\end{lstlisting}
+\end{minipage}
+\vspace{-1mm}
 \end{algorithm*}

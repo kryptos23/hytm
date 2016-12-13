@@ -204,6 +204,35 @@
 \newcommand{\mynote}[3]{}}
 \newcommand{\sr}[1]{\mynote{SR}{#1}{magenta}}
 
+\newcommand{\comnospace}{\mbox{$\triangleright$}}
+\newcommand{\com}{\mbox{\comnospace\ }}
+\usepackage{tabto}
+\newcommand{\medcom}[1]{\tabto{5cm} \com \mbox{#1}}
+\usepackage{listings}
+\usepackage{microtype}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[scaled]{beramono}
+\newcommand\Small{\fontsize{7.6}{7.6}\selectfont}
+\newcommand*\LSTfont{\Small\ttfamily\SetTracking{encoding=*}{-60}\lsstyle}
+\lstdefinestyle{customc}{
+    belowcaptionskip=1\baselineskip,
+    breaklines=true,
+    frame=L,
+    xleftmargin=\parindent,
+    language=C,
+    showstringspaces=false,
+    escapeinside={//}{\^^M},
+    basicstyle=\LSTfont, %\scriptsize\ttfamily,
+    keywordstyle=\bfseries\color{green!40!black},
+    commentstyle=\itshape\color{gray!60!black},
+    identifierstyle=\color{blue!50!black},
+    stringstyle=\color{orange},
+    numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=5pt,                   % how far the line-numbers are from the code
+    numberstyle=\tiny\color{black},  % the style that is used for the line-numbers
+    otherkeywords={then,word,process_local,type,xbegin,xabort,xend}
+}
 
 \begin{document}
 
