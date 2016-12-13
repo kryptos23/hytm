@@ -74,12 +74,6 @@ on the fast-path reading transactions (as in Algorithm~\ref{alg:inswrite}, but p
 for slow-path reading transactions.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Correctness proofs}
-\label{sec:proofs}
-%
-\input{appendix-proof}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \input{prog-fp}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -99,7 +93,7 @@ by implementations due to incremental validation.
 the step-complexity cost on slow-path transactions by performing incremental validation during a transactional read \emph{iff} 
 the global snapshot of the memory locations has changed since the start of the transaction.
 %
-%\input{hybridnorec}
+\input{hybridnorec}
 
 \paragraph{Employing non-cached writes inside fast-path.}
 
