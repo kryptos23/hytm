@@ -37,9 +37,7 @@ An \emph{execution} of a TM implementation $\mathcal{M}$ is an
 execution fragment where, informally, each event respects the
 specification of base objects and the algorithms specified by $\mathcal{M}$.
 
-%applicable to the initial configuration 
-%where each event of each transaction is issued according to $\mathcal{M}$.
-The \emph{read set} (resp., the \emph{write set}) of a transaction $T_k$ in an execution $E$,
+We consider the dynamic programming model: the \emph{read set} (resp., the \emph{write set}) of a transaction $T_k$ in an execution $E$,
 denoted $\Rset_E(T_k)$ (and resp. $\Wset_E(T_k)$), is the set of t-objects that $T_k$ attempts to read (and resp. write) 
 by issuing a t-read (and resp. t-write) invocation in $E$ (for brevity, we sometimes 
 omit the subscript $E$ from the notation).
@@ -185,16 +183,16 @@ Algorithms and lower bounds presented in this paper concern HyTMs that provide \
 nontrivial primitives in any execution.
 %
 %
-\begin{figure*}[!ht]
-\begin{center}
-	\subfloat[\label{sfig:ob-01}]{\scalebox{0.5}[0.5]{\input{ob01}}}
-	\hspace{10mm}
-	\subfloat[\label{sfig:ob-02}]{\scalebox{0.5}[0.5]{\input{ob11}}}
-	 
-\end{center}
-\caption{
-\label{fig:ob1}
-Execution $E$ in Figure~\ref{sfig:ob-01} is indistinguishable
-to $T_1$ from the execution $E'$ in Figure~\ref{sfig:ob-02}}
-\end{figure*}
+% \begin{figure*}[!ht]
+% \begin{center}
+% 	\subfloat[\label{sfig:ob-01}]{\scalebox{0.5}[0.5]{\input{ob01}}}
+% 	\hspace{10mm}
+% 	\subfloat[\label{sfig:ob-02}]{\scalebox{0.5}[0.5]{\input{ob11}}}
+% 	 
+% \end{center}
+% \caption{
+% \label{fig:ob1}
+% Execution $E$ in Figure~\ref{sfig:ob-01} is indistinguishable
+% to $T_1$ from the execution $E'$ in Figure~\ref{sfig:ob-02}}
+% \end{figure*}
 %
