@@ -39,7 +39,8 @@ primitive that checks if the value of $r_j$, for each $X_j\in \Wset(T_k)$, is un
 If all the locks on the write set were acquired successfully, $T_k$ performs validation of the read set and returns $C_k$ if successful, else $p_i$ aborts the transaction.
 
 \vspace{1mm}\noindent\textbf{Non-cached accesses inside fast-path.}
-
+As indicated in the pseudocode of Algorithm~\ref{alg:inswrite}, some accesses may be performed uncached (as allowed
+in IBM Power 8) and the resulting implementation would still be opaque. 
 We can now prove the following theorem:
 %
 \begin{theorem}
@@ -52,7 +53,7 @@ accesses $m=|\Dset(T_k)|$ distinct metadata base objects.
 \subsection{Instrumentation-optimal HyTMs that are progressive only for a subset of transactions}
 \label{sec:hytm2}
 %
-\begin{figure*}[!ht]
+\begin{figure*}[!h]
       
      \scalebox{1}[1]{
      \begin{tabularx}{\textwidth}{c|c|c|c|c}
@@ -62,7 +63,7 @@ accesses $m=|\Dset(T_k)|$ distinct metadata base objects.
 	Metadata accesses in read-only s/f & No & yes & Yes & Yes \\ \hline
 	Metadata accesses in updating h/w & No & yes & Yes & Yes \\ \hline
 	h/w-s/f concurrency & No & yes & Yes & Yes \\ \hline
-	opacity & No & yes & Yes & Yes \\  \hline
+	opacity & yes & yes & Yes & Yes 
 	%    \hline
    \end{tabularx}
 \caption{Table}\label{fig:main}    

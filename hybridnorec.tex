@@ -10,7 +10,9 @@
 
 //\textbf{Code for fast-path transactions}
 start$_k$()
-    
+    if esl==1
+	return A$_k$
+
 read$_k$(X$_j$)
     ov$_j$ := v$_j$ //\medcom cached read
     return ov$_j$
@@ -20,6 +22,12 @@ write$_k$(X$_j$, v)
     return OK
 
 try$C_k$()
+    if $\Wset(T_k)= \emptyset$ then
+	return C$_k$
+    l:= gsl
+    if l $\mathrel{\&} 1$ then
+	return A_$k$
+    gsl:=l+2
     return commitCache$_i$() //\medcom returns $C_k$ or $A_k$
 \end{lstlisting}
 \end{minipage}
@@ -27,9 +35,16 @@ try$C_k$()
 \begin{lstlisting}[frame=none,firstnumber=last,mathescape=true]
 //\textbf{Code for slow-path transactions}
 start$_k$()
-    
+    while sl $\mathrel{\&} 1$
+	sl:= gsl
+
 read$_k$(X$_j$)
+    if X$_j$ $\in \Wset(T_k)$ then
+	return $\Wset(T_k).\lit{locate}(X_j)$ 
     ov$_j$ := v$_j$ //\medcom cached read
+    $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$ //\label{line:rset}
+    if $\neg \lit{validate}()$ then 
+	return A$_k$
     return ov$_j$
 
 write$_k$(X$_j$, v)
@@ -38,18 +53,16 @@ write$_k$(X$_j$, v)
 
 tryC$_k$()
     if Wset(T$_k$) = $\emptyset$ then return $C_k$
-    while not flag do flag := CAS(L, 0, 1)
-    for each X$_j \in$ Wset(T$_k$)
-        nr$_j$ := r$_j$
-        if or$_j \neq$ nr$_j$ then
-            release(Wset(T$_k$))
-            return $A_k$
-    for each X$_j \in$ Wset(T$_k$) do r$_j$ := nr$_j$ + 1
+    while sl $\mathrel{\&} 1$ or $\neg\ms{gsl}$.CAS($sl$, $sl+1$)  
+          sl:= gsl
+    esl:=1
     if validate() then
-        release(Wset(T$_k$))
+        esl:=0
+        gsl:=gsl+1
         return $A_k$
     for each X$_j \in$ Wset(T$_k$) do v$_j$ := nv$_j$
-    release(Wset(T$_k$))
+    esl:=0
+    gsl:=gsl+1
     return $C_k$
 \end{lstlisting}
 \end{minipage}

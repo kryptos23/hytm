@@ -52,7 +52,7 @@ software transactions \textit{cannot} avoid incremental validation.
 Specifically, we prove that read operations of software transactions in progressive HyTMs
 must necessarily incur a validation cost that is \emph{linear} 
 in the size of the transaction's read set. 
-This is in stark contrast to progressive STMs which can achieve $O(1)$ complexity read operations.
+This is in stark contrast to progressive STMs like TL2 which has constant time read operations.
 Thus, in addition to the linear instrumentation cost on the hardware transactions, there is the quadratic
 step complexity cost on the software transactions.
 
