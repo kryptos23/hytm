@@ -42,12 +42,32 @@ Hardware transactions typically provide automatic contention detection for every
 thus ensuring that the transaction itself would be aborted.
 This is at least the case with the Intel Haswell's Transactional Synchronization Extensions~\cite{haswell}.
 The IBM Power8 ISA additionally allows hardware transactions to access metadata \emph{non-speculatively}, thus precluding
-contention detection for all memory locations accessed. While this has the advantage of potentially reducing contention aborts
+contention detection for \emph{all} memory locations accessed. While this has the advantage of potentially reducing contention aborts
 in hardware, this makes the design of HyTM implementations potentially harder to prove correct.
 
+In \cite{htmdisc15}, it was shown that hardware transactions in progressive HyTMs must perform
+an additional metadata access per transactional operation.
+In this paper, we show that in progressive HyTMs, 
+software transactions \textit{cannot} avoid incremental validation.
+Specifically, we prove that read operations of software transactions in progressive HyTMs
+must necessarily incur a validation cost that is \emph{linear} 
+in the size of the transaction's read set. 
+This is in stark contrast to progressive STMs which can achieve $O(1)$ complexity read operations.
+Thus, in addition to the linear instrumentation cost on the hardware transactions, there is the quadratic
+step complexity cost on the software transactions.
+
+We then present \emph{opaque} HyTM algorithms providing \emph{progressiveness for a subset of transactions} that are  %both hardware and software transactions \trevor{maybe just ``transactions''?}
+optimal in terms of hardware instrumentation. We show 
+how \emph{some} hardware instrumentation can be performed \textit{non-speculatively} without violating opacity while exploring the concurrency vs. hardware instrumentation vs. software validation
+tradeoffs for these algorithms.
+Preliminary experiments on Intel Haswell (resp. IBM Power 8) not supporting (resp. supporting) non-speculative accesses inside hardware,
+seem to suggest that the inherent \emph{cost to concurrency} in HyTMs also exists in practice and discuss algorithmic techniques to overcome them.
+
 \paragraph{Roadmap.}
-\cref{sec:hytm} formalizes the HyTM model that extends the model in \cite{htmdisc15} 
-to access metadata non-speculatively.
-\cref{sec:lb} presents our main lower bound result on the step-complexity of progressive HyTMs.
+\cref{sec:hytm} presents details of the HyTM model that extends the model introduced in \cite{htmdisc15} 
+to access memory locations non-speculatively.
+\cref{sec:lb} presents our main lower bound result on the step-complexity of progressive HyTMs
+while \cref{sec:hytmalgos} presents several opaque HyTM algorithms.
+\cref{sec:eval} summarizes resuls from our preliminary experiments on Intel Haswell and IBM Power 8 architectures.
 \cref{sec:rel} presents the related work and \cref{sec:conc} concludes the paper.
 %

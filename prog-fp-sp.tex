@@ -16,6 +16,72 @@ read$_k(X_j)$
     if or$_j$ $\mathrel{\&}1$ then  
 	return A$_k$ 
     return ov$_j$ 
+
+write$_k(X_j,v)$
+    $\textit{or}_j := \Read(r_j)$ //\medcom cached read \label{line:m1}
+    if or$_j$ $\mathrel{\&} 1$ then  		
+	return A$_k$ 
+    r$_j$ := or$_j$+2 // \label{line:m2}
+    v$_j$ := v //\medcom uncached write \label{line:lin2} 
+    return ok
+
+tryC$_k$()
+    commit-cache$_i$ // \label{line:lin3}
+
+Function: release(Q)
+    for each X$_j$ $\in Q$
+	r$_j$ := or$_j$+1 // \label{line:rel1}	
+	
+Function: acquire(Q)
+    for each X$_j$ $\in Q$	
+	if r$_j.\lit{setV}()$  // \label{line:acq1}
+	    Lset(T$_k$) := Lset(T$_k$) $\cup \{X_j\}$
+	    return true
+	$\lit{release}$(Lset(T$_k$))
+	    return false
+\end{lstlisting}
+\end{minipage}
+\begin{minipage}{0.49\textwidth}
+\begin{lstlisting}[frame=none,firstnumber=last,mathescape=true]
+//\textbf{Code for slow-path transactions}
+Read$_k$(X$_j$)
+    if X$_j$ $\in \Wset(T_k)$ then
+	return $\Wset(T_k).\lit{locate}(X_j)$ 
+    or$_j$ := r$_j$ //\label{line:readorec}
+    ov$_j$ := v$_j$ //\label{line:read2}
+    $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$ //\label{line:rset}
+    if or$_j$ $\mathrel{\&} 1$ then //\label{line:abort0}	
+	return A$_k$
+    if $\neg \lit{validate}()$ then //\label{line:valid}
+	return A$_k$
+    return ov$_j$
+
+write$_k(X_j,v)$
+    or$_j$ := r$_j$
+    nv$_j$ := v
+    if or$_j$ $\mathrel{\&} 1$ then	
+	return A$_k$ 
+    $\Wset(T_k) := \Wset(T_k)\cup\{X_j,\textit{nv}_j, \textit{or}_j\}$
+    return ok
+
+tryC$_k$()
+    if $\Wset(T_k)= \emptyset$ then
+	return C$_k$ // \label{line:return}
+    if $\lit{acquire}(\Wset(T_k))$ then	// \label{line:acq}
+	if $\neg \lit{validate}()$} // \label{line:abort3}
+	    $\lit{release}( \ms{Wset}(T_k))$ 
+	    return A$_k$ 
+	for each $X_j \in \Wset(T_k)$
+	    v_j:= nv$_j$ //\label{line:write}
+	$\lit{release}(\Wset(T_k))$  // \label{line:rel}	
+	    return C$_k$ 
+    return A$_k$ 
+
+Function: $\lit{validate}()$}
+    if $\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$ then // \label{line:valid}
+	return false
+    return true
+
 \end{lstlisting}
 \end{minipage}
 \vspace{-1mm}
