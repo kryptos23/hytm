@@ -11,7 +11,7 @@
 #include "../recordmgr/machineconstants.h"
 #include "../globals_extern.h"
 #include "../globals.h"
-#include <tm.h>
+#include "../dsbench_tm.h"
 using namespace std;
 
 //extern void *singleton;
@@ -81,11 +81,11 @@ using namespace std;
     info.nodeContainingPtrToObjIsMarked = arg3; /*bst_retired_info(obj, arg2, arg3);*/ \
     if (_obj != root && !shmem->protect(tid, _obj, callbackCheckNotRetired, (void*) &info))
 
-//__rtm_force_inline CallbackReturn callbackReturnTrue(CallbackArg arg) {
+//inline CallbackReturn callbackReturnTrue(CallbackArg arg) {
 //    return true;
 //}
 
-__rtm_force_inline CallbackReturn callbackCheckNotRetired(CallbackArg arg) {
+inline CallbackReturn callbackCheckNotRetired(CallbackArg arg) {
     bst_retired_info *info = (bst_retired_info*) arg;
     if (*info->ptrToObj == info->obj) {
         // we insert a compiler barrier (not a memory barrier!)
@@ -103,7 +103,7 @@ __rtm_force_inline CallbackReturn callbackCheckNotRetired(CallbackArg arg) {
 }
 
 template<class K, class V, class Compare, class RecManager>
-__rtm_force_inline SCXRecord<K,V>* bst<K,V,Compare,RecManager>::allocateSCXRecord(
+inline SCXRecord<K,V>* bst<K,V,Compare,RecManager>::allocateSCXRecord(
             const int tid) {
     SCXRecord<K,V> *newop = shmem->template allocate<SCXRecord<K,V> >(tid);
     if (newop == NULL) {
@@ -114,7 +114,7 @@ __rtm_force_inline SCXRecord<K,V>* bst<K,V,Compare,RecManager>::allocateSCXRecor
 }
 
 template<class K, class V, class Compare, class RecManager>
-__rtm_force_inline SCXRecord<K,V>* bst<K,V,Compare,RecManager>::initializeSCXRecord(
+inline SCXRecord<K,V>* bst<K,V,Compare,RecManager>::initializeSCXRecord(
             const int tid,
             SCXRecord<K,V> * const newop,
             ReclamationInfo<K,V> * const info,
@@ -142,7 +142,7 @@ __rtm_force_inline SCXRecord<K,V>* bst<K,V,Compare,RecManager>::initializeSCXRec
 }
 
 template<class K, class V, class Compare, class RecManager>
-__rtm_force_inline Node<K,V>* bst<K,V,Compare,RecManager>::allocateNode(
+inline Node<K,V>* bst<K,V,Compare,RecManager>::allocateNode(
             const int tid) {
     Node<K,V> *newnode = shmem->template allocate<Node<K,V> >(tid);
     if (newnode == NULL) {
@@ -153,7 +153,7 @@ __rtm_force_inline Node<K,V>* bst<K,V,Compare,RecManager>::allocateNode(
 }
 
 template<class K, class V, class Compare, class RecManager>
-__rtm_force_inline Node<K,V>* bst<K,V,Compare,RecManager>::initializeNode(
+inline Node<K,V>* bst<K,V,Compare,RecManager>::initializeNode(
             const int tid,
             Node<K,V> * const newnode,
             const K& key,
@@ -259,6 +259,7 @@ int bst<K,V,Compare,RecManager>::rangeQuery(const int tid, const K& low, const K
     return cnt;
 }
 
+#ifdef TLE
 template<class K, class V, class Compare, class RecManager>
 int bst<K,V,Compare,RecManager>::rangeQuery_tle(const int tid, const K& low, const K& hi, Node<K,V> const ** result) {
     int cnt;
@@ -299,7 +300,9 @@ int bst<K,V,Compare,RecManager>::rangeQuery_tle(const int tid, const K& low, con
     shmem->enterQuiescentState(tid);
     return cnt;
 }
+#endif
 
+#if 0
 template<class K, class V, class Compare, class RecManager>
 int bst<K,V,Compare,RecManager>::rangeQuery_txn(ReclamationInfo<K,V> * const info, const int tid, void **input, void **output) {
     //COUTATOMICTID("rangeQuery_lock(low="<<low<<", hi="<<hi<<")"<<endl);
@@ -357,6 +360,7 @@ TXN1: (0);
     // success
     return true;
 }
+#endif
 
 template<class K, class V, class Compare, class RecManager>
 int bst<K,V,Compare,RecManager>::rangeQuery_lock(ReclamationInfo<K,V> * const info, const int tid, void **input, void **output) {
@@ -543,6 +547,7 @@ const pair<V,bool> bst<K,V,Compare,RecManager>::find(const int tid, const K& key
     return pair<V,bool>(NO_VALUE, false);
 }
 
+#ifdef TLE
 template<class K, class V, class Compare, class RecManager>
 const pair<V,bool> bst<K,V,Compare,RecManager>::find_tle(const int tid, const K& key) {
     pair<V,bool> result;
@@ -586,6 +591,7 @@ const pair<V,bool> bst<K,V,Compare,RecManager>::find_tle(const int tid, const K&
     shmem->enterQuiescentState(tid);
     return result; // success
 }
+#endif
 
 template<class K, class V, class Compare, class RecManager>
 const pair<V,bool> bst<K,V,Compare,RecManager>::find_stm(TM_ARGDECL_ALONE, const int tid, const K& key) {
@@ -640,6 +646,7 @@ const V bst<K,V,Compare,RecManager>::insert(const int tid, const K& key, const V
     return result;
 }
 
+#ifdef TLE
 template<class K, class V, class Compare, class RecManager>
 const V bst<K,V,Compare,RecManager>::insert_tle(const int tid, const K& key, const V& val) {
     shmem->leaveQuiescentState(tid);
@@ -690,6 +697,7 @@ const V bst<K,V,Compare,RecManager>::insert_tle(const int tid, const K& key, con
         return NO_VALUE;
     }
 }
+#endif
 
 template<class K, class V, class Compare, class RecManager>
 const V bst<K,V,Compare,RecManager>::insert_stm(TM_ARGDECL_ALONE, const int tid, const K& key, const V& val) {
@@ -753,6 +761,7 @@ const pair<V,bool> bst<K,V,Compare,RecManager>::erase(const int tid, const K& ke
     return pair<V,bool>(result, (result != NO_VALUE));
 }
 
+#ifdef TLE
 template<class K, class V, class Compare, class RecManager>
 const pair<V,bool> bst<K,V,Compare,RecManager>::erase_tle(const int tid, const K& key) {
     shmem->leaveQuiescentState(tid);
@@ -810,6 +819,7 @@ const pair<V,bool> bst<K,V,Compare,RecManager>::erase_tle(const int tid, const K
     }
     return pair<V,bool>(result, (result != NO_VALUE));
 }
+#endif
 
 template<class K, class V, class Compare, class RecManager>
 const pair<V,bool> bst<K,V,Compare,RecManager>::erase_stm(TM_ARGDECL_ALONE, const int tid, const K& key) {
@@ -869,6 +879,7 @@ const pair<V,bool> bst<K,V,Compare,RecManager>::erase_stm(TM_ARGDECL_ALONE, cons
     return pair<V,bool>(result, (result != NO_VALUE));
 }
 
+#if 0
 template<class K, class V, class Compare, class RecManager>
 inline bool bst<K,V,Compare,RecManager>::updateInsert_txn_search_inplace(
             ReclamationInfo<K,V> * const info, const int tid, void **input, void **output) {
@@ -1052,6 +1063,7 @@ aborthere:
         return false;
     }
 }
+#endif
 
 template<class K, class V, class Compare, class RecManager>
 inline bool bst<K,V,Compare,RecManager>::updateInsert_search_llx_scx(
@@ -1215,6 +1227,7 @@ inline bool bst<K,V,Compare,RecManager>::updateInsert_lock_search_inplace(
     }
 }
 
+#if 0
 template<class K, class V, class Compare, class RecManager>
 inline bool bst<K,V,Compare,RecManager>::updateErase_txn_search_inplace(
             ReclamationInfo<K,V> * const info, const int tid, void **input, void **output) { // input consists of: const K& key
@@ -1390,6 +1403,7 @@ aborthere:
         return false;
     }
 }
+#endif
 
 template<class K, class V, class Compare, class RecManager>
 inline bool bst<K,V,Compare,RecManager>::updateErase_search_llx_scx(
@@ -1851,13 +1865,14 @@ void bst<K,V,Compare,RecManager>::htmWrapper(
     }
 }
 
+#if 0
 /**
  * CAN BE INVOKED ONLY IF EVERYTHING FROM THE FIRST LINKED LLX
  * TO THE END OF THIS CALL WILL BE EXECUTED ATOMICALLY
  * (E.G., IN A TXN OR CRITICAL SECTION)
  */
 template<class K, class V, class Compare, class RecManager>
-__rtm_force_inline bool bst<K,V,Compare,RecManager>::scx_intxn_markingwr_infowr(
+inline bool bst<K,V,Compare,RecManager>::scx_intxn_markingwr_infowr(
             const int tid,
             ReclamationInfo<K,V> * const info,
             Node<K,V> * volatile * field,        // pointer to a "field pointer" that will be changed
@@ -1880,7 +1895,7 @@ __rtm_force_inline bool bst<K,V,Compare,RecManager>::scx_intxn_markingwr_infowr(
 
 // note: this needs to go up to NUM_OF_NODES for marking
 template<class K, class V, class Compare, class RecManager>
-__rtm_force_inline bool bst<K,V,Compare,RecManager>::scx_htm(
+inline bool bst<K,V,Compare,RecManager>::scx_htm(
             const int tid,
             ReclamationInfo<K,V> * const info,
             Node<K,V> * volatile * field,        // pointer to a "field pointer" that will be changed
@@ -1939,10 +1954,11 @@ TXN1: int attempts = MAX_FAST_HTM_RETRIES;
         return false;
     }
 }
+#endif
 
 // you may call this only if each node in nodes is protected by a call to shmem->protect
 template<class K, class V, class Compare, class RecManager>
-__rtm_force_inline bool bst<K,V,Compare,RecManager>::scx(
+inline bool bst<K,V,Compare,RecManager>::scx(
             const int tid,
             ReclamationInfo<K,V> * const info,
             Node<K,V> * volatile * field,        // pointer to a "field pointer" that will be changed
@@ -2005,7 +2021,7 @@ __rtm_force_inline bool bst<K,V,Compare,RecManager>::scx(
 // each node in scx->nodes must be protected by a call to shmem->protect.
 // returns the state field of the scx record "scx."
 template<class K, class V, class Compare, class RecManager>
-__rtm_force_inline int bst<K,V,Compare,RecManager>::help(const int tid, SCXRecord<K,V> *scx, bool helpingOther) {
+inline int bst<K,V,Compare,RecManager>::help(const int tid, SCXRecord<K,V> *scx, bool helpingOther) {
     assert(shmem->isProtected(tid, scx));
     assert(scx != dummy);
 //    bool updateCAS = false;
@@ -2184,8 +2200,9 @@ __rtm_force_inline int bst<K,V,Compare,RecManager>::help(const int tid, SCXRecor
     return SCXRecord<K,V>::STATE_COMMITTED; // success
 }
 
+#if 0
 template<class K, class V, class Compare, class RecManager>
-__rtm_force_inline void *bst<K,V,Compare,RecManager>::llx_intxn_markingwr_infowr(
+inline void *bst<K,V,Compare,RecManager>::llx_intxn_markingwr_infowr(
             const int tid,
             Node<K,V> *node,
             Node<K,V> **retLeft,
@@ -2210,7 +2227,7 @@ __rtm_force_inline void *bst<K,V,Compare,RecManager>::llx_intxn_markingwr_infowr
 }
 
 template<class K, class V, class Compare, class RecManager>
-__rtm_force_inline void *bst<K,V,Compare,RecManager>::llx_htm(
+inline void *bst<K,V,Compare,RecManager>::llx_htm(
             const int tid,
             Node<K,V> *node,
             Node<K,V> **retLeft,
@@ -2235,10 +2252,11 @@ __rtm_force_inline void *bst<K,V,Compare,RecManager>::llx_htm(
     }
     return NULL;           // fail
 }
+#endif
 
 // you may call this only if node is protected by a call to shmem->protect
 template<class K, class V, class Compare, class RecManager>
-__rtm_force_inline void *bst<K,V,Compare,RecManager>::llx(
+inline void *bst<K,V,Compare,RecManager>::llx(
             const int tid,
             Node<K,V> *node,
             Node<K,V> **retLeft,

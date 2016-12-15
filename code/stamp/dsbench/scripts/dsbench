@@ -1,0 +1,119 @@
+#!/bin/bash
+
+source plaf.bash
+
+expname=dsbench
+
+seqwidth=48
+algs_reclaimers_pools="dsbench_tl2~debra~none dsbench_hytm1~debra~none dsbench_hytm2~debra~none dsbench_hytm3~debra~none dsbench_hybridnorec~debra~none"
+keyranges="1000 10000 100000"
+insdel_pcnts="5 10 50"
+ntrials=8
+t=1000
+p=-p
+ma=new
+pinnings="${pin_cluster} ${pin_scatter}"
+
+if [ "$#" -ne "0" ]; then
+	echo "RUNNING IN TEST MODE"
+	ntrials=1
+	t=1
+	p=
+fi
+
+cd ..
+
+# assuming we are running in ../
+outdir=output.${machine}.${expname}
+libdir=../lib/x32
+scriptsdir=scripts
+logfile=$outdir/log.out
+compilinglogfile=$outdir/compiling.out
+stderrfile=$outdir/stderr.out
+f=$outdir/temp.out
+
+# back up old output dir, and create a new one
+rm -r -f $outdir.old
+mv $outdir $outdir.old
+mkdir $outdir
+
+# locate jemalloc library
+if [ -e "${libdir}/libjemalloc.so" ]; then
+    envcmd="env LD_PRELOAD=${libdir}/libjemalloc.so"
+#elif [ -e "${libdir}/libjemalloc.so" ]; then
+#    envcmd="env LD_PRELOAD=${libdir}/libjemalloc.so.2"
+else
+    echo "ERROR: could not find jemalloc library"
+    exit 1
+fi
+
+echo "-------------------- BEGIN VARIABLES --------------------" >> $logfile
+( set -o posix ; set ) >> $logfile
+echo "--------------------- END VARIABLES ---------------------" >> $logfile
+
+cat $logfile
+
+cnt1=0
+cnt2=0
+for counting in 1 0; do
+    for k in $keyranges; do
+    for pinning in $pinnings; do
+    for alg_reclaimer_pool in $algs_reclaimers_pools; do
+        alg=`echo $alg_reclaimer_pool | cut -d"~" -f1`
+        mr=`echo $alg_reclaimer_pool | cut -d"~" -f2`
+        mp=`echo $alg_reclaimer_pool | cut -d"~" -f3`
+            if [ $counting -eq 0 ]; then
+                target=`echo $alg | cut -d"_" -f2`
+                makecmd="make -f Makefile.stm -j TARGET=$target machine=$machine EXTRAFLAGS1=$xargs1 EXTRAFLAGS3=-DHTM_ATTEMPT_THRESH=20 pinning=$pinning"
+                echo $makecmd
+                $makecmd >> $compilinglogfile
+                if [ "$?" -ne 0 ]; then
+                    cat $compilinglogfile
+                    echo "ERROR COMPILING"
+                    exit 1
+                fi
+            else
+                echo "counting trials for alg $alg, mr $mr, mp $mp and k $k"
+            fi
+
+            for insdel_pcnt in $insdel_pcnts; do
+            for nthreads in $threadcounts; do
+            for ((trial=0;trial<$ntrials;++trial)); do
+                if [ $counting -eq 1 ]; then
+                    cnt1=`expr $cnt1 + 1`
+                    continue
+                fi
+
+                cnt2=`expr $cnt2 + 1`
+                echo -n "trial $cnt2 / $cnt1: "
+
+                args="-t $t -mr $mr -ma $ma -mp $mp $p -k $k -i $insdel_pcnt -d $insdel_pcnt -rq 0 -nwork $nthreads"
+                cmd="$machine.$alg $args"
+                fname=`echo $cmd | tr " " "."`
+                fname="step$cnt2.${fname}.-seqwidth.$seqwidth.-trial.$trial"
+                fname="$outdir/$fname.data"
+                echo "$envcmd ${malloc_conf} $cmdprefix ./$cmd > $fname"
+                echo "$envcmd ${malloc_conf} $cmdprefix ./$cmd" > $fname
+                $envcmd ${malloc_conf} $cmdprefix ./$cmd >> $fname 2>>$stderrfile
+                if [ "$?" -ne "0" ]; then
+                    echo "ERROR: nonzero status after executing cmd"
+                    cat $stderrfile
+                    exit
+                fi
+            done
+            done
+        done
+    done
+    done
+    done
+done
+
+cat $logfile > $f
+cat $compilinglogfile > $logfile
+echo >> $logfile
+cat $f >> $logfile
+rm -f $f
+rm -f $compilinglogfile
+
+cd $scriptsdir
+./${expname}.format ${machine}

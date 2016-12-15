@@ -1455,7 +1455,7 @@ backoff (Thread* Self, long attempt)
     }
 #else
     /* CCM: timer function may misbehave */
-    volatile typeof(stall) i = 0;
+    volatile unsigned long long i = 0;
     while (i++ < stall) {
         PAUSE();
     }

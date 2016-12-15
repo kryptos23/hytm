@@ -25,7 +25,9 @@
 #include "../recordmgr/record_manager.h"
 #include "../debugcounters.h"
 #include "../common/random.h"
+#ifdef TLE
 #include "../tle.h"
+#endif
 #include "scxrecord.h"
 #include "node.h"
 
@@ -136,15 +138,15 @@ private:
 
     inline int getState(const bool, SCXRecord<K,V> * const);
     
-    __rtm_force_inline SCXRecord<K,V>* allocateSCXRecord(const int tid);
-    __rtm_force_inline Node<K,V>* allocateNode(const int tid);
-    __rtm_force_inline SCXRecord<K,V>* initializeSCXRecord(
+    inline SCXRecord<K,V>* allocateSCXRecord(const int tid);
+    inline Node<K,V>* allocateNode(const int tid);
+    inline SCXRecord<K,V>* initializeSCXRecord(
                 const int,
                 SCXRecord<K,V> * const,
                 ReclamationInfo<K,V> * const,
                 Node<K,V> * volatile * const,
                 Node<K,V> * const);
-    __rtm_force_inline Node<K,V>* initializeNode(
+    inline Node<K,V>* initializeNode(
                 const int,
                 Node<K,V> * const,
                 const K&,
@@ -184,7 +186,7 @@ private:
             Node<K,V> *node,
             Node<K,V> **retLeft,
             Node<K,V> **retRight);
-    __rtm_force_inline void* llx_intxn_markingwr_infowr(
+    inline void* llx_intxn_markingwr_infowr(
             const int tid,
             Node<K,V> *node,
             Node<K,V> **retLeft,
@@ -199,7 +201,7 @@ private:
                 ReclamationInfo<K,V> * const,
                 Node<K,V> * volatile * field,         // pointer to a "field pointer" that will be changed
                 Node<K,V> * newNode);
-    __rtm_force_inline bool scx_intxn_markingwr_infowr(
+    inline bool scx_intxn_markingwr_infowr(
                 const int tid,
                 ReclamationInfo<K,V> * const,
                 Node<K,V> * volatile * field,         // pointer to a "field pointer" that will be changed

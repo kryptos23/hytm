@@ -1,18 +1,21 @@
 PROG := dsbench
 EXTRAFLAGS := $(EXTRAFLAGS1) $(EXTRAFLAGS2) $(EXTRAFLAGS3) $(EXTRAFLAGS4)
+#STM := ../$(TARGET)
+#LIB := ../lib
 
-FLAGS = -std=c++0x -mcx16 -mrtm
+FLAGS = -std=c++0x
+#FLAGS += -DSTM -I$(STM) -I$(LIB)
 FLAGS += -g
 FLAGS += $(EXTRAFLAGS)
 FLAGS += -DPHYSICAL_PROCESSORS=128
 FLAGS += -DRECORD_ABORTS
 #FLAGS += -DNDEBUG
 #FLAGS += -DDEBUG=if\(1\) -DDEBUG1=if\(1\) -DDEBUG2=if\(1\)
-FLAGS += -I./tlewrapper -I../lib
 
 LDFLAGS = -lpthread
+#LDFLAGS += -l$(TARGET)
 #LDFLAGS += -ltcmalloc
-LDFLAGS += -L./tlewrapper -L../lib
+#LDFLAGS += -L$(STM)
 
 GPP = g++
 
@@ -21,6 +24,5 @@ all: microbench
 clean:
 
 microbench:
-#note: -DSTM is a hack just to satisfy parts of the STAMP suite that we're not even using in this compiled code.
-	$(GPP) $(FLAGS) -o $(PROG)_$(TARGET) -O3 -DBST -DTLE -DSTM -DP1ALG1 -DP2ALG1 -DP3ALG12 -DTHREAD_BINDING=0 main.cpp ../lib/thread.c $(LDFLAGS)
+	$(GPP) $(FLAGS) -o $(PROG)_$(TARGET) -O3 -DBST -DTLE -D$(TARGET) -DP1ALG1 -DP2ALG1 -DP3ALG12 -DTHREAD_BINDING=0 main.cpp ../lib/thread.c $(LDFLAGS)
 	

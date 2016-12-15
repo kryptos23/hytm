@@ -4,8 +4,12 @@
 #TARGETS="tl2 hytm2sw hytm1 hytm2"
 #PROGS="dsbench"
 
-TARGETS="seqtm tl2 hytm1 hytm2 hytm3 hybridnorec"
-PROGS="dsbench bayes genome intruder kmeans labyrinth ssca2 vacation yada"
+#TARGETS="seqtm tl2 hytm1 hytm2 hytm3 hybridnorec"
+#PROGS="dsbench bayes genome intruder kmeans labyrinth ssca2 vacation yada"
+
+#TARGETS="seqtm tle tl2 hytm1 hytm2 hytm3 hybridnorec"
+TARGETS="hytm1"
+PROGS="dsbench"
 
 #TARGETS="hytm3 hytm2"
 #TARGETS="tl2"

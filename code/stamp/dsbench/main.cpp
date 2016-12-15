@@ -23,12 +23,12 @@ typedef long test_type; // really want compile-time assert that this is the same
 #include <typeinfo>
 #include <pthread.h>
 #include <atomic>
-#include <tm.h>
+#include "dsbench_tm.h"
 #include "common/random.h"
 #include "globals.h"
 #include "globals_extern.h"
 #include "recordmgr/machineconstants.h"
-#include <thread.h>
+#include "binding.h"
 
 #ifndef EXPERIMENT_FN
 #define EXPERIMENT_FN trial
@@ -139,11 +139,6 @@ const test_type POS_INFTY = 2000000000;
     #define CLEAR_COUNTERS tree->clearCounters()
 #endif
 
-// cpu sets for binding threads to cores
-#ifdef THREAD_BINDING
-cpu_set_t *cpusets[PHYSICAL_PROCESSORS];
-#endif
-
 //template <class MemMgmt>
 //void prefill(DS_DECLARATION * tree) {
 //    const double PREFILL_THRESHOLD = 0.03;
@@ -219,15 +214,7 @@ template <class MemMgmt>
 void thread_timed(void *unused) {
     const int OPS_BETWEEN_TIME_CHECKS = 500;
     int tid = thread_getId();
-#ifdef THREAD_BINDING
-    sched_setaffinity(0, CPU_ALLOC_SIZE(PHYSICAL_PROCESSORS), cpusets[tid%PHYSICAL_PROCESSORS]); // bind thread to core
-    for (int i=0;i<PHYSICAL_PROCESSORS;++i) {
-        if (CPU_ISSET_S(i, CPU_ALLOC_SIZE(PHYSICAL_PROCESSORS), cpusets[tid%PHYSICAL_PROCESSORS])) {
-            VERBOSE COUTATOMICTID("binding to cpu "<<i<<endl);
-        }
-    }
-#endif
-    
+    bindThread(tid, PHYSICAL_PROCESSORS);
     TM_THREAD_ENTER();
     PRCU_REGISTER(tid);
     test_type garbage = 0;
@@ -290,205 +277,6 @@ void thread_timed(void *unused) {
     PRCU_UNREGISTER;
     TM_THREAD_EXIT();
 }
-
-//template <class MemMgmt>
-//void *thread_rq(void *_id) {
-//    const int OPS_BETWEEN_TIME_CHECKS = 50;
-//    int tid = *((int*) _id);
-//#ifdef THREAD_BINDING
-//    sched_setaffinity(0, CPU_ALLOC_SIZE(PHYSICAL_PROCESSORS), cpusets[tid%PHYSICAL_PROCESSORS]); // bind thread to core
-//    for (int i=0;i<PHYSICAL_PROCESSORS;++i) {
-//        if (CPU_ISSET_S(i, CPU_ALLOC_SIZE(PHYSICAL_PROCESSORS), cpusets[tid%PHYSICAL_PROCESSORS])) {
-//            VERBOSE COUTATOMICTID("binding to cpu "<<i<<endl);
-//        }
-//    }
-//#endif
-//    PRCU_REGISTER(tid);
-//    test_type garbage = 0;
-//    Random *rng = &rngs[tid*PREFETCH_SIZE_WORDS];
-//    DS_DECLARATION * tree = (DS_DECLARATION *) __tree;
-//
-//#if defined(BST)
-//    Node<test_type, test_type> const ** rqResults = new Node<test_type, test_type> const *[RQSIZE];
-//#elif defined(MCLIST)
-//    Node<test_type, test_type> const ** rqResults = new Node<test_type, test_type> const *[RQSIZE];
-//#elif defined(ABTREE)
-//    abtree_Node<ABTREE_NODE_DEGREE, test_type> const ** rqResults = new abtree_Node<ABTREE_NODE_DEGREE, test_type> const *[RQSIZE];
-//#elif defined(CITRUS)
-//    int * rqResults = new int[RQSIZE];
-//#else
-//#error "Failed to define a data structure"
-//#endif
-//    
-//    int sqrt_rqsize = sqrt(RQSIZE);
-//
-//    INIT_THREAD(tid);
-//    running.fetch_add(1);
-//    __sync_synchronize();
-//    while (!start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<endl); } // wait to start
-//    int cnt = 0;
-//    while (!done) {
-//        if (((++cnt) % OPS_BETWEEN_TIME_CHECKS) == 0) {
-//            chrono::time_point<chrono::high_resolution_clock> __endTime = chrono::high_resolution_clock::now();
-//            if (chrono::duration_cast<chrono::milliseconds>(__endTime-startTime).count() >= MILLIS_TO_RUN) {
-//                done = true;
-//                __sync_synchronize();
-//                break;
-//            }
-//        }
-//        
-//        VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<endl);
-//        int key = rng->nextNatural(MAXKEY);
-//        int sz = rng->nextNatural(sqrt_rqsize); sz *= sz;
-//
-//        int rqcnt;
-//        if (RQ_AND_CHECK_SUCCESS(rqcnt)) { // prevent rqResults and count from being optimized out
-//            garbage += RQ_GARBAGE(rqcnt);
-//        }
-//        tree->debugGetCounters()->rqSuccess->inc(tid);
-//    }
-//    running.fetch_add(-1);
-//    VERBOSE COUTATOMICTID("termination"<<" garbage="<<garbage<<endl);
-//    PRCU_UNREGISTER;
-//    return NULL;
-//}
-//
-//template <class MemMgmt>
-//void trial_nmixed() {
-//#if defined(BST)
-//    __tree = (void*) new DS_DECLARATION(NO_KEY, NO_VALUE, RETRY, TOTAL_THREADS);
-//#elif defined(MCLIST)
-//    __tree = (void*) new DS_DECLARATION(TOTAL_THREADS, NEG_INFTY, POS_INFTY, NO_VALUE);
-//#elif defined(ABTREE)
-//    __tree = (void*) new DS_DECLARATION(TOTAL_THREADS, DEFAULT_SUSPECTED_SIGNAL, NO_KEY, ABTREE_NODE_MIN_DEGREE);
-//#elif defined(CITRUS)
-//    __tree = (void*) new DS_DECLARATION(MAXKEY, TOTAL_THREADS);
-//#else
-//#error "Failed to define a data structure"
-//#endif
-//
-//    // get random number generator seeded with time
-//    // we use this rng to seed per-thread rng's that use a different algorithm
-//    srand(time(NULL));
-//
-//    pthread_t *threads[WORK_THREADS];
-//    int ids[WORK_THREADS];
-//    for (int i=0;i<WORK_THREADS;++i) {
-//        threads[i] = new pthread_t;
-//        ids[i] = i;
-//        rngs[i*PREFETCH_SIZE_WORDS].setSeed(rand());
-//    }
-//    
-//    PRCU_INIT;    
-//    if (PREFILL) prefill((DS_DECLARATION *) __tree);
-//    
-//    for (int i=0;i<WORK_THREADS;++i) {
-//        if (pthread_create(threads[i], NULL, thread_timed<MemMgmt>, &ids[i])) {
-//            cerr<<"ERROR: could not create thread"<<endl;
-//            exit(-1);
-//        }
-//    }
-//
-//    while (running.load() < WORK_THREADS) {
-//        TRACE COUTATOMIC("main thread: waiting for threads to START running="<<running.load()<<endl);
-//    } // wait for all threads to be ready
-//    COUTATOMIC("main thread: starting timer..."<<endl);
-//    __sync_synchronize();
-//    startTime = chrono::high_resolution_clock::now();
-//    __sync_synchronize();
-//    start = true;
-//    for (int i=0;i<WORK_THREADS;++i) {
-//        VERBOSE COUTATOMIC("main thread: attempting to join thread "<<i<<endl);
-//        if (pthread_join(*threads[i], NULL)) {
-//            cerr<<"ERROR: could not join thread"<<endl;
-//            exit(-1);
-//        }
-//        VERBOSE COUTATOMIC("main thread: joined thread "<<i<<endl);
-//    }
-//    endTime = chrono::high_resolution_clock::now();
-//    __sync_synchronize();
-//    elapsedMillis = chrono::duration_cast<chrono::milliseconds>(endTime-startTime).count();
-//    COUTATOMIC((elapsedMillis/1000.)<<"s"<<endl);
-//    
-//    for (int i=0;i<WORK_THREADS;++i) {
-//        delete threads[i];
-//    }
-//}
-//
-//template <class MemMgmt>
-//void trial_1rq_restmixed() {
-//#if defined(BST)
-//    __tree = (void*) new DS_DECLARATION(NO_KEY, NO_VALUE, RETRY, WORK_THREADS, DEFAULT_SUSPECTED_SIGNAL);
-//#elif defined(MCLIST)
-//    __tree = (void*) new DS_DECLARATION(WORK_THREADS, NEG_INFTY, POS_INFTY, NO_VALUE);
-//#elif defined(ABTREE)
-//    __tree = (void*) new DS_DECLARATION(WORK_THREADS, DEFAULT_SUSPECTED_SIGNAL, NO_KEY, ABTREE_NODE_MIN_DEGREE);
-//#elif defined(CITRUS)
-//    __tree = (void*) new DS_DECLARATION(MAXKEY, WORK_THREADS);
-//#else
-//#error "Failed to define a data structure"
-//#endif
-//
-//    // get random number generator seeded with time
-//    // we use this rng to seed per-thread rng's that use a different algorithm
-//    srand(time(NULL));
-//
-//    // create range query thread (id=WORK_THREADS-1)
-//    pthread_t *threads[WORK_THREADS];
-//    int ids[WORK_THREADS];
-//    threads[WORK_THREADS-1] = new pthread_t;
-//    ids[WORK_THREADS-1] = WORK_THREADS-1;
-//    rngs[(WORK_THREADS-1)*PREFETCH_SIZE_WORDS].setSeed(rand());
-//
-//    // create other threads (id=0..WORK_THREADS-2)
-//    for (int i=0;i<WORK_THREADS-1;++i) {
-//        threads[i] = new pthread_t;
-//        ids[i] = i;
-//        rngs[i*PREFETCH_SIZE_WORDS].setSeed(rand());
-//    }
-//    
-//    PRCU_INIT;
-//    if (PREFILL) prefill((DS_DECLARATION *) __tree);
-//    
-//    // start range query thread (id=WORK_THREADS-1)
-//    if (pthread_create(threads[WORK_THREADS-1], NULL, thread_rq<MemMgmt>, &ids[WORK_THREADS-1])) {
-//        cerr<<"ERROR: could not create thread"<<endl;
-//        exit(-1);
-//    }
-//    
-//    // start other threads (id=0..WORK_THREADS-2)
-//    for (int i=0;i<WORK_THREADS-1;++i) {
-//        if (pthread_create(threads[i], NULL, thread_timed<MemMgmt>, &ids[i])) {
-//            cerr<<"ERROR: could not create thread"<<endl;
-//            exit(-1);
-//        }
-//    }
-//
-//    while (running.load() < WORK_THREADS) {
-//        TRACE COUTATOMIC("main thread: waiting for threads to START running="<<running.load()<<endl);
-//    } // wait for all threads to be ready
-//    COUTATOMIC("main thread: starting timer..."<<endl);
-//    __sync_synchronize();
-//    startTime = chrono::high_resolution_clock::now();
-//    __sync_synchronize();
-//    start = true;
-//    for (int i=0;i<WORK_THREADS;++i) {
-//        VERBOSE COUTATOMIC("main thread: attempting to join thread "<<i<<endl);
-//        if (pthread_join(*threads[i], NULL)) {
-//            cerr<<"ERROR: could not join thread"<<endl;
-//            exit(-1);
-//        }
-//        VERBOSE COUTATOMIC("main thread: joined thread "<<i<<endl);
-//    }
-//    endTime = chrono::high_resolution_clock::now();
-//    __sync_synchronize();
-//    elapsedMillis = chrono::duration_cast<chrono::milliseconds>(endTime-startTime).count();
-//    COUTATOMIC((elapsedMillis/1000.)<<"s"<<endl);
-//    
-//    for (int i=0;i<WORK_THREADS;++i) {
-//        delete threads[i];
-//    }
-//}
 
 template <class MemMgmt>
 void trial() {
@@ -816,53 +604,7 @@ void performExperiment() {
 }
 
 int main(int argc, char** argv) {
-#ifdef THREAD_BINDING
-    const int NONE = 0;
-    const int IDENTITY = 1;
-    const int X52_SCATTER = 2; // specific to oracle x5-2
-    const int X52_SOCKET1_THEN_SOCKET2 = 3; // specific to oracle x5-2
-
-    // create cpu sets for binding threads to cores
-    int size = CPU_ALLOC_SIZE(PHYSICAL_PROCESSORS);
-    for (int i=0;i<PHYSICAL_PROCESSORS;++i) {
-        cpusets[i] = CPU_ALLOC(PHYSICAL_PROCESSORS);
-        CPU_ZERO_S(size, cpusets[i]);
-        int j = -1;
-        switch (THREAD_BINDING) {
-            case IDENTITY:
-                j = i;
-                break;
-            case X52_SCATTER:
-                if (i >= PHYSICAL_PROCESSORS / 2) { // hyperthreading
-                    j = i - PHYSICAL_PROCESSORS / 2;
-                } else {
-                    j = i;
-                }
-                if (i & 1) j++;
-                j /= 2;
-                if (i & 1) j--;
-                if (i & 1) { // odd
-                    j += PHYSICAL_PROCESSORS / 4;
-                }
-                if (i >= PHYSICAL_PROCESSORS / 2) { // hyperthreading
-                    j += PHYSICAL_PROCESSORS / 2;
-                }
-                break;
-            case X52_SOCKET1_THEN_SOCKET2:
-                j = i;
-                if (j >= PHYSICAL_PROCESSORS / 4 && j < PHYSICAL_PROCESSORS / 2) {
-                    j += 18;
-                } else if (j >= PHYSICAL_PROCESSORS / 2 && j < 3 * PHYSICAL_PROCESSORS / 4) {
-                    j -= 18;
-                }
-                break;
-        }
-        if (THREAD_BINDING != NONE) {
-            CPU_SET_S(j, size, cpusets[i]);
-        }
-    }
-#endif
-
+    configureBindingPolicy(PHYSICAL_PROCESSORS);
     PREFILL = false;
     MILLIS_TO_RUN = -1;
     MAX_FAST_HTM_RETRIES = 10;
@@ -942,6 +684,7 @@ int main(int argc, char** argv) {
     PRINTS(ALLOC_TYPE);
     PRINTS(POOL_TYPE);
     PRINTI(PRINT_TREE);
+    PRINTI(THREAD_BINDING);
     
     keysum = new debugCounter(TOTAL_THREADS);
     
