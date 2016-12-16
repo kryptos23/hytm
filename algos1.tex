@@ -2,6 +2,24 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \input{prog-fp-sp}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure*}[!h]
+      
+     \scalebox{.9}[.9]{
+     \begin{tabularx}{\textwidth}{c|c|c|c|c}
+%	\hline
+	~~~~~ & Algorithm~\ref{alg:inswrite} & Algorithm~\ref{alg:inswrite2} & TLE & HybridNorec\\ \hline
+	Instrumentation in fast-path reads & per-read & none & none & none \\ \hline
+	Instrumentation in fast-path writes & per-write & per-write & constant & none \\ \hline
+	Validation in slow-path reads & $\Omega(|Rset|)$ & $\Omega(|Rset|)$ & None & $\Omega(|Rset|)$ only if concurrency \\ \hline
+	h/w-s/f concurrency & prog. & prog. for slow-path readers & zero & not prog., but small contention window \\ \hline
+	Uncached accesses inside fast-path & yes & yes & no & yes \\ \hline
+	opacity & yes & yes & Yes & Yes 
+	%    \hline
+   \end{tabularx}
+\caption{Table}\label{fig:main}    
+}
+\end{figure*}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Instrumentation-optimal progressive HyTM }
 \label{sec:hytm1}
 %
@@ -41,37 +59,18 @@ If all the locks on the write set were acquired successfully, $T_k$ performs val
 \vspace{1mm}\noindent\textbf{Non-cached accesses inside fast-path.}
 As indicated in the pseudocode of Algorithm~\ref{alg:inswrite}, some accesses may be performed uncached (as allowed
 in IBM Power 8) and the resulting implementation would still be opaque. 
-We can now prove the following theorem:
+% We can now prove the following theorem:
+% %
+% \begin{theorem}
+% \label{th:inswrite}
+% Algorithm~\ref{alg:inswrite} implements an opaque HyTM that provides invisible reads, progressiveness
+% such that in its every execution $E$, every fast-path transaction $T\in \ms{txns}(E)$
+% accesses $m=|\Dset(T_k)|$ distinct metadata base objects.
+% \end{theorem}
 %
-\begin{theorem}
-\label{th:inswrite}
-Algorithm~\ref{alg:inswrite} implements an opaque HyTM that provides invisible reads, progressiveness
-such that in its every execution $E$, every fast-path transaction $T\in \ms{txns}(E)$
-accesses $m=|\Dset(T_k)|$ distinct metadata base objects.
-\end{theorem}
-%
-\subsection{Instrumentation-optimal HyTMs that are progressive only for a subset of transactions}
-\label{sec:hytm2}
-%
-\begin{figure*}[!h]
-      
-     \scalebox{.9}[.9]{
-     \begin{tabularx}{\textwidth}{c|c|c|c|c}
-%	\hline
-	~~~~~ & Algorithm~\ref{alg:inswrite} & Algorithm~\ref{alg:inswrite2} & TLE & HybridNorec\\ \hline
-	Instrumentation in fast-path reads & per-read & none & none & none \\ \hline
-	Instrumentation in fast-path writes & per-write & per-write & constant & none \\ \hline
-	Validation in slow-path reads & $\Omega(|Rset|)$ & $\Omega(|Rset|)$ & None & $\Omega(|Rset|)$ only if concurrency \\ \hline
-	h/w-s/f concurrency & prog. & prog. for slow-path readers & zero & not prog., but small contention window \\ \hline
-	Uncached accesses inside fast-path & yes & yes & no & yes \\ \hline
-	opacity & yes & yes & Yes & Yes 
-	%    \hline
-   \end{tabularx}
-\caption{Table}\label{fig:main}    
-}
-\end{figure*}
-%
-In this section, we describe Algorithm~\ref{alg:inswrite2} which does not incur the linear instrumentation cost
+
+\paragraph{Instrumentation-optimal HyTMs that are progressive only for a subset of transactions.}
+Algorithm~\ref{alg:inswrite2} does not incur the linear instrumentation cost
 on the fast-path reading transactions (as in Algorithm~\ref{alg:inswrite}, but provides progressiveness only
 for slow-path reading transactions.
 %
@@ -96,10 +95,6 @@ the step-complexity cost on slow-path transactions by performing incremental val
 the global snapshot of the memory locations has changed since the start of the transaction.
 %
 \input{hybridnorec}
-
-\paragraph{Employing non-cached writes inside fast-path.}
-
-\paragraph{Performing short fast-path transactions inside slow-path.}
 
 \paragraph{Employing an uninstrumented fast fast-path.}
 Note that ideally we would like to execute all transactions inside hardware with minimal instrumentation.
