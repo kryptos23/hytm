@@ -70,12 +70,12 @@ typedef struct Thread_void {
 #define STM_INIT_THREAD(t, id)          TxInitThread(t, id)
 #define STM_FREE_THREAD(t)              TxFreeThread(t)
 
+__thread intptr_t (*sharedReadFunPtr)(void* Self, volatile intptr_t* addr);
+__thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t val);
 
-
-
-
-#if 1
 #  define STM_BEGIN(isReadOnly)         do { \
+                                            sharedReadFunPtr = &TxLoad_htm; \
+                                            sharedWriteFunPtr = &TxStore_htm; \
                                             STM_JMPBUF_T STM_JMPBUF; \
                                             /*int STM_RO_FLAG = isReadOnly;*/ \
                                             \
@@ -87,10 +87,8 @@ typedef struct Thread_void {
                                             ___Self->isFallback = 0; \
                                             ___Self->IsRO = 1; \
                                             ___Self->envPtr = &STM_JMPBUF; \
-                                            int ___htmattempts; \
-                                            /*printf("HTM_ATTEMPT_THRESH=%d\n", HTM_ATTEMPT_THRESH);*/ \
-                                            for (___htmattempts = 0 ; ___htmattempts < HTM_ATTEMPT_THRESH; ++___htmattempts) { \
-                                                /*printf("h/w loop iteration\n");*/ \
+                                            unsigned ___htmattempts; \
+                                            for (___htmattempts = 0; ___htmattempts < HTM_ATTEMPT_THRESH; ++___htmattempts) { \
                                                 if (XBEGIN(___xarg)) { \
                                                     break; \
                                                 } else { /* if we aborted */ \
@@ -100,30 +98,20 @@ typedef struct Thread_void {
                                             } \
                                             /*printf("exited loop\n");*/ \
                                             if (___htmattempts < HTM_ATTEMPT_THRESH) break; \
-                                            /*printf("passed h/w break\n");*/ \
                                             /* STM attempt */ \
                                             /*DEBUG2 aout("thread "<<___Self->UniqID<<" started s/w tx attempt "<<(___Self->AbortsSW+___Self->CommitsSW)<<"; s/w commits so far="<<___Self->CommitsSW);*/ \
                                             /*DEBUG1 if ((___Self->CommitsSW % 50000) == 0) aout("thread "<<___Self->UniqID<<" has committed "<<___Self->CommitsSW<<" s/w txns");*/ \
                                             DEBUG2 printf("thread %ld started s/w tx; attempts so far=%ld, s/w commits so far=%ld\n", ___Self->UniqID, (___Self->AbortsSW+___Self->CommitsSW), ___Self->CommitsSW); \
                                             DEBUG1 if ((___Self->CommitsSW % 25000) == 0) printf("thread %ld has committed %ld s/w txns (over all threads so far=%ld)\n", ___Self->UniqID, ___Self->CommitsSW, CommitTallySW); \
-                                            ___Self->isFallback = 1; \
                                             if (sigsetjmp(STM_JMPBUF, 1)) { \
                                                 TxClearRWSets(STM_SELF); \
                                             } \
+                                            ___Self->isFallback = 1; \
+                                            sharedReadFunPtr = &TxLoad_stm; \
+                                            sharedWriteFunPtr = &TxStore_stm; \
                                             /*TxStart(STM_SELF, &STM_JMPBUF, SETJMP_RETVAL, &STM_RO_FLAG);*/ \
                                             SOFTWARE_BARRIER; \
-                                            /*printf("begin software attempt\n");*/ \
-                                            /*countersProbStartTime(c_counters, ___Self->UniqID, 0.);*/ \
                                         } while (0); /* enforce comma */
-#else
-#  define STM_BEGIN(isReadOnly)         do { \
-                                            STM_JMPBUF_T STM_JMPBUF; \
-                                            int STM_RO_FLAG = isReadOnly; \
-                                            int SETJMP_RETVAL = sigsetjmp(STM_JMPBUF, 1); \
-                                            TxStart(STM_SELF, &STM_JMPBUF, SETJMP_RETVAL, &STM_RO_FLAG); \
-                                            SOFTWARE_BARRIER; \
-                                        } while (0); /* enforce comma */
-#endif
 
 
 #define STM_BEGIN_RD()                  STM_BEGIN(1)
@@ -133,6 +121,7 @@ typedef struct Thread_void {
 
 typedef volatile intptr_t               vintp;
 
+#if 0
 #define STM_READ_L(var)                 TxLoad(STM_SELF, (vintp*)(void*)&(var))
 #define STM_READ_F(var)                 IP2F(TxLoad(STM_SELF, \
                                                     (vintp*)FP2IPP(&(var))))
@@ -154,33 +143,27 @@ typedef volatile intptr_t               vintp;
 #define STM_WRITE_P(var, val)           TxStore(STM_SELF, \
                                                 (vintp*)(void*)&(var), \
                                                 VP2IP(val))
+#else
+#define STM_READ_L(var)                 (*sharedReadFunPtr)(STM_SELF, (vintp*)(void*)&(var))
+#define STM_READ_F(var)                 IP2F((*sharedReadFunPtr)(STM_SELF, \
+                                                    (vintp*)FP2IPP(&(var))))
+#define STM_READ_P(var)                 IP2VP((*sharedReadFunPtr)(STM_SELF, \
+                                                     (vintp*)(void*)&(var)))
+#define STM_WRITE_L(var, val)           (*sharedWriteFunPtr)(STM_SELF, \
+                                                (vintp*)(void*)&(var), \
+                                                (intptr_t)(val))
+#define STM_WRITE_F(var, val)           (*sharedWriteFunPtr)(STM_SELF, \
+                                                (vintp*)FP2IPP(&(var)), \
+                                                F2IP(val))
+#define STM_WRITE_P(var, val)           (*sharedWriteFunPtr)(STM_SELF, \
+                                                (vintp*)(void*)&(var), \
+                                                VP2IP(val))
+#endif
 
 #define STM_LOCAL_WRITE_L(var, val)     ({var = val; var;})
 #define STM_LOCAL_WRITE_F(var, val)     ({var = val; var;})
 #define STM_LOCAL_WRITE_P(var, val)     ({var = val; var;})
 //*/
-
-/*
-#define STM_READ_L(var)                 TxLoadl(STM_SELF, (volatile long*)(void*)&(var))
-#define STM_READ_F(var)                 TxLoadf(STM_SELF, (volatile float*)&(var))
-#define STM_READ_P(var)                 TxLoadl(STM_SELF, (volatile intptr_t*)(void*)&(var))
-#define STM_WRITE_L(var, val)           TxStorel(STM_SELF, (volatile long*)(void*)&(var), (long)(val))
-#define STM_WRITE_F(var, val)           TxStoref(STM_SELF, (volatile float*)&(var), (float)(val))
-#define STM_WRITE_P(var, val)           TxStorel(STM_SELF, (volatile intptr_t*)&(var), (volatile intptr_t)(void*)(val))
-//*/
-/*
-#define STM_LOCAL_WRITE_L(var, val)     TxStoreLocall(STM_SELF, (volatile long*)(void*)&(var), (long)(val))
-#define STM_LOCAL_WRITE_F(var, val)     TxStoreLocalf(STM_SELF, (volatile float*)&(var), (float)(val))
-#define STM_LOCAL_WRITE_P(var, val)     TxStoreLocalp(STM_SELF, (volatile intptr_t*)&(var), (volatile intptr_t)(void*)(val))
-//*/
-
-//#define STM_READ_L(var)                 IP2L(TxLoad(STM_SELF, LP2IPP(&(var))))
-//#define STM_READ_F(var)                 IP2F(TxLoad(STM_SELF, FP2IPP(&(var))))
-//#define STM_READ_P(var)                 IP2VP(TxLoad(STM_SELF, (volatile intptr_t*)(void*)&(var)))
-//#define STM_WRITE_L(var, val)           TxStore(STM_SELF, LP2IPP(&(var)), L2IP((val)))
-//#define STM_WRITE_F(var, val)           TxStore(STM_SELF, FP2IPP(&(var)), F2IP((val)))
-//#define STM_WRITE_P(var, val)           TxStore(STM_SELF, (volatile intptr_t*)&(var), (volatile intptr_t)(void*)(val))
-
 
 #endif /* STM_H */
 

@@ -33,12 +33,19 @@ using namespace std;
 #include "counters/debugcounters_cpp.h"
 struct c_debugCounters *c_counters;
 
-//#define USE_FULL_HASHTABLE
+#define PREFETCH_SIZE_BYTES 192
+
+#define USE_FULL_HASHTABLE
 //#define USE_BLOOM_FILTER
+
+#define HASHTABLE_CLEAR_FROM_LIST
 
 // just for debugging
 volatile int globallock = 0; // for printf and cout
+
+volatile char padding0[PREFETCH_SIZE_BYTES];
 volatile int tleLock = 0; // for tle software path
+volatile char padding1[PREFETCH_SIZE_BYTES];
 
 void printStackTrace() {
   void *trace[16];
@@ -119,8 +126,6 @@ __INLINE__ void releaseLock(volatile int *lock) {
  * 
  */
 
-class Thread;
-
 #include <map>
 map<const void*, unsigned> addrToIx;
 map<unsigned, const void*> ixToAddr;
@@ -173,7 +178,6 @@ string renamePointer(const void* p) {
         return stringifyIndex(it->second);
     }
 }
-
 
 
 
@@ -347,12 +351,14 @@ enum hytm_config {
         }
 
         __INLINE__ int32_t findIx(volatile intptr_t* addr) {
+//            int k = 0;
             int32_t ix = hash(addr);
             while (data[ix]) {
                 if (data[ix]->addr == addr) {
                     return ix;
                 }
                 ix = (ix + 1) & (cap-1);
+//                ++k; if (k > 100*cap) { exit(-1); } // TODO: REMOVE THIS DEBUG CODE: catch infinite loops
             }
             return -1;
         }
@@ -375,7 +381,7 @@ enum hytm_config {
 #ifdef HASHTABLE_CLEAR_FROM_LIST
             e->hashTableEntry = &data[ix];
 #endif
-            VALIDATE ++sz;
+            ++sz;
             VALIDATE_INV(this);
         }
         
@@ -408,6 +414,7 @@ enum hytm_config {
                 //assert(*e->hashTableEntry);
                 //assert(*e->hashTableEntry == e);
                 *e->hashTableEntry = NULL;
+//                e->hashTableEntry = NULL;
             }
 #else
             memset(data, 0, sizeof(AVPair*) * cap);
@@ -646,8 +653,8 @@ public:
             e = append(Self, addr, value);
 #ifdef USE_FULL_HASHTABLE
             // insert in hash table
-//            if (tab.requiresExpansion()) tab.expandAndRehashFromList(head, put);
             tab.insertFresh(e);
+            if (tab.requiresExpansion()) tab.expandAndRehashFromList(head, put);
 #elif defined(USE_BLOOM_FILTER)
             tab.insertFresh(addr);
 #endif
@@ -790,6 +797,8 @@ void TxClearRWSets(void* _Self) {
 
 int TxCommit(void* _Self) {
     Thread* Self = (Thread*) _Self;
+    
+    // software path
     if (Self->isFallback) {
         releaseLock(&tleLock);
 #ifdef TXNL_MEM_RECLAMATION
@@ -797,7 +806,8 @@ int TxCommit(void* _Self) {
         tmalloc_releaseAllForward(Self->freePtr, NULL);
 #endif
         counterInc(c_counters->htmCommit[PATH_FALLBACK], Self->UniqID);
-        countersProbEndTime(c_counters, Self->UniqID, c_counters->timingOnFallback);
+        
+    // hardware path
     } else {
 #ifdef TXNL_MEM_RECLAMATION
         tmalloc_clear(Self->allocPtr);
@@ -811,6 +821,8 @@ int TxCommit(void* _Self) {
 
 void TxAbort(void* _Self) {
     Thread* Self = (Thread*) _Self;
+    
+    // software path
     if (Self->isFallback) {
         /* Clean up after an abort. Restore any modified locations. */
         Self->wrSet->writeBackward();
@@ -820,7 +832,7 @@ void TxAbort(void* _Self) {
         releaseLock(&tleLock);
 
         ++Self->Retries;
-        ++Self->AbortsSW;
+        //++Self->AbortsSW;
         if (Self->Retries > MAX_RETRIES) {
             aout("TOO MANY ABORTS. QUITTING.");
             aout("BEGIN DEBUG ADDRESS MAPPING:");
@@ -842,26 +854,34 @@ void TxAbort(void* _Self) {
         tmalloc_clear(Self->freePtr);
 #endif
 
+        // longjmp to start of txn
         SIGLONGJMP(*Self->envPtr, 1);
         ASSERT(0);
+        
+    // hardware path
     } else {
         XABORT(0);
     }
 }
 
-/*__INLINE__*/
-intptr_t TxLoad(void* _Self, volatile intptr_t* addr) {
+intptr_t TxLoad_htm(void* _Self, volatile intptr_t* addr) {
     return *addr;
 }
 
-/*__INLINE__*/
-void TxStore(void* _Self, volatile intptr_t* addr, intptr_t value) {
-    Thread* Self = (Thread*) _Self;
-    if (Self->isFallback) {
-        Self->wrSet->insertReplace(Self, addr, *addr);
-    }
+intptr_t TxLoad_stm(void* _Self, volatile intptr_t* addr) {
+    return *addr;
+}
+
+void TxStore_htm(void* _Self, volatile intptr_t* addr, intptr_t value) {
     *addr = value;
 }
+
+void TxStore_stm(void* _Self, volatile intptr_t* addr, intptr_t value) {
+    Thread* Self = (Thread*) _Self;
+    Self->wrSet->insertReplace(Self, addr, *addr);
+    *addr = value;
+}
+
 
 
 
@@ -883,7 +903,6 @@ void TxOnce() {
     c_counters = (c_debugCounters *) malloc(sizeof(c_debugCounters));
     countersInit(c_counters, MAX_TID_POW2);
     printf("%s %s\n", TM_NAME, "system ready\n");
-//    memset(LockTab, 0, _TABSZ*sizeof(vLock));
 }
 
 void TxShutdown() {
@@ -947,6 +966,6 @@ void TxFree(void* _Self, void* ptr) {
     Thread* Self = (Thread*) _Self;
     tmalloc_append(Self->freePtr, ptr);
 #else
-    free(ptr);
+//    free(ptr);
 #endif
 }

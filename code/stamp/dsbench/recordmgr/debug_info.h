@@ -11,7 +11,7 @@
 #include "machineconstants.h"
 
 struct _memrecl_counters {
-    char padding1[PREFETCH_SIZE_BYTES];
+    volatile char padding1[PREFETCH_SIZE_BYTES];
     long allocated;
     long deallocated;
     long fromPool;
@@ -19,7 +19,7 @@ struct _memrecl_counters {
     long given; // how many blocks have been moved from this pool to a shared pool
     long taken; // how many blocks have been moved from a shared pool to this pool
     long retired; // how many objects have been retired
-    char padding2[PREFETCH_SIZE_BYTES];
+    volatile char padding2[PREFETCH_SIZE_BYTES];
 };
 
 class debugInfo {

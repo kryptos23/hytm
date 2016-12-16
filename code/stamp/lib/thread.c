@@ -97,10 +97,10 @@ threadWait (void* argPtr)
 
     THREAD_LOCAL_SET(global_threadId, (long)threadId);
 
-    cpu_set_t my_set;
-    CPU_ZERO(&my_set);
-    CPU_SET(threadId % 8, &my_set);
-    sched_setaffinity(0, sizeof(cpu_set_t), &my_set);
+//    cpu_set_t my_set;
+//    CPU_ZERO(&my_set);
+//    CPU_SET(threadId % 8, &my_set);
+//    sched_setaffinity(0, sizeof(cpu_set_t), &my_set);
 
     while (1) {
         THREAD_BARRIER(global_barrierPtr, threadId); /* wait for start parallel */

@@ -71,8 +71,12 @@ typedef struct Thread_void {
 #define STM_INIT_THREAD(t, id)          TxInitThread(t, id)
 #define STM_FREE_THREAD(t)              TxFreeThread(t)
 
-#if 1
+__thread intptr_t (*sharedReadFunPtr)(void* Self, volatile intptr_t* addr);
+__thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t val);
+
 #  define STM_BEGIN(isReadOnly)         do { \
+                                            sharedReadFunPtr = &TxLoad_htm; \
+                                            sharedWriteFunPtr = &TxStore_htm; \
                                             STM_JMPBUF_T STM_JMPBUF; \
                                             /*int STM_RO_FLAG = isReadOnly;*/ \
                                             \
@@ -99,6 +103,8 @@ typedef struct Thread_void {
                                             } \
                                             if (___htmattempts < HTM_ATTEMPT_THRESH) break; \
                                             /* STM attempt */ \
+                                            sharedReadFunPtr = &TxLoad_stm; \
+                                            sharedWriteFunPtr = &TxStore_stm; \
                                             /*DEBUG2 aout("thread "<<___Self->UniqID<<" started s/w tx attempt "<<(___Self->AbortsSW+___Self->CommitsSW)<<"; s/w commits so far="<<___Self->CommitsSW);*/ \
                                             /*DEBUG1 if ((___Self->CommitsSW % 50000) == 0) aout("thread "<<___Self->UniqID<<" has committed "<<___Self->CommitsSW<<" s/w txns");*/ \
                                             DEBUG2 printf("thread %ld started s/w tx; attempts so far=%ld, s/w commits so far=%ld\n", ___Self->UniqID, (___Self->AbortsSW+___Self->CommitsSW), ___Self->CommitsSW); \
@@ -108,7 +114,6 @@ typedef struct Thread_void {
                                                 TxClearRWSets(STM_SELF); \
                                             } \
                                             /*TxStart(STM_SELF, &STM_JMPBUF, SETJMP_RETVAL, &STM_RO_FLAG);*/ \
-                                            ___Self->isFallback = 1; \
                                             /** acquire global lock **/ \
                                             while (1) { \
                                                 if (tleLock) { \
@@ -122,16 +127,6 @@ typedef struct Thread_void {
                                             } \
                                             SOFTWARE_BARRIER; \
                                         } while (0); /* enforce comma */
-#else
-#  define STM_BEGIN(isReadOnly)         do { \
-                                            STM_JMPBUF_T STM_JMPBUF; \
-                                            int STM_RO_FLAG = isReadOnly; \
-                                            int SETJMP_RETVAL = sigsetjmp(STM_JMPBUF, 1); \
-                                            TxStart(STM_SELF, &STM_JMPBUF, SETJMP_RETVAL, &STM_RO_FLAG); \
-                                            SOFTWARE_BARRIER; \
-                                        } while (0); /* enforce comma */
-#endif
-
 
 
 
@@ -142,13 +137,18 @@ typedef struct Thread_void {
 
 typedef volatile intptr_t               vintp;
 
-#define STM_READ_L(var)                 TxLoad(STM_SELF, (vintp*)(void*)&(var))
+#define STM_READ_L(var)                 (*sharedReadFunPtr)(STM_SELF, (vintp*)(void*)&(var))
+#define STM_READ_F(var)                 IP2F((*sharedReadFunPtr)(STM_SELF, \
+                                                    (vintp*)FP2IPP(&(var))))
+#define STM_READ_P(var)                 IP2VP((*sharedReadFunPtr)(STM_SELF, \
+                                                     (vintp*)(void*)&(var)))
+/*#define STM_READ_L(var)                 TxLoad(STM_SELF, (vintp*)(void*)&(var))
 #define STM_READ_F(var)                 IP2F(TxLoad(STM_SELF, \
                                                     (vintp*)FP2IPP(&(var))))
 #define STM_READ_P(var)                 IP2VP(TxLoad(STM_SELF, \
-                                                     (vintp*)(void*)&(var)))
+                                                     (vintp*)(void*)&(var)))*/
 
-#define STM_WRITE_L(var, val)           TxStore(STM_SELF, \
+#define STM_WRITE_L(var, val)           (*sharedWriteFunPtr)(STM_SELF, \
                                                 (vintp*)(void*)&(var), \
                                                 (intptr_t)(val))
 /**
@@ -157,38 +157,29 @@ typedef volatile intptr_t               vintp;
  * consequently, writing to a float also writes to the
  * adjacent float...
  */
+#define STM_WRITE_F(var, val)           (*sharedWriteFunPtr)(STM_SELF, \
+                                                (vintp*)FP2IPP(&(var)), \
+                                                F2IP(val))
+#define STM_WRITE_P(var, val)           (*sharedWriteFunPtr)(STM_SELF, \
+                                                (vintp*)(void*)&(var), \
+                                                VP2IP(val))
+
+
+
+/*#define STM_WRITE_L(var, val)           TxStore(STM_SELF, \
+                                                (vintp*)(void*)&(var), \
+                                                (intptr_t)(val))
 #define STM_WRITE_F(var, val)           TxStore(STM_SELF, \
                                                 (vintp*)FP2IPP(&(var)), \
                                                 F2IP(val))
 #define STM_WRITE_P(var, val)           TxStore(STM_SELF, \
                                                 (vintp*)(void*)&(var), \
-                                                VP2IP(val))
+                                                VP2IP(val))*/
 
 #define STM_LOCAL_WRITE_L(var, val)     ({var = val; var;})
 #define STM_LOCAL_WRITE_F(var, val)     ({var = val; var;})
 #define STM_LOCAL_WRITE_P(var, val)     ({var = val; var;})
 //*/
-
-/*
-#define STM_READ_L(var)                 TxLoadl(STM_SELF, (volatile long*)(void*)&(var))
-#define STM_READ_F(var)                 TxLoadf(STM_SELF, (volatile float*)&(var))
-#define STM_READ_P(var)                 TxLoadl(STM_SELF, (volatile intptr_t*)(void*)&(var))
-#define STM_WRITE_L(var, val)           TxStorel(STM_SELF, (volatile long*)(void*)&(var), (long)(val))
-#define STM_WRITE_F(var, val)           TxStoref(STM_SELF, (volatile float*)&(var), (float)(val))
-#define STM_WRITE_P(var, val)           TxStorel(STM_SELF, (volatile intptr_t*)&(var), (volatile intptr_t)(void*)(val))
-//*/
-/*
-#define STM_LOCAL_WRITE_L(var, val)     TxStoreLocall(STM_SELF, (volatile long*)(void*)&(var), (long)(val))
-#define STM_LOCAL_WRITE_F(var, val)     TxStoreLocalf(STM_SELF, (volatile float*)&(var), (float)(val))
-#define STM_LOCAL_WRITE_P(var, val)     TxStoreLocalp(STM_SELF, (volatile intptr_t*)&(var), (volatile intptr_t)(void*)(val))
-//*/
-
-//#define STM_READ_L(var)                 IP2L(TxLoad(STM_SELF, LP2IPP(&(var))))
-//#define STM_READ_F(var)                 IP2F(TxLoad(STM_SELF, FP2IPP(&(var))))
-//#define STM_READ_P(var)                 IP2VP(TxLoad(STM_SELF, (volatile intptr_t*)(void*)&(var)))
-//#define STM_WRITE_L(var, val)           TxStore(STM_SELF, LP2IPP(&(var)), L2IP((val)))
-//#define STM_WRITE_F(var, val)           TxStore(STM_SELF, FP2IPP(&(var)), F2IP((val)))
-//#define STM_WRITE_P(var, val)           TxStore(STM_SELF, (volatile intptr_t*)&(var), (volatile intptr_t)(void*)(val))
 
 
 #endif /* STM_H */

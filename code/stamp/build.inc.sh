@@ -8,7 +8,9 @@
 #PROGS="dsbench bayes genome intruder kmeans labyrinth ssca2 vacation yada"
 
 #TARGETS="seqtm tle tl2 hytm1 hytm2 hytm3 hybridnorec"
-TARGETS="hytm1"
+#TARGETS="tl2 hytm1 hytm2 hytm3 hybridnorec"
+#TARGETS="hytm1 hytm2 hytm3 hybridnorec"
+TARGETS="tl2"
 PROGS="dsbench"
 
 #TARGETS="hytm3 hytm2"
@@ -54,6 +56,7 @@ do
         cp hytm2/*.h hytm2sw/
     else
         xflags3="-DHTM_ATTEMPT_THRESH=20"
+#        xflags3="-DHTM_ATTEMPT_THRESH=-1"
         cd $t
         echo "Compiling TM library: $t"
         make -f Makefile${makefileSuffix} clean

@@ -40,16 +40,6 @@ static Random rngs[MAX_TID_POW2*PREFETCH_SIZE_WORDS]; // create per-thread rando
 #if defined(BST)
 #include "bst/bst_impl.h"
 #include "recordmgr/record_manager.h"
-//#elif defined(MCLIST)
-//#include "mcas/List/MC_list_impl.h"
-//#define INSERT_IF_ABSENT
-#elif defined(ABTREE)
-#include "abtree/abtree_impl.h"
-#include "recordmgr/record_manager.h"
-//#elif defined(CITRUS)
-//#include "recordmgr/record_manager.h"
-//#include "citrus/prcu.h"
-//#include "citrus/citrus_impl.h"
 #else
 #error "Failed to define a data structure"
 #endif
@@ -65,6 +55,12 @@ bool done = false;
 atomic_int running; // number of threads that are running
 debugCounter * keysum; // key sum hashes for all threads (including for prefilling)
 
+const int OPS_BETWEEN_TIME_CHECKS = 500;
+const int OPS_BETWEEN_TIME_CHECKS_RQ = 10;
+
+debugCounter * prefillSize;
+const long long PREFILL_INTERVAL_MILLIS = 200;
+
 // create a binary search tree with an allocator that uses a new form of epoch based memory reclamation
 const test_type NO_KEY = -1;
 const test_type NO_VALUE = -1;
@@ -76,14 +72,6 @@ const test_type POS_INFTY = 2000000000;
 
 #if defined(BST)
 #define DS_DECLARATION bst<test_type, test_type, less<test_type>, MemMgmt>
-//#elif defined(MCLIST)
-//#define DS_DECLARATION MC_list<test_type, test_type, MemMgmt>
-#elif defined(ABTREE)
-#define ABTREE_NODE_DEGREE 16
-#define ABTREE_NODE_MIN_DEGREE 6
-#define DS_DECLARATION abtree<ABTREE_NODE_DEGREE, test_type, less<test_type>, MemMgmt>
-//#elif defined(CITRUS)
-//#define DS_DECLARATION citrustree<MemMgmt>
 #else
 #error "Failed to define a data structure"
 #endif
@@ -91,47 +79,22 @@ const test_type POS_INFTY = 2000000000;
 #define STR(x) XSTR(x)
 #define XSTR(x) #x
 
-//#ifndef RQ_FUNC
-//#define RQ_FUNC rangeQuery
-//#endif
-//
-//#ifndef INSERT_FUNC
-//#define INSERT_FUNC insert
-//#endif
-//
-//#ifndef ERASE_FUNC
-//#define ERASE_FUNC erase
-//#endif
-//
-//#ifndef RQ_FUNC
-//#define RQ_FUNC rangeQuery
-//#endif
-//
-//#ifndef FIND_FUNC
-//#define FIND_FUNC find
-//#endif
-
-#if defined(ABTREE)
-#define VALUE ((void*) (int64_t) key)
-#define KEY keys[0]
-#else
 #define VALUE key
 #define KEY key
-#endif
 
-#if defined(BST) || defined(ABTREE)
-#if defined(TLE) || defined(tle)
+#if defined(BST)
+    #if defined(TLE) || defined(tle)
         #define INSERT_AND_CHECK_SUCCESS tree->insert_tle(tid, key, VALUE) == tree->NO_VALUE
         #define DELETE_AND_CHECK_SUCCESS tree->erase_tle(tid, key).second
         #define FIND_AND_CHECK_SUCCESS tree->find_tle(tid, key)
+        #define RQ_AND_CHECK_SUCCESS(rqcnt) { cout<<"ERROR: RQ not supported in TLE mode"<<endl; exit(-1); }
     #else
         #define INSERT_AND_CHECK_SUCCESS tree->insert_stm(TM_ARG_ALONE, tid, key, VALUE) == tree->NO_VALUE
         #define DELETE_AND_CHECK_SUCCESS tree->erase_stm(TM_ARG_ALONE, tid, key).second
         #define FIND_AND_CHECK_SUCCESS tree->find_stm(TM_ARG_ALONE, tid, key)
+        #define RQ_AND_CHECK_SUCCESS(rqcnt) (rqcnt) = tree->rangeUpdate_stm(TM_ARG_ALONE, tid, key, key+RQSIZE)
     #endif
 
-    //#define RQ_AND_CHECK_SUCCESS(rqcnt) rqcnt = tree->RQ_FUNC(tid, key, key+RQSIZE, rqResults)
-    //#define RQ_GARBAGE(rqcnt) rqResults[0]->KEY + rqResults[rqcnt-1]->KEY
     #define INIT_THREAD(tid) tree->initThread(tid)
     #define PRCU_INIT 
     #define PRCU_REGISTER(tid)
@@ -139,107 +102,30 @@ const test_type POS_INFTY = 2000000000;
     #define CLEAR_COUNTERS tree->clearCounters()
 #endif
 
-//template <class MemMgmt>
-//void prefill(DS_DECLARATION * tree) {
-//    const double PREFILL_THRESHOLD = 0.03;
-//    for (int tid=0;tid<TOTAL_THREADS;++tid) {
-//        INIT_THREAD(tid); // it must be okay that we do this with the main thread and later with another thread.
-//    }
-//    Random& rng = rngs[0];
-//    const double expectedFullness = (INS+DEL ? INS / (double)(INS+DEL) : 0.5); // percent full in expectation
-//    const int expectedSize = (int)(MAXKEY * expectedFullness);
-//
-//#if defined(BST) || defined(ABTREE) //|| defined(CITRUS)
-//    int sz = 0;
-//    int tid = 0;
-//    for (int i=0;;++i) {
-//        VERBOSE {
-//            if (i&&((i % 1000000) == 0)) COUTATOMIC("PREFILL op# "<<i<<" sz="<<sz<<" expectedSize="<<expectedSize<<endl);
-//        }
-//        
-//        int key = rng.nextNatural(MAXKEY);
-//        int op = rng.nextNatural(100);
-//        if (op < 100*expectedFullness) {
-//            if (INSERT_AND_CHECK_SUCCESS) {
-//                keysum->add(tid, key);
-//                ++sz;
-//            }
-//        } else {
-//            if (DELETE_AND_CHECK_SUCCESS) {
-//                keysum->add(tid, -key);
-//                --sz;
-//            }
-//        }
-//        int absdiff = (sz < expectedSize ? expectedSize - sz : sz - expectedSize);
-//        if (absdiff < expectedSize*PREFILL_THRESHOLD) {
-//            break;
-//        }
-//    }
-////#elif defined(MCLIST)
-////    bool present[MAXKEY];
-////    for (int i=0;i<MAXKEY;++i) present[i] = 0;
-////    
-////    int sz = 0;
-////    int tid = 0;
-////    for (int i=0;;++i) {
-////        VERBOSE {
-////            if (i&&((i % 1000000) == 0)) COUTATOMIC("PREFILL op# "<<i<<" sz="<<sz<<" expectedSize="<<expectedSize<<endl);
-////        }
-////        int key = rng.nextNatural(MAXKEY);
-////        if (!present[key]) {
-////            present[key] = 1;
-////            if (++sz >= expectedSize) break;
-////        }
-////    }
-////    // always insert at the head of the list for efficiency
-////    for (int i=MAXKEY-1;i>=0;--i) {
-////        if (present[i]) {
-////            int key = i;
-////            if (INSERT_AND_CHECK_SUCCESS) {
-////                keysum->add(tid, key);
-////            } else {
-////                cerr<<"fatal error during prefilling: key should have been inserted"<<endl;
-////                exit(-1);
-////            }
-////        }
-////    }
-//#endif
-//    
-//    CLEAR_COUNTERS;
-//    VERBOSE COUTATOMIC("finished prefilling to size "<<sz<<" for expected size "<<expectedSize<<endl);
-//}
-
-
 template <class MemMgmt>
-void thread_timed(void *unused) {
-    const int OPS_BETWEEN_TIME_CHECKS = 500;
+void thread_prefill(void *unused) {
     int tid = thread_getId();
+    TRACE COUTATOMICTID("prefill thread started"<<endl);
     bindThread(tid, PHYSICAL_PROCESSORS);
     TM_THREAD_ENTER();
     PRCU_REGISTER(tid);
-    test_type garbage = 0;
     Random *rng = &rngs[tid*PREFETCH_SIZE_WORDS];
     DS_DECLARATION * tree = (DS_DECLARATION *) __tree;
 
-#if defined(BST)
-    Node<test_type, test_type> const ** rqResults = new Node<test_type, test_type> const *[RQSIZE];
-//#elif defined(MCLIST)
-//    Node<test_type, test_type> const ** rqResults = new Node<test_type, test_type> const *[RQSIZE];
-#elif defined(ABTREE)
-    abtree_Node<ABTREE_NODE_DEGREE, test_type> const ** rqResults = new abtree_Node<ABTREE_NODE_DEGREE, test_type> const *[RQSIZE];
-//#elif defined(CITRUS)
-//    int * rqResults = new int[RQSIZE];
-#endif
+    double insProbability = (INS > 0 ? 100*INS/(INS+DEL) : 50.);
     
     INIT_THREAD(tid);
     running.fetch_add(1);
     __sync_synchronize();
-//    while (!start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<endl); } // wait to start
+    while (!start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<endl); } // wait to start
     int cnt = 0;
     while (!done) {
+//        TRACE COUTATOMICTID("prefill thread cnt="<<cnt<<endl);
         if (((++cnt) % OPS_BETWEEN_TIME_CHECKS) == 0) {
             chrono::time_point<chrono::high_resolution_clock> __endTime = chrono::high_resolution_clock::now();
-            if (chrono::duration_cast<chrono::milliseconds>(__endTime-startTime).count() >= MILLIS_TO_RUN) {
+            chrono::time_point<chrono::high_resolution_clock> __startTime = startTime;
+            auto duration = chrono::duration_cast<chrono::milliseconds>(__endTime-__startTime).count();
+            if ((int) duration >= PREFILL_INTERVAL_MILLIS) {
                 done = true;
                 __sync_synchronize();
                 break;
@@ -248,33 +134,192 @@ void thread_timed(void *unused) {
         
         VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<endl);
         int key = rng->nextNatural(MAXKEY);
-        //cout<<"MAXKEY="<<MAXKEY<<" random key for tid="<<tid<<" is "<<key<<endl;
         double op = rng->nextNatural(100000000) / 1000000.;
-        if (op < INS) {
+        if (op < insProbability) {
             if (INSERT_AND_CHECK_SUCCESS) {
                 keysum->add(tid, key);
+                prefillSize->add(tid, 1);
             }
-            tree->debugGetCounters()->insertSuccess->inc(tid);
-        } else if (op < INS+DEL) {
+        } else {
             if (DELETE_AND_CHECK_SUCCESS) {
                 keysum->add(tid, -key);
+                prefillSize->add(tid, -1);
             }
-            tree->debugGetCounters()->eraseSuccess->inc(tid);
-        } else if (op < INS+DEL+RQ) {
-//            int rqcnt;
-//            if (RQ_AND_CHECK_SUCCESS(rqcnt)) { // prevent rqResults and count from being optimized out
-//                garbage += RQ_GARBAGE(rqcnt);
-//            }
-//            tree->debugGetCounters()->rqSuccess->inc(tid);
-        } else {
-            FIND_AND_CHECK_SUCCESS;
-            tree->debugGetCounters()->findSuccess->inc(tid);
         }
     }
     running.fetch_add(-1);
-    VERBOSE COUTATOMICTID("termination"<<" garbage="<<garbage<<endl);
+    PRCU_UNREGISTER;
+    TM_THREAD_EXIT();
+}
+
+template <class MemMgmt>
+void prefill(DS_DECLARATION * tree) {
+    chrono::time_point<chrono::high_resolution_clock> prefillStartTime = chrono::high_resolution_clock::now();
+    __sync_synchronize();
+
+    const double PREFILL_THRESHOLD = 0.05;
+    const int MAX_ATTEMPTS = 500;
+    const double expectedFullness = (INS+DEL ? INS / (double)(INS+DEL) : 0.5); // percent full in expectation
+    const int expectedSize = (int)(MAXKEY * expectedFullness);
+
+    int sz = 0;
+    int attempts;
+    TRACE COUTATOMIC("main thread: starting tm"<<endl);
+//    TM_STARTUP(TOTAL_THREADS);
+    for (attempts=0;attempts<MAX_ATTEMPTS;++attempts) {
+//        COUTATOMIC("main thread: prefilling iteration "<<attempts<<endl);
+        TRACE COUTATOMIC("main thread: creating prefill threads"<<endl);
+        thread_startup(TOTAL_THREADS);
+
+        startTime = chrono::high_resolution_clock::now();
+        __sync_synchronize();
+
+        TRACE COUTATOMIC("main thread: starting prefilling threads"<<endl);
+        start = true;
+        thread_start(thread_prefill<MemMgmt>, NULL);
+
+        TRACE COUTATOMIC("main thread: shutting down threads"<<endl);
+        thread_shutdown();
+        
+        start = false;
+        done = false;
+
+        sz = prefillSize->getTotal();
+        //sz = tree->getSize();
+        int absdiff = (sz < expectedSize ? expectedSize - sz : sz - expectedSize);
+        if (absdiff < expectedSize*PREFILL_THRESHOLD) {
+            break;
+        }
+        TRACE COUTATOMIC("main thread: prefilling iteration "<<attempts<<" sz="<<sz<<" expectedSize="<<expectedSize<<" keysum="<<keysum->getTotal()<<" treekeysum="<<tree->debugKeySum()<<" treesize="<<tree->size()<<endl);
+    }
+    TRACE COUTATOMIC("main thread: shutting down tm"<<endl);
+//    TM_SHUTDOWN();
+    
+    if (attempts >= MAX_ATTEMPTS) {
+        cerr<<"ERROR: could not prefill to expected size "<<expectedSize<<". reached size "<<sz<<" after "<<attempts<<" attempts"<<endl;
+        exit(-1);
+    }
+    
+    CLEAR_COUNTERS;
+    chrono::time_point<chrono::high_resolution_clock> prefillEndTime = chrono::high_resolution_clock::now();
+    auto elapsed = chrono::duration_cast<chrono::milliseconds>(prefillEndTime-prefillStartTime).count();
+    COUTATOMIC(endl);
+    COUTATOMIC("###############################"<<endl);
+    COUTATOMIC("##### FINISHED PREFILLING ##### (running="<<running.load()<<" size "<<sz<<" for expected size "<<expectedSize<<" keysum="<<keysum->getTotal()<<" treekeysum="<<tree->debugKeySum()<<" treesize="<<tree->size()<<" in "<<(elapsed/1000.)<<"s)"<<endl);
+    COUTATOMIC("###############################"<<endl);
+    COUTATOMIC(endl);
+    __sync_synchronize();
+}
+
+template <class MemMgmt>
+void thread_timed(void *unused) {
+    int tid = thread_getId();
+    bindThread(tid, PHYSICAL_PROCESSORS);
+    __sync_synchronize();
+    TM_THREAD_ENTER();
+    PRCU_REGISTER(tid);
+    Random *rng = &rngs[tid*PREFETCH_SIZE_WORDS];
+    DS_DECLARATION * tree = (DS_DECLARATION *) __tree;
+
+#if defined(BST)
+    Node<test_type, test_type> const ** rqResults = new Node<test_type, test_type> const *[RQSIZE];
+#endif
+    
+    VERBOSE COUTATOMICTID("timed thread initializing"<<endl);
+    INIT_THREAD(tid);
+    VERBOSE COUTATOMICTID("join running"<<endl);
+    running.fetch_add(1);
+    __sync_synchronize();
+//    while (!start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<endl); } // wait to start
+    int cnt = 0;
+    
+    if (tid >= WORK_THREADS) {
+        VERBOSE COUTATOMICTID("identifying as an rq thread"<<endl);
+        // rq thread
+        while (!done) {
+//            VERBOSE COUTATOMICTID("rq thread cnt="<<cnt<<endl);
+            if (((++cnt) % OPS_BETWEEN_TIME_CHECKS_RQ) == 0) {
+                chrono::time_point<chrono::high_resolution_clock> __endTime = chrono::high_resolution_clock::now();
+                chrono::time_point<chrono::high_resolution_clock> __startTime = startTime;
+                auto duration = chrono::duration_cast<chrono::milliseconds>(__endTime-__startTime).count();
+                if ((int) duration >= MILLIS_TO_RUN) {
+                    done = true;
+                    __sync_synchronize();
+                    break;
+                }
+//                VERBOSE COUTATOMICTID("not stopping yet: duration="<<duration<<" MILLIS_TO_RUN="<<MILLIS_TO_RUN<<endl);
+            }
+
+            VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<endl);
+            int key = rng->nextNatural(MAXKEY);
+            //cout<<"MAXKEY="<<MAXKEY<<" random key for tid="<<tid<<" is "<<key<<endl;
+//            double op = rng->nextNatural(100000000) / 1000000.;
+//            if (op < INS) {
+//                if (INSERT_AND_CHECK_SUCCESS) {
+//                    keysum->add(tid, key);
+//                }
+//                tree->debugGetCounters()->insertSuccess->inc(tid);
+//            } else if (op < INS+DEL) {
+//                if (DELETE_AND_CHECK_SUCCESS) {
+//                    keysum->add(tid, -key);
+//                }
+//                tree->debugGetCounters()->eraseSuccess->inc(tid);
+//            } else if (op < INS+DEL+RQ) {
+                int rqcnt;
+                RQ_AND_CHECK_SUCCESS(rqcnt);
+                tree->debugGetCounters()->rqSuccess->inc(tid);
+//            } else {
+//                FIND_AND_CHECK_SUCCESS;
+//                tree->debugGetCounters()->findSuccess->inc(tid);
+//            }
+        }
+    } else {
+        VERBOSE COUTATOMICTID("identifying as a work thread"<<endl);
+        // work thread
+        while (!done) {
+//            VERBOSE COUTATOMICTID("work thread cnt="<<cnt<<endl);
+            if (((++cnt) % OPS_BETWEEN_TIME_CHECKS) == 0) {
+                chrono::time_point<chrono::high_resolution_clock> __endTime = chrono::high_resolution_clock::now();
+                chrono::time_point<chrono::high_resolution_clock> __startTime = startTime;
+                auto duration = chrono::duration_cast<chrono::milliseconds>(__endTime-__startTime).count();
+                if ((int) duration >= MILLIS_TO_RUN) {
+                    done = true;
+                    __sync_synchronize();
+                    break;
+                }
+//                VERBOSE COUTATOMICTID("not stopping yet: duration="<<duration<<" MILLIS_TO_RUN="<<MILLIS_TO_RUN<<endl);
+            }
+
+            VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<endl);
+            int key = rng->nextNatural(MAXKEY);
+            //cout<<"MAXKEY="<<MAXKEY<<" random key for tid="<<tid<<" is "<<key<<endl;
+            double op = rng->nextNatural(100000000) / 1000000.;
+            if (op < INS) {
+                if (INSERT_AND_CHECK_SUCCESS) {
+                    keysum->add(tid, key);
+                }
+                tree->debugGetCounters()->insertSuccess->inc(tid);
+            } else if (op < INS+DEL) {
+                if (DELETE_AND_CHECK_SUCCESS) {
+                    keysum->add(tid, -key);
+                }
+                tree->debugGetCounters()->eraseSuccess->inc(tid);
+            } else if (op < INS+DEL+RQ) {
+                int rqcnt;
+                RQ_AND_CHECK_SUCCESS(rqcnt);
+                tree->debugGetCounters()->rqSuccess->inc(tid);
+            } else {
+                FIND_AND_CHECK_SUCCESS;
+                tree->debugGetCounters()->findSuccess->inc(tid);
+            }
+        }
+    }
+    
+    running.fetch_add(-1);
+    VERBOSE COUTATOMICTID("termination"<<endl);
     
     PRCU_UNREGISTER;
+    VERBOSE COUTATOMICTID("calling TM_THREAD_EXIT"<<endl);
     TM_THREAD_EXIT();
 }
 
@@ -282,12 +327,6 @@ template <class MemMgmt>
 void trial() {
 #if defined(BST)
     __tree = (void*) new DS_DECLARATION(NO_KEY, NO_VALUE, RETRY, TOTAL_THREADS);
-//#elif defined(MCLIST)
-//    __tree = (void*) new DS_DECLARATION(TOTAL_THREADS, NEG_INFTY, POS_INFTY, NO_VALUE);
-#elif defined(ABTREE)
-    __tree = (void*) new DS_DECLARATION(TOTAL_THREADS, DEFAULT_SUSPECTED_SIGNAL, NO_KEY, ABTREE_NODE_MIN_DEGREE);
-//#elif defined(CITRUS)
-//    __tree = (void*) new DS_DECLARATION(MAXKEY, TOTAL_THREADS);
 #else
 #error "Failed to define a data structure"
 #endif
@@ -299,8 +338,10 @@ void trial() {
         rngs[i*PREFETCH_SIZE_WORDS].setSeed(rand());
     }
     
-    assert(RQ_THREADS == 0);
     TM_STARTUP(TOTAL_THREADS);
+    if (PREFILL) prefill((DS_DECLARATION *) __tree);
+    __sync_synchronize();
+    
     thread_startup(TOTAL_THREADS);
     
     startTime = chrono::high_resolution_clock::now();
@@ -313,67 +354,11 @@ void trial() {
     elapsedMillis = chrono::duration_cast<chrono::milliseconds>(endTime-startTime).count();
     COUTATOMIC((elapsedMillis/1000.)<<"s"<<endl);
     
-    TM_SHUTDOWN();
     thread_shutdown();
-    
-//    // create threads
-//    pthread_t *threads[TOTAL_THREADS];
-//    for (int i=0;i<TOTAL_THREADS;++i) {
-//        threads[i] = new pthread_t;
-//        rngs[i*PREFETCH_SIZE_WORDS].setSeed(rand());
-//    }
-//
-//    if (PREFILL) prefill((DS_DECLARATION *) __tree);
-//
-//    // start all threads
-//    for (int i=0;i<TOTAL_THREADS;++i) {
-//        if (pthread_create(threads[i], NULL,
-//                    (i < WORK_THREADS
-//                     ? thread_timed<MemMgmt>
-//                     : thread_rq<MemMgmt>), &ids[i])) {
-//            cerr<<"ERROR: could not create thread"<<endl;
-//            exit(-1);
-//        }
-//    }
-//
-//    while (running.load() < TOTAL_THREADS) {
-//        TRACE COUTATOMIC("main thread: waiting for threads to START running="<<running.load()<<endl);
-//    } // wait for all threads to be ready
-//    COUTATOMIC("main thread: starting timer..."<<endl);
-//    __sync_synchronize();
-//    startTime = chrono::high_resolution_clock::now();
-//    __sync_synchronize();
-//    start = true;
-//    for (int i=0;i<TOTAL_THREADS;++i) {
-//        VERBOSE COUTATOMIC("main thread: attempting to join thread "<<i<<endl);
-//        if (pthread_join(*threads[i], NULL)) {
-//            cerr<<"ERROR: could not join thread"<<endl;
-//            exit(-1);
-//        }
-//        VERBOSE COUTATOMIC("main thread: joined thread "<<i<<endl);
-//    }
-//    endTime = chrono::high_resolution_clock::now();
-//    __sync_synchronize();
-//    elapsedMillis = chrono::duration_cast<chrono::milliseconds>(endTime-startTime).count();
-//    COUTATOMIC((elapsedMillis/1000.)<<"s"<<endl);
-//
-//    for (int i=0;i<TOTAL_THREADS;++i) {
-//        delete threads[i];
-//    }
+    TM_SHUTDOWN();
 }
 
 #ifdef BST
-//void printInterruptedAddresses(ostream& os) {
-//    // print addresses where threads were interrupted by signals
-//    // that performed siglongjmp
-//    for (int tid=0;tid<TOTAL_THREADS;++tid) {
-//        const int sz = threadAddrIndices[tid*PREFETCH_SIZE_WORDS];
-//        for (int ix=0;ix<sz;++ix) {
-//            os<<hex<<threadAddr[tid*MAX_THREAD_ADDR + ix]<<endl;
-//        }
-//    }
-//}
-
 void sighandler(int signum) {
     printf("Process %d got signal %d\n", getpid(), signum);
 
@@ -439,7 +424,7 @@ void printOutput() {
         cout<<"Validation OK: threadsKeySum="<<threadsKeySum<<" treeKeySum="<<treeKeySum<<endl;
     } else {
         cout<<"Validation FAILURE: threadsKeySum="<<threadsKeySum<<" treeKeySum="<<treeKeySum<<endl;
-#if defined(ABTREE) || defined(BST) || defined(MCLIST)
+#if defined(BST)
         tree->debugPrintToFile("tree_", 0, "", 0, ".out");
 #endif
         exit(-1);
@@ -488,8 +473,6 @@ void printOutput() {
             if (counters->pathSuccess[path]->getTotal()) COUTATOMIC(PATH_NAMES[path]<<" success              : "<<counters->pathSuccess[path]->getTotal()<<" ("<<percent(counters->pathSuccess[path]->getTotal(), totalSuccessful)<<" of successful)"<<endl);
             if (counters->updateChange[path]->getTotal()) COUTATOMIC(PATH_NAMES[path]<<" changes              : "<<counters->updateChange[path]->getTotal()<<" ("<<percent(counters->updateChange[path]->getTotal(), totalChanges)<<" of changes)"<<endl);
             if (counters->pathFail[path]->getTotal()) COUTATOMIC(PATH_NAMES[path]<<" fail                 : "<<counters->pathFail[path]->getTotal()<<endl);
-//            if (counters->rqSuccess[path]->getTotal()) COUTATOMIC(PATH_NAMES[path]<<" rq succ              : "<<counters->rqSuccess[path]->getTotal()<<endl);
-//            if (counters->rqFail[path]->getTotal()) COUTATOMIC(PATH_NAMES[path]<<" rq fail              : "<<counters->rqFail[path]->getTotal()<<endl);
             if (counters->htmCapacityAbortThenCommit[path]->getTotal()) COUTATOMIC(PATH_NAMES[path]<<" capacity -> commit   : "<<counters->htmCapacityAbortThenCommit[path]->getTotal()<<endl);
             if (counters->htmRetryAbortRetried[path]->getTotal()) COUTATOMIC(PATH_NAMES[path]<<" retry -> try again   : "<<counters->htmRetryAbortRetried[path]->getTotal()<<endl);
         }
@@ -497,8 +480,6 @@ void printOutput() {
     COUTATOMIC(endl);
     
 
-//    COUTATOMIC("total llx true                : "<<counters->llxSuccess->getTotal()<<endl);
-//    COUTATOMIC("total llx false               : "<<counters->llxFail->getTotal()<<endl);
     long long rqSuccessTotal = counters->rqSuccess->getTotal();
     long long rqFailTotal = counters->rqFail->getTotal();
     long long findSuccessTotal = counters->findSuccess->getTotal();
@@ -519,18 +500,18 @@ void printOutput() {
     if (rqFailTotal) COUTATOMIC("total rq fail                 : "<<rqFailTotal<<endl);
     const long totalSuccUpdates = counters->insertSuccess->getTotal()+counters->eraseSuccess->getTotal();
     const long totalSuccAll = totalSuccUpdates + rqSuccessTotal + findSuccessTotal;
-    const long throughput = (long) (totalSuccUpdates / (elapsedMillis/1000.));
-    const long throughputAll = (long) (totalSuccAll / (elapsedMillis/1000.));
+    const long throughput = (long) (totalSuccUpdates / (MILLIS_TO_RUN/1000.));
+    const long throughputAll = (long) (totalSuccAll / (MILLIS_TO_RUN/1000.));
     COUTATOMIC("total succ updates            : "<<totalSuccUpdates<<endl);
     COUTATOMIC("total succ                    : "<<totalSuccAll<<endl);
     COUTATOMIC("throughput (succ updates/sec) : "<<throughput<<endl);
     COUTATOMIC("    incl. queries             : "<<throughputAll<<endl);
-    COUTATOMIC("elapsed milliseconds          : "<<elapsedMillis<<endl);
+    COUTATOMIC("elapsed milliseconds          : "<<MILLIS_TO_RUN<<endl);
     COUTATOMIC(endl);
 
     COUTATOMIC(endl);
    
-#if defined(BST) || defined(ABTREE) || defined(MCLIST)
+#if defined(BST)
     if (PRINT_TREE) {
         tree->debugPrintToFile("tree_", 0, "", 0, ".out");
     }
@@ -538,8 +519,6 @@ void printOutput() {
     // free tree
     delete tree;
 #endif
-    VERBOSE COUTATOMIC("main thread: garbage#=");
-    VERBOSE COUTATOMIC(counters->garbage->getTotal()<<endl);
 }
 
 #define PRINTI(name) { cout<<(#name)<<"="<<name<<endl; }
@@ -549,12 +528,6 @@ template <class Reclaim, class Alloc, class Pool>
 void performExperiment() {
 #if defined(BST)
     typedef record_manager<Reclaim, Alloc, Pool, Node<test_type, test_type>, SCXRecord<test_type, test_type> > MemMgmt;
-#elif defined(ABTREE)
-    typedef record_manager<Reclaim, Alloc, Pool, abtree_Node<ABTREE_NODE_DEGREE, test_type>, abtree_SCXRecord<ABTREE_NODE_DEGREE, test_type> > MemMgmt;
-//#elif defined(MCLIST)
-//    typedef record_manager<Reclaim, Alloc, Pool, Node<test_type, test_type> > MemMgmt;
-//#elif defined(CITRUS)
-//    typedef record_manager<Reclaim, Alloc, Pool, node_t> MemMgmt;
 #endif
     EXPERIMENT_FN<MemMgmt>();
     printOutput<MemMgmt>();
@@ -625,8 +598,8 @@ int main(int argc, char** argv) {
             RQSIZE = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-k") == 0) {
             MAXKEY = atoi(argv[++i]);
-//        } else if (strcmp(argv[i], "-nrq") == 0) {
-//            RQ_THREADS = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "-nrq") == 0) {
+            RQ_THREADS = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-nwork") == 0) {
             WORK_THREADS = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-o") == 0) {
@@ -659,7 +632,6 @@ int main(int argc, char** argv) {
         }
     }
     TOTAL_THREADS = WORK_THREADS + RQ_THREADS;
-    
 //    PRINTS(P1NAME);
 //    PRINTS(P2NAME);
 //    PRINTS(P3NAME);
@@ -679,13 +651,14 @@ int main(int argc, char** argv) {
     PRINTI(DEL);
     PRINTI(MAXKEY);
     PRINTI(WORK_THREADS);
-//    PRINTI(RQ_THREADS);
+    PRINTI(RQ_THREADS);
     PRINTS(RECLAIM_TYPE);
     PRINTS(ALLOC_TYPE);
     PRINTS(POOL_TYPE);
     PRINTI(PRINT_TREE);
     PRINTI(THREAD_BINDING);
     
+    prefillSize = new debugCounter(TOTAL_THREADS);
     keysum = new debugCounter(TOTAL_THREADS);
     
     performExperiment();

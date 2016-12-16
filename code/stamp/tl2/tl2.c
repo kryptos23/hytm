@@ -1714,11 +1714,16 @@ TryFastUpdate (Thread* Self)
  * would be best.
  * =============================================================================
  */
+
 void
 TxAbort (Thread* Self)
 {
     PROF_STM_ABORT_BEGIN();
 
+    if (Self->Retries > 100000) {
+        printf("ERROR: A SINGLE SW TXN ABORTED MORE THAN 100000 TIMES\n");
+        exit(-1);
+    }
 
     Self->Mode = TABORTED;
 
@@ -1782,7 +1787,7 @@ __rollback:
  * =============================================================================
  */
 #ifdef TL2_EAGER
-void
+__inline__ void
 TxStore (Thread* Self, volatile intptr_t* addr, intptr_t valu)
 {
     PROF_STM_WRITE_BEGIN();
@@ -1856,7 +1861,7 @@ TxStore (Thread* Self, volatile intptr_t* addr, intptr_t valu)
     PROF_STM_WRITE_END();
 }
 #else /* !TL2_EAGER */
-void
+__inline__ void
 TxStore (Thread* Self, volatile intptr_t* addr, intptr_t valu)
 {
     PROF_STM_WRITE_BEGIN();
@@ -1986,8 +1991,8 @@ TxStore (Thread* Self, volatile intptr_t* addr, intptr_t valu)
  * =============================================================================
  */
 #ifdef TL2_EAGER
-intptr_t
-TxLoad (Thread* Self, volatile intptr_t* Addr)
+__inline__
+intptr_t TxLoad (Thread* Self, volatile intptr_t* Addr)
 {
     PROF_STM_READ_BEGIN();
 
@@ -2036,8 +2041,8 @@ TxLoad (Thread* Self, volatile intptr_t* Addr)
     return 0;
 }
 #else /* !TL2_EAGER */
-intptr_t
-TxLoad (Thread* Self, volatile intptr_t* Addr)
+__inline__
+intptr_t TxLoad (Thread* Self, volatile intptr_t* Addr)
 {
     PROF_STM_READ_BEGIN();
 
@@ -2158,7 +2163,7 @@ txSterilize (void* Base, size_t Length)
  * Update in-place, saving the original contents in the undo log
  * =============================================================================
  */
-void
+__inline__ void
 TxStoreLocal (Thread* Self, volatile intptr_t* Addr, intptr_t Valu)
 {
     PROF_STM_WRITELOCAL_BEGIN();

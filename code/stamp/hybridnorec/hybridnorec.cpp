@@ -33,17 +33,20 @@ using namespace std;
 struct c_debugCounters *c_counters;
 
 #define PREFETCH_SIZE_BYTES 192
+
 #define USE_FULL_HASHTABLE
 //#define USE_BLOOM_FILTER
+
+#define HASHTABLE_CLEAR_FROM_LIST
 
 // just for debugging
 volatile int globallock = 0;
 
-static char padding0[PREFETCH_SIZE_BYTES];
+volatile char padding0[PREFETCH_SIZE_BYTES];
 volatile int gsl = 0;
-static char padding1[PREFETCH_SIZE_BYTES];
+volatile char padding1[PREFETCH_SIZE_BYTES];
 volatile int esl = 0;
-static char padding2[PREFETCH_SIZE_BYTES];
+volatile char padding2[PREFETCH_SIZE_BYTES];
 
 void printStackTrace() {
 
@@ -456,8 +459,6 @@ std::ostream& operator<<(std::ostream& out, const AVPair& obj) {
 //template <typename T>
 //inline Log * getTypedLog(TypeLogs * typelogs);
 
-#define HASHTABLE_CLEAR_FROM_LIST
-
 enum hytm_config {
     INIT_WRSET_NUM_ENTRY = 1024,
     INIT_RDSET_NUM_ENTRY = 8192,
@@ -535,12 +536,14 @@ enum hytm_config {
         }
 
         __INLINE__ int32_t findIx(volatile intptr_t* addr) {
+//            int k = 0;
             int32_t ix = hash(addr);
             while (data[ix]) {
                 if (data[ix]->addr == addr) {
                     return ix;
                 }
                 ix = (ix + 1) & (cap-1);
+//                ++k; if (k > 100*cap) { exit(-1); } // TODO: REMOVE THIS DEBUG CODE: catch infinite loops
             }
             return -1;
         }
@@ -597,6 +600,7 @@ enum hytm_config {
                 //assert(*e->hashTableEntry);
                 //assert(*e->hashTableEntry == e);
                 *e->hashTableEntry = NULL;
+//                e->hashTableEntry = NULL;
 //                assert(e->hashTableIx >= 0 && e->hashTableIx < cap);
 //                assert(data[e->hashTableIx] == e);
 //                data[e->hashTableIx] = 0;
@@ -827,6 +831,9 @@ private:
         put = e->Next;
         e->addr = addr;
         e->value = value;
+//        e->LockFor = _LockFor;
+//        e->rdv = _rdv;
+//        e->hashTableEntry = NULL;
         VALIDATE ++currsz;
         return e;
     }
@@ -841,8 +848,8 @@ public:
             e = append(Self, addr, value);
 #ifdef USE_FULL_HASHTABLE
             // insert in hash table
-            if (tab.requiresExpansion()) tab.expandAndRehashFromList(head, put);
             tab.insertFresh(e);
+            if (tab.requiresExpansion()) tab.expandAndRehashFromList(head, put); // TODO: enable table expansion
 #elif defined(USE_BLOOM_FILTER)
             tab.insertFresh(addr);
 #endif
@@ -1158,99 +1165,172 @@ void TxAbort(void* _Self) {
 // it appears to screw up htm txns but not stm ones, for some reason
 // that i don't understand at all. (reads make sense, but not writes.)
 
-/*__INLINE__*/
-intptr_t TxLoad(void* _Self, volatile intptr_t* addr) {
+//__INLINE__ intptr_t TxLoad(void* _Self, volatile intptr_t* addr) {
+//    Thread* Self = (Thread*) _Self;
+//    
+//    // software path
+//    if (Self->isFallback) {
+////        printf("txLoad(id=%ld, addr=0x%lX) on fallback\n", Self->UniqID, (unsigned long)(void*) addr);
+//        
+//        // check whether addr is in the write-set
+//        AVPair* av = Self->wrSet->find(addr);
+//        if (av) return av->value;//unpackValue(av);
+//
+//        // addr is NOT in the write-set, so we read it
+//        intptr_t val = *addr;
+//
+//        // add the value we read to the read-set
+//        // note: if addr changed, it was not changed by us (since we write only in commit)
+//        Self->rdSet->insertReplace(Self, addr, val, true);
+//        
+//        // validate reads
+//
+//        // the norec optimization: if the sequence number didn't change, then neither did any memory locations.
+//        AVPair* stop = NULL;
+//        int currGSL = gsl;
+//        if (currGSL == Self->sequenceLock) {
+//            goto validated;
+//        }
+//        // validation retry loop
+//        while (1) {
+//            // wait until sequence lock is not held
+//            while (currGSL & 1) {
+//                PAUSE();
+//                currGSL = gsl;
+//            }
+//            // do value based validation
+//            stop = Self->rdSet->put;
+//            for (AVPair* curr = Self->rdSet->head; curr != stop; curr = curr->Next) {
+//                if (curr->value != *curr->addr) {
+//                    DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting (retries="<<Self->Retries<<")");
+//                    TxAbort(Self);
+//                }
+//            }
+//            // if sequence lock has not changed, then our value based validation saw a snapshot
+//            if (currGSL == gsl) {
+//                // save the new gsl value we read as the last time when we can serialize all reads that we did so far
+//                Self->sequenceLock = currGSL; // assert: even number (unlocked)
+//                break;
+//            } else {
+//                currGSL = gsl;
+//            }
+//        }
+//validated:
+//        
+////        if (!validateReadSet(Self, false)) {
+////            DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting (retries="<<Self->Retries<<")");
+////            TxAbort(Self);
+////        }
+//
+//        //        printf("    txLoad(id=%ld, ...) success\n", Self->UniqID);
+//        return val;
+//        
+//    // hardware path
+//    } else {
+//        // actually read addr
+//        intptr_t val = *addr;
+//        return val;
+//    }
+//}
+
+intptr_t TxLoad_stm(void* _Self, volatile intptr_t* addr) {
     Thread* Self = (Thread*) _Self;
     
-    // software path
-    if (Self->isFallback) {
-//        printf("txLoad(id=%ld, addr=0x%lX) on fallback\n", Self->UniqID, (unsigned long)(void*) addr);
-        
-        // check whether addr is in the write-set
-        AVPair* av = Self->wrSet->find(addr);
-        if (av) return av->value;//unpackValue(av);
+    // check whether addr is in the write-set
+    AVPair* av = Self->wrSet->find(addr);
+    if (av) return av->value;//unpackValue(av);
 
-        // addr is NOT in the write-set, so we read it
-        intptr_t val = *addr;
+    // addr is NOT in the write-set, so we read it
+    intptr_t val = *addr;
 
-        // add the value we read to the read-set
-        // note: if addr changed, it was not changed by us (since we write only in commit)
-        Self->rdSet->insertReplace(Self, addr, val, true);
-        
-        // validate reads
+    // add the value we read to the read-set
+    // note: if addr changed, it was not changed by us (since we write only in commit)
+    Self->rdSet->insertReplace(Self, addr, val, true);
 
-        // the norec optimization: if the sequence number didn't change, then neither did any memory locations.
-        AVPair* stop = NULL;
-        int currGSL = gsl;
-        if (currGSL == Self->sequenceLock) {
-            goto validated;
+    // validate reads
+
+    // the norec optimization: if the sequence number didn't change, then neither did any memory locations.
+    AVPair* stop = NULL;
+    int currGSL = gsl;
+    if (currGSL == Self->sequenceLock) {
+        goto validated;
+    }
+    // validation retry loop
+    while (1) {
+        // wait until sequence lock is not held
+        while (currGSL & 1) {
+            PAUSE();
+            currGSL = gsl;
         }
-        // validation retry loop
-        while (1) {
-            // wait until sequence lock is not held
-            while (currGSL & 1) {
-                PAUSE();
-                currGSL = gsl;
-            }
-            // do value based validation
-            stop = Self->rdSet->put;
-            for (AVPair* curr = Self->rdSet->head; curr != stop; curr = curr->Next) {
-                if (curr->value != *curr->addr) {
-                    DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting (retries="<<Self->Retries<<")");
-                    TxAbort(Self);
-                }
-            }
-            // if sequence lock has not changed, then our value based validation saw a snapshot
-            if (currGSL == gsl) {
-                // save the new gsl value we read as the last time when we can serialize all reads that we did so far
-                Self->sequenceLock = currGSL; // assert: even number (unlocked)
-                break;
-            } else {
-                currGSL = gsl;
+        // do value based validation
+        stop = Self->rdSet->put;
+        for (AVPair* curr = Self->rdSet->head; curr != stop; curr = curr->Next) {
+            if (curr->value != *curr->addr) {
+                DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting (retries="<<Self->Retries<<")");
+                TxAbort(Self);
             }
         }
+        // if sequence lock has not changed, then our value based validation saw a snapshot
+        if (currGSL == gsl) {
+            // save the new gsl value we read as the last time when we can serialize all reads that we did so far
+            Self->sequenceLock = currGSL; // assert: even number (unlocked)
+            break;
+        } else {
+            currGSL = gsl;
+        }
+    }
 validated:
-        
+
 //        if (!validateReadSet(Self, false)) {
 //            DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting (retries="<<Self->Retries<<")");
 //            TxAbort(Self);
 //        }
 
-        //        printf("    txLoad(id=%ld, ...) success\n", Self->UniqID);
-        return val;
-        
-    // hardware path
-    } else {
-        // actually read addr
-        intptr_t val = *addr;
-        return val;
-    }
+    //        printf("    txLoad(id=%ld, ...) success\n", Self->UniqID);
+    return val;
 }
 
-/*__INLINE__*/
-void TxStore(void* _Self, volatile intptr_t* addr, intptr_t value) {
+intptr_t TxLoad_htm(void* _Self, volatile intptr_t* addr) {
+    return *addr;
+}
+
+//__INLINE__ void TxStore(void* _Self, volatile intptr_t* addr, intptr_t value) {
+//    Thread* Self = (Thread*) _Self;
+//    Self->IsRO = false; // txn is not read-only
+//    
+//    // software path
+//    if (Self->isFallback) {
+////        printf("txStore(id=%ld, addr=0x%lX, val=%ld) on fallback\n", Self->UniqID, (unsigned long)(void*) addr, (long) value);
+//        
+//        // add addr to the write-set
+//        Self->wrSet->insertReplace(Self, addr, value, false);
+//
+////        printf("    txStore(id=%ld, ...) success\n", Self->UniqID);
+////        return value;
+//        
+//        // think through 2 writes
+//        // think through write then read
+//        // validate after reading from write-set??
+//        // add new testing.cpp kernel that is like a double or triple increment with multiple reads and writes... but still easy to verify...
+//        
+//    // hardware path
+//    } else {
+//        *addr = value;
+//    }
+//}
+
+void TxStore_stm(void* _Self, volatile intptr_t* addr, intptr_t value) {
     Thread* Self = (Thread*) _Self;
     Self->IsRO = false; // txn is not read-only
     
-    // software path
-    if (Self->isFallback) {
-//        printf("txStore(id=%ld, addr=0x%lX, val=%ld) on fallback\n", Self->UniqID, (unsigned long)(void*) addr, (long) value);
-        
-        // add addr to the write-set
-        Self->wrSet->insertReplace(Self, addr, value, false);
+    // add addr to the write-set
+    Self->wrSet->insertReplace(Self, addr, value, false);
+    // think through 2 writes
+    // think through write then read
+}
 
-//        printf("    txStore(id=%ld, ...) success\n", Self->UniqID);
-//        return value;
-        
-        // think through 2 writes
-        // think through write then read
-        // validate after reading from write-set??
-        // add new testing.cpp kernel that is like a double or triple increment with multiple reads and writes... but still easy to verify...
-        
-    // hardware path
-    } else {
-        *addr = value;
-    }
+void TxStore_htm(void* _Self, volatile intptr_t* addr, intptr_t value) {
+    *addr = value;
 }
 
 
@@ -1344,20 +1424,3 @@ void TxFree(void* _Self, void* ptr) {
 #endif
 }
 
-//long TxLoadl(void* _Self, volatile long* addr) {
-//    Thread* Self = (Thread*) _Self;
-//    return TxLoad(Self, addr);
-//}
-//float TxLoadf(void* _Self, volatile float* addr) {
-//    Thread* Self = (Thread*) _Self;
-//    return TxLoad(Self, addr);
-//}
-//
-//long TxStorel(void* _Self, volatile long* addr, long value) {
-//    Thread* Self = (Thread*) _Self;
-//    return TxStore(Self, addr, value);
-//}
-//float TxStoref(void* _Self, volatile float* addr, float value) {
-//    Thread* Self = (Thread*) _Self;
-//    return TxStore(Self, addr, value);
-//}

@@ -18,15 +18,21 @@ using namespace std;
 #include "debugcounters_impl.h"
 
 string cpp_getAutomaticAbortNames(const int compressedStatus) {
-//    stringstream ss;
-//    if (compressedStatus & _XABORT_EXPLICIT) ss<<" explicit";
-//    if (compressedStatus & _XABORT_RETRY) ss<<" retry";
-//    if (compressedStatus & _XABORT_CONFLICT) ss<<" conflict";
-//    if (compressedStatus & _XABORT_CAPACITY) ss<<" capacity";
-//    if (compressedStatus & _XABORT_DEBUG) ss<<" __debug";
-//    if (compressedStatus & _XABORT_NESTED) ss<<" nested";
-//    return ss.str();
-    return "";
+    stringstream ss;
+#define _XABORT_EXPLICIT	(1 << 0)
+#define _XABORT_RETRY		(1 << 1)
+#define _XABORT_CONFLICT	(1 << 2)
+#define _XABORT_CAPACITY	(1 << 3)
+#define _XABORT_DEBUG		(1 << 4)
+#define _XABORT_NESTED		(1 << 5)
+    if (compressedStatus & _XABORT_EXPLICIT) ss<<" explicit";
+    if (compressedStatus & _XABORT_RETRY) ss<<" retry";
+    if (compressedStatus & _XABORT_CONFLICT) ss<<" conflict";
+    if (compressedStatus & _XABORT_CAPACITY) ss<<" capacity";
+    if (compressedStatus & _XABORT_DEBUG) ss<<" __debug";
+    if (compressedStatus & _XABORT_NESTED) ss<<" nested";
+    return ss.str();
+//    return "";
 }
 
 string cpp_getExplicitAbortName(const int compressedStatus) {
@@ -38,10 +44,10 @@ string cpp_getExplicitAbortName(const int compressedStatus) {
 }
 
 string cpp_getAllAbortNames(const int compressedStatus) {
-//    stringstream ss;
-//    ss<<cpp_getExplicitAbortName(compressedStatus)<<cpp_getAutomaticAbortNames(compressedStatus);
-//    return ss.str();
-    return "";
+    stringstream ss;
+    ss<<cpp_getExplicitAbortName(compressedStatus)<<cpp_getAutomaticAbortNames(compressedStatus);
+    return ss.str();
+//    return "";
 }
 
 void countersPrint(struct c_debugCounters *cs) {

@@ -32,7 +32,7 @@ extern "C" {
 
 void registerHTMAbort(struct c_debugCounters *cs, const int tid, const int status, const int path) {
 #ifdef RECORD_ABORTS
-//    counterInc(cs->htmAbort[path*MAX_ABORT_STATUS+getCompressedStatus(status)], tid);
+    counterInc(cs->htmAbort[path*MAX_ABORT_STATUS+getCompressedStatus(status)], tid);
 #endif
 }
 

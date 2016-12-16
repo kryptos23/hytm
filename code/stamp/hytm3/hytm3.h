@@ -81,8 +81,12 @@ void     TxInitThread  (void*, long id);
 int      TxCommit      (void*);
 void     TxAbort       (void*);
 
-intptr_t TxLoad(void* Self, volatile intptr_t* addr);
-void TxStore(void* Self, volatile intptr_t* addr, intptr_t value);
+//intptr_t TxLoad(void* Self, volatile intptr_t* addr);
+intptr_t TxLoad_htm(void* Self, volatile intptr_t* addr);
+intptr_t TxLoad_stm(void* Self, volatile intptr_t* addr);
+//void TxStore(void* Self, volatile intptr_t* addr, intptr_t value);
+void TxStore_htm(void* Self, volatile intptr_t* addr, intptr_t value);
+void TxStore_stm(void* Self, volatile intptr_t* addr, intptr_t value);
 
 void     TxOnce        ();
 void     TxShutdown    ();

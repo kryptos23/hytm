@@ -50,6 +50,12 @@ int getStatusExplicitAbortCode(const int status) {
 
 string getAutomaticAbortNames(const int compressedStatus) {
 //    stringstream ss;
+//#define _XABORT_EXPLICIT	(1 << 0)
+//#define _XABORT_RETRY		(1 << 1)
+//#define _XABORT_CONFLICT	(1 << 2)
+//#define _XABORT_CAPACITY	(1 << 3)
+//#define _XABORT_DEBUG		(1 << 4)
+//#define _XABORT_NESTED		(1 << 5)
 //    if (compressedStatus & _XABORT_EXPLICIT) ss<<" explicit";
 //    if (compressedStatus & _XABORT_RETRY) ss<<" retry";
 //    if (compressedStatus & _XABORT_CONFLICT) ss<<" conflict";
@@ -82,10 +88,10 @@ string getExplicitAbortName(const int compressedStatus) {
 }
 
 string getAllAbortNames(const int compressedStatus) {
-//    stringstream ss;
-//    ss<<getExplicitAbortName(compressedStatus)<<getAutomaticAbortNames(compressedStatus);
-//    return ss.str();
-    return "";
+    stringstream ss;
+    ss<<getExplicitAbortName(compressedStatus)<<getAutomaticAbortNames(compressedStatus);
+    return ss.str();
+//    return "";
 }
 
 #define MAX_ABORT_STATUS 4096
