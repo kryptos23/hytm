@@ -23,7 +23,7 @@ a value only if the version associated with it is the same as the
 value of the versioned lock read at the start of the transaction. 
 
 In fact, state-of-the-art STM implementations ensure progress in the absence of conflicts with 
-$O$(1) complexity read operations while still satisfying \emph{invisible reads} (read operations 
+$O$(1) read operations while still satisfying \emph{invisible reads} (read operations 
 do not apply any nontrivial primitives on the shared memory).
 Nonetheless, TM designs that are implemented entirely in software still incur significant performance overhead.
 Thus, current CPUs have included instructions to mark a block of memory accesses as transactional~\cite{Rei12, asf, bluegene}, allowing them to be executed \emph{atomically} in hardware.
@@ -33,8 +33,7 @@ since they may experience %\emph{conflict aborts} and
 \emph{hybrid} TMs in which the \emph{fast} hardware transactions are 
 complemented with \emph{slower} software transactions that do not experience spurious aborts.
 
-To allow hardware transactions in a HyTM to detect conflicts with software transactions, 
-hardware transactions must be \emph{instrumented} to perform additional metadata accesses, which introduces overhead.
+To allow hardware transactions in a HyTM to detect conflicts with software transactions, they must be \emph{instrumented} to perform additional metadata accesses, which introduces overhead.
 Hardware transactions typically provide automatic contention detection for every memory location accessed within one,
 thus ensuring that the transaction itself would be aborted.
 This is at least the case with the Intel Haswell's Transactional Synchronization Extensions~\cite{haswell}.
@@ -66,5 +65,5 @@ to access memory locations non-speculatively.
 \cref{sec:lb} presents our main lower bound result on the step-complexity of progressive HyTMs
 while \cref{sec:hytmalgos} presents several opaque HyTM algorithms.
 \cref{sec:eval} summarizes resuls from our preliminary experiments on Intel Haswell and IBM Power 8 architectures.
-\cref{sec:rel} presents the related work and \cref{sec:conc} concludes the paper.
+\cref{sec:rel} presents the related work along with concluding remarks.
 %
