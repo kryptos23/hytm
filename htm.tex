@@ -252,7 +252,7 @@ good performance by carefully avoiding the overhead of \emph{incremental validat
 still providing \emph{progressiveness} (allowing transactional aborts only due to \emph{data conflicts}).
 Hardware transactional memory (HTM) implementations promise even better performance, but offer no progress guarantees.
 Thus, they must be combined with STMs, leading to \emph{hybrid} TMs (HyTM)
-that require hardware transactional accesses be \emph{instrumented} (i.e., access metadata) to detect contention with software transactions. 
+in which hardware transactional accesses be \emph{instrumented} (i.e., access metadata) to detect contention with software transactions. 
 
 We show that, unlike in progressive STMs, in progressive HyTMs, software transactions \textit{cannot} avoid incremental validation.
 %\trevor{Maybe the next two sentences can just be cut to save space.}

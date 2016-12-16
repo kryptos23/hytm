@@ -8,12 +8,12 @@ that allows the programmer to \emph{speculatively} execute sequences of shared-m
 operations as \emph{atomic transactions}.
 Most popular TM designs, subsequent to the original proposal in \cite{HM93} 
 have implemented all the functionality in software~\cite{norec, ST95,HLM+03, astm, fraser}.
-The original dynamic STM implementation \emph{DSTM}~\cite{HLM+03} ensures \emph{progressiveness}: 
+The original dynamic STM implementation DSTM~\cite{HLM+03} ensures \emph{progressiveness}: 
 a transaction aborts only if there is a read-write \emph{data conflict} with a concurrent
 transaction. However, read operations in DSTM must \emph{incrementally} validate
 every next read operation. This results in a quadratic  (in the size of the transaction's read
 set) step-complexity bound. Subsequent STM 
-implementations like \emph{NOrec}~\cite{norec} and \emph{TL2}~\cite{DSS06}
+implementations like NOrec~\cite{norec} and TL2~\cite{DSS06}
 minimize the impact on performance due to incremental validation.
 NOrec uses a global versioned lock that is read at the start of a transaction and performs \emph{value-based}
 validation during read operations only if the value of the global lock has changed since reading it.
@@ -23,11 +23,8 @@ a value only if the version associated with it is the same as the
 value of the versioned lock read at the start of the transaction. 
 
 In fact, state-of-the-art STM implementations ensure progress in the absence of conflicts with 
-$O$(1) complexity read operations while still satisfying \emph{invisible reads}.
-Intuitively, this means that read-only transactions do not
-apply any nontrivial primitives on the shared memory which is considered importance for performance in
-read-dominated workloads.
-
+$O$(1) complexity read operations while still satisfying \emph{invisible reads} (read operations 
+do not apply any nontrivial primitives on the shared memory).
 Nonetheless, TM designs that are implemented entirely in software still incur significant performance overhead.
 Thus, current CPUs have included instructions to mark a block of memory accesses as transactional~\cite{Rei12, asf, bluegene}, allowing them to be executed \emph{atomically} in hardware.
 Hardware transactions promise even better performance, but they offer no progress guarantees 
