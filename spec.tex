@@ -5,10 +5,11 @@
 %
 \begin{figure*}[!ht]
 \begin{center}
-	\subfloat[fig1\label{sfig:inv-1}]{\scalebox{0.7}[0.7]{\input{dap}}}
+	\subfloat[Slow-path transaction $T_{\phi}$ performs $i-1$ distinct t-reads followed by the t-read of $X_i$ that returns value $nv$ 
+	writtten by fast-path transaction $T_i$\label{sfig:inv-1}]{\scalebox{0.7}[0.7]{\input{dap}}}
         \\
         \vspace{1mm}
-	\subfloat[fig2 \label{sfig:inv-2}]{\scalebox{0.7}[0.7]{\input{dap2}}}
+	\subfloat[\label{sfig:inv-2}]{\scalebox{0.7}[0.7]{\input{dap2}}}
 	\\
 	\vspace{1mm}
 	\subfloat[fig3 \label{sfig:inv-3}]{\scalebox{0.7}[0.7]{\input{dap3}}}
@@ -144,16 +145,13 @@ by Lemma~\ref{lm:hytm}, transactions $T_{\phi}$ and $T_i$ do not contend
 on any base object in execution $\rho^i\cdot \pi^{i-1}$.
 Thus, $\rho^i\cdot \pi^{i-1}$ is also an execution of $\mathcal{M}$.
 
-By opacity, $\rho^i\cdot \pi^{i-1} \cdot \alpha^i$ is an execution
+By opacity, $\rho^i\cdot \pi^{i-1} \cdot \alpha^i$ (Figure~\ref{sfig:inv-1}) is an execution
 of $\mathcal{M}$ in which the t-read of $X_i$ performed by $T_{\phi}$ must return $nv_i$.
 But $\rho^i \cdot \pi^{i-1} \cdot \alpha^i$ is indistinguishable to $T_{\phi}$ from
 $\pi^{i-1}\cdot \rho^i \cdot \alpha^i$.
-Thus, $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \rho^i \cdot \alpha^i$.
+Thus, $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \rho^i \cdot \alpha^i$ (Figure~\ref{sfig:inv-2}).
 \end{proof}
 %
-By Claim~\ref{cl:readdap}, for all $i\in \{2,\ldots, m\}$, $\mathcal{M}$ has an execution of the form 
-$E^{i}=\pi^{i-1}\cdot \rho^i \cdot \alpha_i$.
-
 For each $i\in \{2,\ldots, m\}$, $j\in \{1,2\}$ and $\ell \leq (i-1)$, 
 we now define an execution of the form  $\mathbb{E}_{j\ell}^{i}=\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$
 as follows:
@@ -208,7 +206,7 @@ $(i-1)$ different base objects during the execution of $\Read_{\phi}(X_i)$ in th
 $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$.
 
 Consider the $(i-1)$ different executions: 
-$\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot \rho^i$.
+$\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot \rho^i$ (cf. Figure~\ref{sfig:inv-3}).
 For all $\ell, \ell' \leq (i-1)$;$\ell' \neq \ell$, 
 $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \beta^{\ell'}$
 in which transactions $T_{\ell}$ and $T_{\ell'}$ access mutually disjoint data sets.
