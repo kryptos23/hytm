@@ -45,14 +45,14 @@ Function: acquire(Q)
 \begin{lstlisting}[frame=none,firstnumber=last,mathescape=true]
 //\textbf{Code for slow-path transactions}
 Read$_k$(X$_j$)
-    if X$_j$ $\in \Wset(T_k)$ then
-	return $\Wset(T_k).\lit{locate}(X_j)$ 
+    if X$_j$ $\in$ Wset(T$_k$) then
+	return Wset(T$_k$).locate(X$_j$) 
     or$_j$ := r$_j$ //\label{line:readorec}
     ov$_j$ := v$_j$ //\label{line:read2}
-    $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$ //\label{line:rset}
+    Rset(T$_k$) := Rset(T$_k$)$\cup$ {X$_j$,or$_j$} //\label{line:rset}
     if or$_j$ $\mathrel{\&} 1$ then //\label{line:abort0}	
 	return A$_k$
-    if $\neg \lit{validate}()$ then //\label{line:valid}
+    if $\neg$ validate() then //\label{line:valid}
 	return A$_k$
     return ov$_j$
 
@@ -61,7 +61,7 @@ write$_k(X_j,v)$
     nv$_j$ := v
     if or$_j$ $\mathrel{\&} 1$ then	
 	return A$_k$ 
-    $\Wset(T_k) := \Wset(T_k)\cup\{X_j,\textit{nv}_j, \textit{or}_j\}$
+    Wset(T$_k$) := Wset(T$_k$)$\cup$\{X$_j$,nv$_j$, or$_j$\}
     return ok
 
 tryC$_k$()
@@ -78,7 +78,7 @@ tryC$_k$()
     return A$_k$ 
 
 Function: $\lit{validate}()$}
-    if $\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$ then // \label{line:valid}
+    if $\exists X_j \in$ Rset(T_k):or$_j\neq$ r$_j$ then // \label{line:valid}
 	return false
     return true
 

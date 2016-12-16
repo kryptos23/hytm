@@ -13,15 +13,15 @@ A \emph{transaction} is a sequence of \emph{transactional operations}
 A TM \emph{implementation} provides a set of
 concurrent \emph{processes} with deterministic algorithms that implement reads and
 writes on t-objects using  a set of \emph{base objects}.
-More precisely, for each transaction $T_k$, a TM implementation must support the following t-operations: 
-$\mathit{read}_k(X)$, where $X$ is a t-object, that returns a value in
-a domain $V$
-or a special value $A_k\notin V$ (\emph{abort}),
-$\mathit{write}_k(X,v)$, for a value $v \in V$,
-that returns $\mathit{ok}$ or $A_k$, and
-$\mathit{tryC}_k$ that returns $C_k\notin V$ (\emph{commit}) or $A_k$.
-Additionally, we assume that a transaction $T_k$
-may perform a $\mathit{start_k}$ that is the first t-operation performed by $T_k$ prior to invoking any $\mathit{read}_k$ or $\mathit{write}_k$.
+% More precisely, for each transaction $T_k$, a TM implementation must support the following t-operations: 
+% $\mathit{read}_k(X)$, where $X$ is a t-object, that returns a value in
+% a domain $V$
+% or a special value $A_k\notin V$ (\emph{abort}),
+% $\mathit{write}_k(X,v)$, for a value $v \in V$,
+% that returns $\mathit{ok}$ or $A_k$, and
+% $\mathit{tryC}_k$ that returns $C_k\notin V$ (\emph{commit}) or $A_k$.
+% Additionally, we assume that a transaction $T_k$
+% may perform a $\mathit{start_k}$ that is the first t-operation performed by $T_k$ prior to invoking any $\mathit{read}_k$ or $\mathit{write}_k$.
 
 \paragraph{Configurations and executions.} 
 A \emph{configuration} of a TM implementation specifies the state of each base object and each process. 
@@ -41,9 +41,6 @@ We consider the dynamic programming model: the \emph{read set} (resp., the \emph
 denoted $\Rset_E(T_k)$ (and resp. $\Wset_E(T_k)$), is the set of t-objects that $T_k$ attempts to read (and resp. write) 
 by issuing a t-read (and resp. t-write) invocation in $E$ (for brevity, we sometimes 
 omit the subscript $E$ from the notation).
-The \emph{data set} of $T_k$ is $\Dset(T_k)=\Rset(T_k)\cup\Wset(T_k)$.
-$T_k$ is called \emph{read-only} if $\Wset(T_k)=\emptyset$; \emph{write-only} if $\Rset(T_k)=\emptyset$ and
-\emph{updating} if $\Wset(T_k)\neq\emptyset$.
 
 For any finite execution $E$ and execution fragment $E'$, $E\cdot E'$ denotes the concatenation of $E$ and $E'$
 and we say that $E\cdot E'$ is an \emph{extension}
@@ -102,13 +99,6 @@ A base object $b$ is \emph{present} in $\tau_i$ with mode $m$ if $\exists v, (b,
 A trivial (resp.\ nontrivial) 
 cached primitive $\langle g,h \rangle$ applied to $b$ 
 by process $i$ 
-% first checks the condition $|\tau_i|=\TS$ and if so, it
-% sets $\tau_i=\emptyset$ and immediately returns $\bot$ (we call this event a
-% \emph{capacity abort}). 
-% We assume that $\TS$ is large enough so that no transaction 
-% with data set of size $1$ can incur a capacity abort.
-% %
-% If the transaction does not incur a capacity abort, the process 
 checks whether $b$ is present in exclusive
 (resp.\ any) mode in $\tau_j$ 
 for any $j\neq i$. If so, $\tau_i$ is set to $\emptyset$ and the
@@ -138,10 +128,7 @@ Finally, $\tau_i$ is set to $\emptyset$ and the primitive
 returns $\textit{commit}$. 
 
 \paragraph{Slow-path and fast-path transactions.}
-In the following, we partition HyTM transactions into \emph{fast-path transactions} and \emph{slow-path transactions}.
-Practically, two separate algorithms (fast-path one and slow-path one) 
-are provided for each t-operation. 
-
+We partition HyTM transactions into \emph{fast-path transactions} and \emph{slow-path transactions}.
 A slow-path transaction models a regular software transaction.
 An event of a slow-path transaction is either an invocation or response of a t-operation, or
 a direct rmw primitive on a base object. 

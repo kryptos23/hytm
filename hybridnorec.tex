@@ -37,7 +37,7 @@ Function: $\lit{validate}()$}
     while true
         while currGSL $\mathrel{\&} 1$
 	    currGSL:=gsl
-	if $\exists X_j \in Rset(T_k)$:$(\textit{ov}_j \neq \Read(X_j))$ then
+	if $\exists$ X$_j$ $\in$ Rset(T$_k$):ov$_j$ $\neq$ X$_j$ then
 	    return false
     	if gsl == currGSL then
 	    sl:=currGSL
@@ -56,8 +56,8 @@ read$_k$(X$_j$)
     if X$_j$ $\in \Wset(T_k)$ then
 	return $\Wset(T_k).\lit{locate}(X_j)$ 
     ov$_j$ := v$_j$ //\medcom cached read
-    $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$ //\label{line:rset}
-    if $\neg \lit{validate}()$ then 
+    Rset(T$_k$) := Rset(T$_k$)$\cup${X$_j$,or$_j$} //\label{line:rset}
+    if $\neg$ validate() then 
 	return A$_k$
     return ov$_j$
 

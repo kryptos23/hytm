@@ -55,7 +55,10 @@ NOrec and algorithms in this paper provide a stronger definition of progressiven
 only if there is a prefix in which it conflicts with another transaction and both are t-incomplete. TL2 on the other hand allows
 a transaction to abort due to a concurrent conflicting transaction.
 
-The formal proof follows.
+The proof of the lemma below is a simple extension of the analogous lemmas from \cite{hytm14disc}
+allowing direct trivial accesses inside fast-path transactions. This intuively follows from the fact that
+the tracking set of a process executing a fast-path transaction is invalidated due to contention on a base
+object with another transaction (cf. Observation~\ref{ob:traborts}).
 %
 \begin{lemma}
 \label{lm:hytm}
