@@ -128,9 +128,8 @@ if, in a configuration $C$ where  $(b,v,\exclusive)\in\tau_i$
 (resp.\ any \emph{nontrivial} primitive) to $b$, then $\tau_i$ becomes
 \emph{invalid} and any subsequent event invoked by $i$
 sets $\tau_i$ to $\emptyset$ and returns $\bot$. We refer to this event as a \emph{tracking set abort}.
-
-Note that hardware transactions may also abort spuriously, or because of unsupported operations~\cite{Rei12}, or due to \emph{capacity} aborts. 
-Since modelling these aborts will not affect our results, except make for a more cumbersome presentation, we only consider capacity aborts in this paper. 
+% Note that hardware transactions may also abort spuriously, or because of unsupported operations~\cite{Rei12}, or due to \emph{capacity} aborts. 
+% Since modelling these aborts will not affect our results, except make for a more cumbersome presentation, we only consider capacity aborts in this paper. 
 
 Any transaction $T_k \in \ms{txns}(E)$ that performs at least one cached access necessarily performs a \emph{cache-commit} primitive as the last event of $E|k$. 
 A \emph{cache-commit} primitive issued by process $i$ with
