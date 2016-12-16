@@ -2,19 +2,8 @@
 \section{Hybrid transactional memory algorithms}\label{sec:hytmalgos}
 %
 %
-In this section, we first identify some invariants that follow from the HyTM execution model presented in the previous section.
-We then describe two HyTM implementations: \cref{sec:hytm1} describes a progressive opaque TM while \cref{sec:hytm2} describes an opaque HyTM that is progressive only for read-only slow-path transactions.
-
-Let $E$ be any execution of a HyTM implementation $\mathcal{M}$ in
-which a fast-path transaction $T_k$ is either
-t-incomplete or aborted. Let $E'$ be the execution fragment that is a subsequence of $E$ derived by removing all cached events of $E|k$.
-%
-\begin{observation} 
-\label{ob:one}
-To every slow-path transaction $T_m \in \ms{txns}(E)$, $E$ is indistinguishable from $E'$. Additionally, if a fast-path transaction $T_m\in \ms{txns}(E) \setminus \{T_k\}$ does not incur a tracking set abort in $E$, 
-then $E$ is indistinguishable to $T_m$ from $E'$.
-\end{observation}
-%
+In this section, we first present progressive opaque HyTM algorithms that subject to the lower bound
+of Theorem~\ref{th:impossibility} and then discuss techniques to circumvent the lower bound.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \input{algos1}

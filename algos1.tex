@@ -2,57 +2,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \input{prog-fp-sp}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Instrumentation-optimal progressive HyTM }
-\label{sec:hytm1}
-%
-For every t-object $X_j$, our implementation maintains a base object $v_j\in \mathbb{D}$ that stores the value of $X_j$
-and a \emph{sequence lock} $r_{j}$. The sequence lock is an unsigned integer whose LSB bit stores the \emph{locked} state.
-Specifically, we say that process $p_i$ \emph{holds a lock on $X_j$ after an execution $E$} if
-$\textit{or}_j$ $\mathrel{\&} 1=1$ after $E$, where $\textit{or}_j$ is the value of $r_j$ after $E$.
-
-\vspace{1mm}\noindent\textbf{Fast-path transactions.}
-For a fast-path transaction $T_k$ executed by process $p_i$, the $\Read_k(X_j)$ implementation first reads $r_j$ (uncached)
-and returns $A_k$ if some other process $p_j$ holds a lock on $X_j$.
-Otherwise, it returns the value of $X_j$.
-Updating fast-path transactions 
-As with $\Read_k(X_j)$, the $\Write (X_j,v)$ implementation returns $A_k$ if some other process $p_j$ holds a lock on $X_j$.
-Process $p_i$ then increments the value of $r_j$ by $2$ via a direct access and stores the cached state of $X_j$ along with its value $v$.
-If the cache has not been invalidated, $p_i$ updates the shared memory
-during $\TryC_k$ by invoking the $\ms{commit-cache}$ primitive.
-
-\vspace{1mm}\noindent\textbf{Slow-path read-only transactions.}
-Any $\Read_k(X_j)$ invoked by a slow-path transaction first reads the value of the object from $v_j$, 
-checks if $r_j$ is se, adds $r_j$ to $\Rset(T_k)$
-and then performs \emph{validation} on its entire read set to check if any of them have been modified. 
-If either of these conditions is true,
-the transaction returns $A_k$. Otherwise, it returns the value of $X_j$. 
-Validation of the read set is performed by re-reading the values of the sequence lock entires stored in $\Rset(T_k)$.
-A read-only transaction simply returns $C_k$ during the tryCommit.
-
-\vspace{1mm}\noindent\textbf{Slow-path updating transactions.}
-The $\Write_k(X,v)$ implementation of a slow-path transaction stores
-$v$ and the current value of $X_j$ locally, 
-deferring the actual update in shared memory to tryCommit. 
-An updating slow-path transaction $T_k$ attempts to obtain exclusive write access to its 
-entire write set by performing \emph{compare-and-set} (\emph{cas})
-primitive that checks if the value of $r_j$, for each $X_j\in \Wset(T_k)$, is unchanged since last reading it during $\Write_k(X.v)$
-If all the locks on the write set were acquired successfully, $T_k$ performs validation of the read set and returns $C_k$ if successful, else $p_i$ aborts the transaction.
-
-\vspace{1mm}\noindent\textbf{Non-cached accesses inside fast-path.}
-As indicated in the pseudocode of Algorithm~\ref{alg:inswrite}, some accesses may be performed uncached (as allowed
-in IBM Power 8) and the resulting implementation would still be opaque. 
-We can now prove the following theorem:
-%
-\begin{theorem}
-\label{th:inswrite}
-Algorithm~\ref{alg:inswrite} implements an opaque HyTM that provides invisible reads, progressiveness
-such that in its every execution $E$, every fast-path transaction $T\in \ms{txns}(E)$
-accesses $m=|\Dset(T_k)|$ distinct metadata base objects.
-\end{theorem}
-%
-\subsection{Instrumentation-optimal HyTMs that are progressive only for a subset of transactions}
-\label{sec:hytm2}
-%
 \begin{figure*}[!h]
       
      \scalebox{.9}[.9]{
@@ -70,8 +19,58 @@ accesses $m=|\Dset(T_k)|$ distinct metadata base objects.
 \caption{Table}\label{fig:main}    
 }
 \end{figure*}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Instrumentation-optimal progressive HyTMs }
+\label{sec:hytm1}
 %
-In this section, we describe Algorithm~\ref{alg:inswrite2} which does not incur the linear instrumentation cost
+For every t-object $X_j$, our implementation maintains a base object $v_j\in \mathbb{D}$ that stores the value of $X_j$
+and a \emph{sequence lock} $r_{j}$. The sequence lock is an unsigned integer whose LSB bit stores the \emph{locked} state.
+Specifically, we say that process $p_i$ \emph{holds a lock on $X_j$ after an execution $E$} if
+$\textit{or}_j$ $\mathrel{\&} 1=1$ after $E$, where $\textit{or}_j$ is the value of $r_j$ after $E$.
+
+\vspace{1mm}\noindent\textit{Fast-path transactions.}
+For a fast-path transaction $T_k$ executed by process $p_i$, the $\Read_k(X_j)$ implementation first reads $r_j$ (uncached)
+and returns $A_k$ if some other process $p_j$ holds a lock on $X_j$.
+Otherwise, it returns the value of $X_j$.
+Updating fast-path transactions 
+As with $\Read_k(X_j)$, the $\Write (X_j,v)$ implementation returns $A_k$ if some other process $p_j$ holds a lock on $X_j$.
+Process $p_i$ then increments the value of $r_j$ by $2$ via a direct access and stores the cached state of $X_j$ along with its value $v$.
+If the cache has not been invalidated, $p_i$ updates the shared memory
+during $\TryC_k$ by invoking the $\ms{commit-cache}$ primitive.
+
+\vspace{1mm}\noindent\textit{Slow-path read-only transactions.}
+Any $\Read_k(X_j)$ invoked by a slow-path transaction first reads the value of the object from $v_j$, 
+checks if $r_j$ is se, adds $r_j$ to $\Rset(T_k)$
+and then performs \emph{validation} on its entire read set to check if any of them have been modified. 
+If either of these conditions is true,
+the transaction returns $A_k$. Otherwise, it returns the value of $X_j$. 
+Validation of the read set is performed by re-reading the values of the sequence lock entires stored in $\Rset(T_k)$.
+A read-only transaction simply returns $C_k$ during the tryCommit.
+
+\vspace{1mm}\noindent\textit{Slow-path updating transactions.}
+The $\Write_k(X,v)$ implementation of a slow-path transaction stores
+$v$ and the current value of $X_j$ locally, 
+deferring the actual update in shared memory to tryCommit. 
+An updating slow-path transaction $T_k$ attempts to obtain exclusive write access to its 
+entire write set by performing \emph{compare-and-set} (\emph{cas})
+primitive that checks if the value of $r_j$, for each $X_j\in \Wset(T_k)$, is unchanged since last reading it during $\Write_k(X.v)$
+If all the locks on the write set were acquired successfully, $T_k$ performs validation of the read set and returns $C_k$ if successful, else $p_i$ aborts the transaction.
+
+\vspace{1mm}\noindent\textit{Non-cached accesses inside fast-path.}
+As indicated in the pseudocode of Algorithm~\ref{alg:inswrite}, some accesses may be performed uncached (as allowed
+in IBM Power 8) and the resulting implementation would still be opaque. 
+% We can now prove the following theorem:
+% %
+% \begin{theorem}
+% \label{th:inswrite}
+% Algorithm~\ref{alg:inswrite} implements an opaque HyTM that provides invisible reads, progressiveness
+% such that in its every execution $E$, every fast-path transaction $T\in \ms{txns}(E)$
+% accesses $m=|\Dset(T_k)|$ distinct metadata base objects.
+% \end{theorem}
+%
+
+\paragraph{Instrumentation-optimal HyTMs that are progressive only for a subset of transactions.}
+Algorithm~\ref{alg:inswrite2} does not incur the linear instrumentation cost
 on the fast-path reading transactions (as in Algorithm~\ref{alg:inswrite}, but provides progressiveness only
 for slow-path reading transactions.
 %
@@ -96,10 +95,6 @@ the step-complexity cost on slow-path transactions by performing incremental val
 the global snapshot of the memory locations has changed since the start of the transaction.
 %
 \input{hybridnorec}
-
-\paragraph{Employing non-cached writes inside fast-path.}
-
-\paragraph{Performing short fast-path transactions inside slow-path.}
 
 \paragraph{Employing an uninstrumented fast fast-path.}
 Note that ideally we would like to execute all transactions inside hardware with minimal instrumentation.
