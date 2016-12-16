@@ -1,15 +1,21 @@
 %!TEX root = htm.tex
-\section{Related work and concluding remarks}
+\section{Related work and discussion}
 \label{sec:rel}
 %
+\paragraph{HyTM complexity.}
 The proof of Theorem~\ref{th:impossibility} is heavily based on the analogous proof for step complexity of
 STMs that are \emph{disjoint-access parallel} from \cite{prog15-pact}.
 The model from \cref{sec:hytm} itself is an extension of the HyTM model introduced in \cite{hytm14disc}
 which does not allow uncached accesses within the fast-path.
 
+\paragraph{HyTM implementations.}
 The HyTM implementation in \cite{damronhytm} uses the \emph{ROCK} processor~\cite{rock} as the underlying HTM
 while \cite{kumarhytm} described a specific HTM design that requires the support of \emph{non-cached accesses}
 within a hardware transaction. 
-Recent work has investigated alternatives to STM fallback, such as sandboxing~\cite{ALM14,CTGM14}, and fallback to \emph{reduced} hardware transactions~\cite{MS13}. These proposals are not currently covered by our framework, although we believe that our model can be extended to incorporate such techniques.
-Afeak \emph{et al}. proposed amalgamated lock elision (ALE)~\cite{ale15} which improves over TLE
+Recent work has investigated fallback to \emph{reduced} hardware transactions~\cite{MS13}. 
+Afek \emph{et al}. proposed amalgamated lock elision (ALE)~\cite{ale15} which improves over TLE
 by executing the slow-path as a series segments, each segment being a dynamic length hardware transaction.
+The hybridNOrec algorithm is described in \cite{hynorecriegel} and proposed the use of non-speculative accesses
+within fast-path transactions supported in the AMD ASF architectures.
+
+\paragraph{Concluding remarks.}

@@ -238,8 +238,9 @@
 \begin{document}
 
 \title{Cost of Concurrency in Hybrid Transactional Memory}
-\authorinfo{}{}
-
+\authorinfo{Trevor Brown\and Srivatsan Ravi}
+	   {University of Toronto \and Purdue University}
+	   
 \maketitle
 
 \newcommand{\trevor}[1]{\textbf{[[#1--Trevor]]}}
@@ -248,23 +249,29 @@
 %
 \begin{abstract}
 State-of-the-art \emph{software transactional memory (STM)} implementations achieve 
-good performance by carefully avoiding the overhead of \emph{incremental validation} (i.e., re-reading previously read data items to avoid inconsistency) while
+good performance by carefully avoiding the overhead of \emph{incremental validation} 
+(i.e., re-reading previously read data items to avoid inconsistency) while
 still providing \emph{progressiveness} (allowing transactional aborts only due to \emph{data conflicts}).
-Hardware transactional memory (HTM) implementations promise even better performance, but offer no progress guarantees.
+Hardware transactional memory (HTM) implementations promise even better performance, 
+but offer no progress guarantees.
 Thus, they must be combined with STMs, leading to \emph{hybrid} TMs (HyTM)
-in which hardware transactional accesses be \emph{instrumented} (i.e., access metadata) to detect contention with software transactions. 
+in which hardware transactional accesses be \emph{instrumented} (i.e., access metadata) 
+to detect contention with software transactions. 
 
-We show that, unlike in progressive STMs, in progressive HyTMs, software transactions \textit{cannot} avoid incremental validation.
-%\trevor{Maybe the next two sentences can just be cut to save space.}
-%Specifically, we prove that \emph{progressive} HyTMs, in which a transaction may be aborted only due to a \emph{data} conflict with a concurrent transaction, must necessarily incur a validation cost that is \emph{linear} in the size of the transaction's read set. This is in stark contrast to progressive STMs which can achieve $O(1)$ complexity operations.
-In fact, this result holds even if hardware transactions can \emph{read} metadata \emph{non-speculatively} (which intuitively reduces aborts due to metadata instrumentation).
-%
-We then present \emph{opaque} HyTM algorithms providing \emph{progressiveness for a subset of transactions} that are  %both hardware and software transactions \trevor{maybe just ``transactions''?}
+We show that, unlike in progressive STMs, in progressive HyTMs, software transactions 
+\textit{cannot} avoid incremental validation.
+In fact, this result holds even if hardware transactions can \emph{read} metadata 
+\emph{non-speculatively} (which intuitively reduces aborts due to metadata instrumentation).
+We then present \emph{opaque} HyTM algorithms providing \emph{progressiveness for a subset of transactions} 
+that are  %both hardware and software transactions \trevor{maybe just ``transactions''?}
 optimal in terms of hardware instrumentation. We show 
-how \emph{some} hardware instrumentation can be performed \textit{non-speculatively} without violating opacity while exploring the concurrency vs. hardware instrumentation vs. software validation
+how \emph{some} hardware instrumentation can be performed \textit{non-speculatively} 
+without violating opacity while exploring the concurrency vs. hardware instrumentation vs. software validation
 tradeoffs for these algorithms.
-Preliminary experiments on Intel Haswell (resp. IBM Power 8) not supporting (resp. supporting) non-speculative accesses inside hardware,
-seem to suggest that the inherent \emph{cost to concurrency} in HyTMs also exists in practice and discuss algorithmic techniques to overcome them.
+Preliminary experiments on Intel Haswell (resp. IBM Power 8) not supporting 
+(resp. supporting) non-speculative accesses inside hardware,
+seem to suggest that the inherent \emph{cost to concurrency} 
+in HyTMs also exists in practice and discuss algorithmic techniques to overcome them.
 \end{abstract}
 
 %\newpage
@@ -281,8 +288,8 @@ seem to suggest that the inherent \emph{cost to concurrency} in HyTMs also exist
 \input{Evaluation}
 %
 \input{related}
-%
-%\input{conc}
+
+\input{conc}
 %
 \newpage
 %
