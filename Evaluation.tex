@@ -2,5 +2,86 @@
 \section{Evaluation}
 \label{sec:eval}
 %
-We implemented Algorithms~\ref{alg:inswrite}, \ref{alg:inswrite2} and HybridNOrec in Intel Haswell and compared them against
-Transactional Lock Elision (TLE) as well as the popular STM TL2.
+In this section, we study the performance characteristics of Algorithms~\ref{alg:inswrite}, \ref{alg:inswrite2} and HybridNOrec, as well as Transactional Lock Elision (TLE) and the popular STM TL2.
+Our experimental goals are (G1) to study the performance impact of instrumentation on the fast-path and validation on the slow path, (G2) to understand how Algorithms~\ref{alg:inswrite} and \ref{alg:inswrite2} perform relative to the other algorithms, and (G3) to determine whether non-speculative accesses can be used to obtain performance significant improvements.
+We discuss (G1) and (G2), here.
+We are currently in the process of investigating (G3).
+
+%We implemented Algorithms~\ref{alg:inswrite}, \ref{alg:inswrite2} and HybridNOrec in Intel Haswell and compared them against
+%Transactional Lock Elision (TLE) as well as the popular STM TL2.
+
+\paragraph{Experimental system}
+The experimental system is a large-scale 2-socket Intel E7-4830 v3 with 12 cores per socket and 2 hyperthreads (HTs) per core, for a total of 48 threads.
+Each core has a private 32KB L1 cache and 256KB L2 cache (which is shared between HTs on a core).
+All cores on a socket share a 30MB L3 cache.
+
+We pin threads so that the first socket is saturated before we place any threads on the second socket.
+Thus, thread counts 1-24 run on a single socket.
+Furthermore, hyperthreading is engaged on the first socket for thread counts 13-24, and on the second socket for thread counts 37-48.
+Consequently, our graphs clearly show the effects of NUMA and hyperthreading.
+
+The machine has 128GB of RAM, and runs Ubuntu 14.04 LTS.
+All code was compiled with the GNU C++ compiler (G++) 4.8.4 with build target x86\_64-linux-gnu and compilation options \texttt{-std=c++0x -O3 -mx32}.
+%Thread support was provided by the POSIX Threads library.
+We used the default glibc allocator.
+
+\paragraph{Hybrid TM implementations}
+For TL2, we used the implementation published by its authors.
+We implemented the other algorithms in C++.
+Each hybrid TM algorithm first attempts to execute a transaction on the fast path, and will continue to execute on the fast path until the transaction has experienced 20 aborts, at which point it will fall back to the slow path.
+
+\paragraph{Methodology}
+We used a simple unbalanced binary search tree (BST) microbenchmark as a vehicle to study the performance of our implementations.
+The BST implements a dictionary, which contains a set of keys, each with an associated value.
+For each algorithm $A \in \{$TL2, TLE, Algorithm~1, Algorithm~2, Hybrid noREC$\}$, and update rate $U \in \{40, 10, 0\}$, we run six timed \textit{trials} for several thread counts $n$.
+Each trial proceeds in two phases: \textit{prefilling} and \textit{measuring}.
+In the prefilling phase, $n$ concurrent threads perform 50\% \textit{Insert} and 50\% \textit{Delete} operations on keys drawn uniformly randomly from $[0, 10^5)$ until the size of the tree converges to a steady state (containing approximately $10^5/2$ keys).
+Next, the trial enters the measuring phase, during which threads begin counting how many operations they perform.
+In this phase, each thread performs $(U/2)$\% \textit{Insert}, $(U/2)$\% \textit{Delete} and $(100-U)$\% \textit{Search} operations, on keys/values drawn uniformly from $[0,10^5)$, for one second.
+
+Uniformly random updates to an unbalanced BST have been proven to yield trees of logarithmic height with high probability.
+Furthermore, updates and searches in an unbalanced BST are simple.
+Thus, in this type of workload, almost all transactions succeed in hardware, and the slow path is almost never used.
+%there is no need. and have small read and write sets This workload is highly disjoint access parallel, and the height of the tree is relatively small, so most transactions succeed in hardware.
+To study performance when transactions regularly run on the slow path, we introduced another operation called a \textit{RangeIncrement} that often fails in hardware and must run on the slow path.
+A \textit{RangeIncrement}$(low, hi)$ atomically increments the values associated with each key in the range $[low, hi]$ that is present in the tree.
+Note that a \textit{RangeIncrement} is more likely to experience data conflicts and capacity aborts than traditional BST updates, which only modify a single node.
+
+We consider two types of workloads: (W1) all $n$ threads perform \textit{Insert}, \textit{Delete} and \textit{Search}, and (W2) $n-1$ threads perform \textit{Insert}, \textit{Delete} and \textit{Search} and one thread performs only \textit{RangeIncrement} operations.
+%In W2, one can think of the thread $p$ that performs \textit{RangeIncrement} operations as a tunable knob that controls the fraction of time in the execution that the slow path is being executed.
+%Increasing the size of the range $[low, hi]$ passed to \textit{RangeIncrement} will cause $p$ to spend more time on the slow path.
+Figure~\ref{fig-exp-bst} shows the results for both types of workloads.
+
+%As a way of validating correctness in each trial, each thread maintains a \textit{checksum}.
+%Each time a thread inserts (resp., deletes) a key, it adds the key to (resp., subtracts from) its checksum.
+%At the end of the trial, the sum of all thread checksums must be equal to the sum of keys in the tree.
+
+\begin{figure}
+    \centering
+    \setlength\tabcolsep{0pt}
+    \begin{tabular}{m{0.05\linewidth}m{0.47\linewidth}m{0.47\linewidth}}
+        &
+        \fcolorbox{black!50}{black!20}{\parbox{\dimexpr \linewidth-2\fboxsep-2\fboxrule}{\centering {\footnotesize No threads perform \textit{RangeIncrement} (W1)}}} &
+        \fcolorbox{black!50}{black!20}{\parbox{\dimexpr \linewidth-2\fboxsep-2\fboxrule}{\centering {\footnotesize One thread performs \textit{RangeIncrement} (W2)}}}
+        \\
+        \rotatebox{90}{\small 0\% updates} &
+        \includegraphics[width=\linewidth]{figures/graphs/0i0d100000k-nrq0.png} &
+        \includegraphics[width=\linewidth]{figures/graphs/0i0d100000k-nrq1.png}
+        \\
+        \vspace{-5mm}\rotatebox{90}{\small 10\% updates} &
+        \vspace{-5mm}\includegraphics[width=\linewidth]{figures/graphs/5i5d100000k-nrq0.png} &
+        \vspace{-5mm}\includegraphics[width=\linewidth]{figures/graphs/5i5d100000k-nrq1.png}
+        \\
+        \vspace{-5mm}\rotatebox{90}{\small 40\% updates} &
+        \vspace{-5mm}\includegraphics[width=\linewidth]{figures/graphs/20i20d100000k-nrq0.png} &
+        \vspace{-5mm}\includegraphics[width=\linewidth]{figures/graphs/20i20d100000k-nrq1.png}
+        \\
+    \end{tabular}
+    \vspace{-2mm}
+	\includegraphics[width=\linewidth]{figures/graphs/dsbench_legend.png}
+    \vspace{-5mm}
+\caption{Results for a \textbf{BST microbenchmark}.
+The x-axis represents the number of concurrent threads.
+The y-axis represents operations per microsecond.}
+\label{fig-exp-bst}
+\end{figure}
