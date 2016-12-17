@@ -6,16 +6,16 @@
 \begin{figure*}[!ht]
 \begin{center}
 	\subfloat[Slow-path transaction $T_{\phi}$ performs $i-1$ distinct t-reads followed by the t-read of $X_i$ that returns value $nv$ 
-	writtten by fast-path transaction $T_i$\label{sfig:inv-1}]{\scalebox{0.65}[0.65]{\input{dap}}}
+	writtten by fast-path transaction $T_i$\label{sfig:inv-1}]{\scalebox{0.6}[0.6]{\input{dap}}}
         \\
         \vspace{1mm}
 	\subfloat[Fast-path transaction $T_i$ does not contend with any of the $i-1$ t-reads performed by $T_{\phi}$;
-	this execution is indistinguishable to $T_{\phi}$ from \ref{sfig:inv-1} and t-read of $X_i$ must return $nv$\label{sfig:inv-2}]{\scalebox{0.65}[0.65]{\input{dap2}}}
+	this execution is indistinguishable to $T_{\phi}$ from \ref{sfig:inv-1} and t-read of $X_i$ must return $nv$\label{sfig:inv-2}]{\scalebox{0.6}[0.6]{\input{dap2}}}
 	\\
 	\vspace{1mm}
 	\subfloat[To distinguish the $i-1$ different executions, t-read of $X_i$ by $T_{\phi}$ is forced
-	to access $i-1$ different base objects\label{sfig:inv-3}]{\scalebox{0.65}[0.65]{\input{dap3}}}
-	\caption{proof steps
+	to access $i-1$ different base objects\label{sfig:inv-3}]{\scalebox{0.6}[0.6]{\input{dap3}}}
+	\caption{Proof steps for Theorem~\ref{th:impossibility}
         \label{fig:indis}} 
 \end{center}
 \end{figure*}
