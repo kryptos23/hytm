@@ -45,12 +45,12 @@ and then performs \emph{validation} on its entire read set to check if any of th
 If either of these conditions is true,
 the transaction returns $A_k$. Otherwise, it returns the value of $X_j$. 
 Validation of the read set is performed by re-reading the values of the sequence lock entires stored in $\Rset(T_k)$.
-A read-only transaction simply returns $C_k$ during the tryCommit.
+%A read-only transaction simply returns $C_k$ during the tryCommit.
 
 \vspace{1mm}\noindent\textit{Slow-path updating transactions:}
-The $\Write_k(X,v)$ implementation of a slow-path transaction stores
-$v$ and the current value of $X_j$ locally, 
-deferring the actual update in shared memory to tryCommit. 
+% The $\Write_k(X,v)$ implementation of a slow-path transaction stores
+% $v$ and the current value of $X_j$ locally, 
+% deferring the actual update in shared memory to tryCommit. 
 An updating slow-path transaction $T_k$ attempts to obtain exclusive write access to its 
 entire write set by performing \emph{compare-and-set} (\emph{cas})
 primitive that checks if the value of $r_j$, for each $X_j\in \Wset(T_k)$, is unchanged since last reading it during $\Write_k(X.v)$

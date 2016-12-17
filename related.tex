@@ -2,13 +2,13 @@
 \section{Related work and discussion}
 \label{sec:rel}
 %
-\vspace{1mm}\noindent\textbf{HyTM complexity.}
+%\vspace{1mm}\noindent\textbf{HyTM complexity.}
 The proof of Theorem~\ref{th:impossibility} is heavily based on the analogous proof for step complexity of
 STMs that are \emph{disjoint-access parallel} from \cite{prog15-pact}.
 The model from \cref{sec:hytm} itself is an extension of the HyTM model introduced in \cite{hytm14disc}
 which does not allow uncached accesses within the fast-path.
 
-\vspace{1mm}\noindent\textbf{HyTM implementations.}
+%\vspace{1mm}\noindent\textbf{HyTM implementations.}
 An early HyTM implementation described in \cite{damronhytm} uses the \emph{ROCK} processor~\cite{rock} as the underlying HTM
 while \cite{kumarhytm} described a specific HTM design that requires the support of \emph{non-cached accesses}
 within a hardware transaction. 
@@ -19,7 +19,7 @@ by executing the slow-path as a series segments, each segment being a dynamic le
 The hybrid NOrec algorithm is described in \cite{hynorecriegel} which additionally proposed the use of non-speculative accesses
 within fast-path transactions supported in the AMD ASF architectures.
 
-\vspace{1mm}\noindent\textbf{Concluding remarks.}
+%\vspace{1mm}\noindent\textbf{Concluding remarks.}
 In ongoing work, we are implementing our algorithms on the IBM Power8 HTM implementation which supports
 non-cached accesses inside fast-path. We hope to understand if the instrumentation ovehead in
 progressive HyTM implementations on Intel's HTM are also inherent to Power8's HTM implementation.
