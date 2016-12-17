@@ -10,7 +10,7 @@ We are currently in the process of investigating (G3).
 %We implemented Algorithms~\ref{alg:inswrite}, \ref{alg:inswrite2} and HybridNOrec in Intel Haswell and compared them against
 %Transactional Lock Elision (TLE) as well as the popular STM TL2.
 
-\paragraph{Experimental system.}
+\vspace{1mm}\noindent\textbf{Experimental system.}
 The experimental system is a large-scale 2-socket Intel E7-4830 v3 with 12 cores per socket and 2 hyperthreads (HTs) per core, for a total of 48 threads.
 Each core has a private 32KB L1 cache and 256KB L2 cache (which is shared between HTs on a core).
 All cores on a socket share a 30MB L3 cache.
@@ -26,12 +26,12 @@ All code was compiled with the GNU C++ compiler (G++) 4.8.4 with build target x8
 %Thread support was provided by the POSIX Threads library.
 We used the default glibc allocator.
 
-\paragraph{Hybrid TM implementations.}
+\vspace{1mm}\noindent\textbf{Hybrid TM implementations.}
 For TL2, we used the implementation published by its authors.
 We implemented the other algorithms in C++.
 Each hybrid TM algorithm first attempts to execute a transaction on the fast path, and will continue to execute on the fast path until the transaction has experienced 20 aborts, at which point it will fall back to the slow path.
 
-\paragraph{Methodology.}
+\vspace{1mm}\noindent\textbf{Methodology.}
 We used a simple unbalanced binary search tree (BST) microbenchmark as a vehicle to study the performance of our implementations.
 The BST implements a dictionary, which contains a set of keys, each with an associated value.
 For each algorithm $A \in \{$TL2, TLE, Algorithm~1, Algorithm~2, Hybrid NOrec$\}$, and update rate $U \in \{40, 10, 0\}$, we run six timed \textit{trials} for several thread counts $n$.
@@ -87,7 +87,7 @@ The y-axis represents operations per microsecond.}
 \label{fig-exp-bst}
 \end{figure}
 
-\paragraph{Results.}
+\vspace{1mm}\noindent\textbf{Results.}
 
 We first discuss the 0\% updates graph for workload type W1.
 In this graph, essentially all operations committed in hardware.
