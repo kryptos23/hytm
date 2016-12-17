@@ -106,13 +106,8 @@ Specifically, Algorithm~\ref{alg:middle} describes a generic transformation for 
 HyTM $\mathcal{M}'$ by employing a shared \emph{fetch-and-add} metadata $F$ that slow-path updating transactions
 increment (and resp. decrement) at the start (and resp. end). The fast fast-path checks first checks if $F$ is $0$
 and if not, aborts the transaction; otherwise the transaction is continued as an uninstrumented hardware transaction.
-Since there is no concurrency between fast fast-path and slow-path, the following result is immediate:
+Since there is no concurrency between fast fast-path and slow-path, opacity is immediate.
 %
-%
-\begin{theorem}
-Given any opaque HyTM $\mathcal{M}$ with a fast-path and slow-path, Algorithm~\ref{alg:middle} implements an opaque HyTM $\mathcal{M}'$
-with a fast fast-path, fast-path and a slow-path.
-\end{theorem}
 %
 \input{middle}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
