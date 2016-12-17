@@ -35,7 +35,7 @@ Function: release(Q)
 Function: acquire(Q)
     for each X$_j$ $\in Q$	
 	if r$_j.\lit{setV}()$  // \label{line:acq1}
-	    Lset(T$_k$) := Lset(T$_k$) $\cup \{X_j\}$
+	    Lset(T$_k$) := Lset(T$_k$) $\cup$ {X$_j$}
 	    return true
 	$\lit{release}$(Lset(T$_k$))
 	    return false
@@ -61,24 +61,24 @@ write$_k(X_j,v)$
     nv$_j$ := v
     if or$_j$ $\mathrel{\&} 1$ then	
 	return A$_k$ 
-    Wset(T$_k$) := Wset(T$_k$)$\cup$\{X$_j$,nv$_j$, or$_j$\}
+    Wset(T$_k$) := Wset(T$_k$)$\cup${X$_j$,nv$_j$, or$_j$}
     return ok
 
 tryC$_k$()
     if $\Wset(T_k)= \emptyset$ then
 	return C$_k$ // \label{line:return}
     if $\lit{acquire}(\Wset(T_k))$ then	// \label{line:acq}
-	if $\neg \lit{validate}()$} // \label{line:abort3}
-	    $\lit{release}( \ms{Wset}(T_k))$ 
+	if $\neg$ validate() // \label{line:abort3}
+	    release( Wset(T$_k$)) 
 	    return A$_k$ 
-	for each $X_j \in \Wset(T_k)$
+	for each X$_j$ $\in$ Wset(T$_k$)
 	    v_j:= nv$_j$ //\label{line:write}
-	$\lit{release}(\Wset(T_k))$  // \label{line:rel}	
+	    release(Wset(T$_k$))  // \label{line:rel}	
 	    return C$_k$ 
     return A$_k$ 
 
 Function: $\lit{validate}()$}
-    if $\exists X_j \in$ Rset(T_k):or$_j\neq$ r$_j$ then // \label{line:valid}
+    if $\exists$ X$_j$ $\in$ Rset(T$_k$):or$_j\neq$ r$_j$ then // \label{line:valid}
 	return false
     return true
 

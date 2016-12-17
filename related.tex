@@ -12,10 +12,11 @@ which does not allow uncached accesses within the fast-path.
 The HyTM implementation in \cite{damronhytm} uses the \emph{ROCK} processor~\cite{rock} as the underlying HTM
 while \cite{kumarhytm} described a specific HTM design that requires the support of \emph{non-cached accesses}
 within a hardware transaction. 
-Recent work has investigated fallback to \emph{reduced} hardware transactions~\cite{MS13}. 
+Recent work has investigated fallback to \emph{reduced} hardware transactions~\cite{MS13}
+in which an all-software slow-path is replaced by a mix of hardware and software transactions. 
 Afek \emph{et al}. proposed amalgamated lock elision (ALE)~\cite{ale15} which improves over TLE
 by executing the slow-path as a series segments, each segment being a dynamic length hardware transaction.
-The hybridNOrec algorithm is described in \cite{hynorecriegel} and proposed the use of non-speculative accesses
+The hybridNOrec algorithm is described in \cite{hynorecriegel} which additionally proposed the use of non-speculative accesses
 within fast-path transactions supported in the AMD ASF architectures.
 
 \paragraph{Concluding remarks.}
