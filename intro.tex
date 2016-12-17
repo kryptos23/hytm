@@ -56,12 +56,18 @@ Thus, in addition to the linear instrumentation cost on the hardware transaction
 step complexity cost on the software transactions.
 
 We then present \emph{opaque} HyTM algorithms providing \emph{progressiveness for a subset of transactions} that are  %both hardware and software transactions \trevor{maybe just ``transactions''?}
-optimal in terms of hardware instrumentation. We sketch 
-how \emph{some} hardware instrumentation can be performed \textit{non-speculatively} 
-without violating opacity while exploring the concurrency vs. hardware instrumentation vs. software validation
-tradeoffs for these algorithms.
-Preliminary experiments on Intel Haswell (resp. IBM Power 8) not supporting (resp. supporting) non-speculative accesses inside hardware,
-seem to suggest that the inherent \emph{cost to concurrency} in HyTMs also exists in practice and discuss algorithmic techniques to overcome them.
+optimal in terms of hardware instrumentation.
+Algorithm~1 is progressive for all transactions, but it incurs high instrumentation overhead in practice.
+Algorithm~2 avoids all instrumentation in fast-path read operations, but is progressive only for slow-path reading transactions.
+We also sketch how \emph{some} hardware instrumentation can be performed \textit{non-speculatively} without violating opacity.
+
+We performed preliminary experiments comparing our HyTM algorithms to TL2, Transactional Lock Elision (TLE) and Hybrid NOrec~\cite{hynorecriegel} using a binary search tree microbenchmark.
+In these experiments, we studied two types of workloads: workloads in which essentially all transactions commit on the fast-path, and workloads in which some thread periodically performs transactions on the slow-path.
+These experiments demonstrate that hardware instrumentation is a dominating factor in the performance of HyTMs, and that simplistic algorithms like TLE perform very well unless transactions periodically run on the slow-path.
+
+%We explore the concurrency vs. hardware instrumentation vs. software validation tradeoffs for these algorithms.
+%Preliminary experiments on Intel Haswell (resp. IBM Power 8) not supporting (resp. supporting) non-speculative accesses inside hardware,
+%seem to suggest that the inherent \emph{cost to concurrency} in HyTMs also exists in practice and discuss algorithmic techniques to overcome them.
 
 % \paragraph{Roadmap.}
 % \cref{sec:hytm} presents details of the HyTM model that extends the model introduced in \cite{htmdisc15} 
