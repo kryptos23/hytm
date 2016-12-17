@@ -84,8 +84,9 @@ for slow-path reading transactions.
 %
 Observe that the lower bound in Theorem~\ref{th:impossibility} assumes progressiveness for both slow-path and fast-path transactions
 along with opacity and invisible reads.
-In this section, we present algorithmic ideas for cirvumventing the lower bound or minimizing the cost incurred
-by implementations due to incremental validation.
+In this section, we suggest algorithmic ideas for cirvumventing the lower bound or minimizing the cost incurred
+by implementations due to incremental validation. Figure~\ref{fig:main} summarizes the complexity costs
+associated with the HyTM algorithms considered in this paper.
 
 \paragraph{Sacrificing progressiveness and minimizing contention window.}
 %
