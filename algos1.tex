@@ -92,10 +92,11 @@ associated with the HyTM algorithms considered in this paper.
 %
 \emph{Hybrid Norec}~\cite{hybridnorec} is a HyTM implementation that does not satisfy progressiveness
 (unlike its STM counterpart Norec), but mitigates
-the step-complexity cost on slow-path transactions by performing incremental validation during a transactional read \emph{iff} 
+the step-complexity cost on slow-path transactions by performing incremental validation 
+during a transactional read \emph{iff} 
 the global snapshot of the memory locations has changed since the start of the transaction.
 %
-\input{hybridnorec}
+%\input{hybridnorec}
 
 \paragraph{Employing an uninstrumented fast fast-path.}
 Note that ideally we would like to execute all transactions inside hardware with minimal instrumentation.
