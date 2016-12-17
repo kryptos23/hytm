@@ -113,7 +113,9 @@ Then, $T_1$ and $T_2$ do not contend on any base object in $E_1 \cdot E_2$.
 % to the assumption that $\mathcal{M}$ is progressive.   
 % \end{enumerate}
 % \end{proof}
-%
+
+The formal proof of the theorem follows.
+
 \begin{proof}
 We construct an execution of a progressive opaque HyTM in which every t-read performed by a read-only slow-path transaction
 must access linear (in the size of the read set) number of distinct base objects.
@@ -142,20 +144,20 @@ $\Read_{\phi}(X_i) \rightarrow nv_i$.
 %
 \end{claim}
 %
-\begin{proof}
-%
-$\mathcal{M}$ has an execution of the form $\rho^i\cdot \pi^{i-1}$.
-Since $\Dset(T_k) \cap \Dset(T_{i}) =\emptyset$ in $\rho^i\cdot \pi^{i-1}$,
-by Lemma~\ref{lm:hytm}, transactions $T_{\phi}$ and $T_i$ do not contend
-on any base object in execution $\rho^i\cdot \pi^{i-1}$.
-Thus, $\rho^i\cdot \pi^{i-1}$ is also an execution of $\mathcal{M}$.
-
-By opacity, $\rho^i\cdot \pi^{i-1} \cdot \alpha^i$ (Figure~\ref{sfig:inv-1}) is an execution
-of $\mathcal{M}$ in which the t-read of $X_i$ performed by $T_{\phi}$ must return $nv_i$.
-But $\rho^i \cdot \pi^{i-1} \cdot \alpha^i$ is indistinguishable to $T_{\phi}$ from
-$\pi^{i-1}\cdot \rho^i \cdot \alpha^i$.
-Thus, $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \rho^i \cdot \alpha^i$ (Figure~\ref{sfig:inv-2}).
-\end{proof}
+% \begin{proof}
+% %
+% $\mathcal{M}$ has an execution of the form $\rho^i\cdot \pi^{i-1}$.
+% Since $\Dset(T_k) \cap \Dset(T_{i}) =\emptyset$ in $\rho^i\cdot \pi^{i-1}$,
+% by Lemma~\ref{lm:hytm}, transactions $T_{\phi}$ and $T_i$ do not contend
+% on any base object in execution $\rho^i\cdot \pi^{i-1}$.
+% Thus, $\rho^i\cdot \pi^{i-1}$ is also an execution of $\mathcal{M}$.
+% 
+% By opacity, $\rho^i\cdot \pi^{i-1} \cdot \alpha^i$ (Figure~\ref{sfig:inv-1}) is an execution
+% of $\mathcal{M}$ in which the t-read of $X_i$ performed by $T_{\phi}$ must return $nv_i$.
+% But $\rho^i \cdot \pi^{i-1} \cdot \alpha^i$ is indistinguishable to $T_{\phi}$ from
+% $\pi^{i-1}\cdot \rho^i \cdot \alpha^i$.
+% Thus, $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \rho^i \cdot \alpha^i$ (Figure~\ref{sfig:inv-2}).
+% \end{proof}
 %
 For each $i\in \{2,\ldots, m\}$, $j\in \{1,2\}$ and $\ell \leq (i-1)$, 
 we now define an execution of the form  $\mathbb{E}_{j\ell}^{i}=\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$
