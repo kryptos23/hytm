@@ -13,73 +13,64 @@
 read$_k(X_j)$
     ov$_j$ := v$_j$ //\medcom cached read \label{line:lin1}
     or$_j$ := r$_j$ //\medcom uncached read \label{line:hread}
-    if or$_j$ $\mathrel{\&}1$ then  
-	return A$_k$ 
-    return ov$_j$ 
+    if or$_j$ & 1 then return $A_k$ 
+    return ov$_j$ //\vspace{-2mm}
 
 write$_k(X_j,v)$
     $\textit{or}_j := \Read(r_j)$ //\medcom cached read \label{line:m1}
-    if or$_j$ $\mathrel{\&} 1$ then  		
-	return A$_k$ 
+    if or$_j$ & 1 then return $A_k$
     r$_j$ := or$_j$+2 // \label{line:m2}
     v$_j$ := v //\medcom uncached write \label{line:lin2} 
-    return ok
+    return OK //\vspace{-2mm}
 
 tryC$_k$()
-    commit-cache$_i$ // \label{line:lin3}
+    commit-cache$_i$ // \label{line:lin3}\vspace{-2mm}
 
 Function: release(Q)
     for each X$_j$ $\in Q$
-	r$_j$ := or$_j$+1 // \label{line:rel1}	
+	r$_j$ := or$_j$+1 // \label{line:rel1}\vspace{-2mm}
 	
 Function: acquire(Q)
     for each X$_j$ $\in Q$	
 	if r$_j.\lit{setV}()$  // \label{line:acq1}
 	    Lset(T$_k$) := Lset(T$_k$) $\cup$ {X$_j$}
 	    return true
-	$\lit{release}$(Lset(T$_k$))
-	    return false
+	release(Lset(T$_k$))
+	return false
 \end{lstlisting}
 \end{minipage}
 \begin{minipage}{0.49\textwidth}
 \begin{lstlisting}[frame=none,firstnumber=last,mathescape=true]
 //\textbf{Code for slow-path transactions}
 Read$_k$(X$_j$)
-    if X$_j$ $\in$ Wset(T$_k$) then
-	return Wset(T$_k$).locate(X$_j$) 
+    if X$_j$ $\in$ Wset(T$_k$) then	return Wset(T$_k$).locate(X$_j$) 
     or$_j$ := r$_j$ //\label{line:readorec}
     ov$_j$ := v$_j$ //\label{line:read2}
     Rset(T$_k$) := Rset(T$_k$)$\cup$ {X$_j$,or$_j$} //\label{line:rset}
-    if or$_j$ $\mathrel{\&} 1$ then //\label{line:abort0}	
-	return A$_k$
-    if $\neg$ validate() then //\label{line:valid}
-	return A$_k$
-    return ov$_j$
+    if or$_j$ $\mathrel{\&} 1$ then return $A_k$ //\label{line:abort0}	
+    if not validate() then return $A_k$ //\label{line:valid}
+    return ov$_j$ //\vspace{-2mm}
 
 write$_k(X_j,v)$
     or$_j$ := r$_j$
     nv$_j$ := v
-    if or$_j$ $\mathrel{\&} 1$ then	
-	return A$_k$ 
-    Wset(T$_k$) := Wset(T$_k$)$\cup${X$_j$,nv$_j$, or$_j$}
-    return ok
+    if or$_j$ & 1 then return $A_k$
+    Wset(T$_k$) := Wset(T$_k$) $\cup$ {X$_j$, nv$_j$, or$_j$}
+    return OK //\vspace{-2mm}
 
 tryC$_k$()
-    if $\Wset(T_k)= \emptyset$ then
-	return C$_k$ // \label{line:return}
-    if $\lit{acquire}(\Wset(T_k))$ then	// \label{line:acq}
-	if $\neg$ validate() // \label{line:abort3}
-	    release( Wset(T$_k$)) 
-	    return A$_k$ 
-	for each X$_j$ $\in$ Wset(T$_k$)
+    if Wset(T$_k$) = $\emptyset$ then return $C_k$ // \label{line:return}
+    if not acquire(Wset(T$_k$)) then return $A_k$ // \label{line:acq}
+    if not validate() // \label{line:abort3}
+	    release(Wset(T$_k$)) 
+	    return $A_k$ 
+    for each X$_j$ $\in$ Wset(T$_k$)
 	    v_j:= nv$_j$ //\label{line:write}
 	    release(Wset(T$_k$))  // \label{line:rel}	
-	    return C$_k$ 
-    return A$_k$ 
+	    return $C_k$  //\vspace{-2mm}
 
-Function: $\lit{validate}()$}
-    if $\exists$ X$_j$ $\in$ Rset(T$_k$):or$_j\neq$ r$_j$ then // \label{line:valid}
-	return false
+Function: validate()
+    if $\exists$ X$_j$ $\in$ Rset(T$_k$):or$_j \neq$ r$_j$ then return false // \label{line:valid}
     return true
 
 \end{lstlisting}
