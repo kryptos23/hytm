@@ -3,23 +3,24 @@
 \label{sec:rel}
 %
 %\vspace{1mm}\noindent\textbf{HyTM complexity.}
-The proof of Theorem~\ref{th:impossibility} is heavily based on the analogous proof for step complexity of
-STMs that are \emph{disjoint-access parallel}~\cite{prog15-pact}.
-The model from \cref{sec:hytm} itself is an extension of the HyTM model introduced in \cite{hytm14disc}
-which does not allow uncached accesses within the fast-path.
+The proof of Theorem~\ref{th:impossibility} is based on the analogous proof for step complexity of STMs that are \emph{disjoint-access parallel}~\cite{prog15-pact}.
+Our model extends the HyTM model in \cite{hytm14disc} which did not allow uncached accesses on the fast-path.
 
 %\vspace{1mm}\noindent\textbf{HyTM implementations.}
 An early HyTM implementation described in \cite{damronhytm} uses the \emph{ROCK} processor~\cite{rock} as the underlying HTM
-while \cite{kumarhytm} described a specific HTM design that requires the support of \emph{non-cached accesses}
-within a hardware transaction. 
+while \cite{kumarhytm} described an implementation that requires support for \emph{non-cached accesses} in a hardware transaction. 
 Recent work has investigated fallback to \emph{reduced} hardware transactions~\cite{MS13}
 in which an all-software slow-path is replaced by a mix of hardware and software transactions. 
 Afek \emph{et al}. proposed amalgamated lock elision (ALE)~\cite{ale15} which improves over TLE
-by executing the slow-path as a series segments, each segment being a dynamic length hardware transaction.
-The hybrid NOrec algorithm is described in \cite{hynorecriegel} which additionally proposed the use of non-speculative accesses
-within fast-path transactions supported in the AMD ASF architectures.
+by executing the slow-path as a series of segments, each of which is a dynamic length hardware transaction.
+Our implementation of Hybrid NOrec follows \cite{hynorecriegel}, which additionally proposed the use of non-speculative accesses
+in fast-path transactions to reduce instrumentation overhead. %(supported in the AMD ASF architectures).
 
 %\vspace{1mm}\noindent\textbf{Concluding remarks.}
-In ongoing work, we are implementing our algorithms on the IBM Power8 HTM implementation which supports
-non-cached accesses inside fast-path. We hope to understand if the instrumentation overheads we observed
-on Intel's HTM are also inherent to Power8's HTM implementation.
+In ongoing work, we are implementing our algorithms on the IBM POWER8 HTM implementation which supports
+non-cached accesses in hardware transactions.
+We hope to understand whether the instrumentation overheads we observed
+on Intel's HTM are also inherent to POWER8's HTM implementation.
+
+One important consequence of our work is the realization that, in order to achieve high performance in practice, one must either abandon progressiveness or develop a new HyTM algorithm that effectively uses non-speculative writes.
+Both directions are promising, and little work has been done in either.
