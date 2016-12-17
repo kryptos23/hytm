@@ -90,13 +90,22 @@ associated with the HyTM algorithms considered in this paper.
 
 \paragraph{Sacrificing progressiveness and minimizing contention window.}
 %
-\emph{Hybrid Norec}~\cite{hybridnorec} is a HyTM implementation that does not satisfy progressiveness
-(unlike its STM counterpart Norec), but mitigates
+\emph{Hybrid NOrec}~\cite{hybridnorec} is a HyTM implementation that does not satisfy progressiveness
+(unlike its STM counterpart NOrec), but mitigates
 the step-complexity cost on slow-path transactions by performing incremental validation 
 during a transactional read \emph{iff} 
-the global snapshot of the memory locations has changed since the start of the transaction.
-%
-%\input{hybridnorec}
+the shared memory has changed since the start of the transaction.
+Conceptually, hybrid NOrec uses a global sequence lock gsl that is incremented 
+at the start and end of each transaction's commit procedure.
+Readers can use the value of gsl to determine whether shared memory has changed between two configurations.
+Unfortunately, with this approach, two fast path transactions will always conflict on the gsl if their 
+commit procedures are concurrent.
+To reduce the contention window for fast path transactions, the gsl is actually implemented as two separate locks.
+a slow path transaction locks both esl and gsl while it is committing.
+Instead of incrementing gsl, a fast path transaction checks if esl is locked and aborts if it is.
+Then, at the end of the fast path transaction's commit procedure, 
+it increments gsl twice (quickly locking and releasing it and immediately commits in hardware), thus, the 
+window for fast path transactions to content on gsl is very small.
 
 \paragraph{Employing an uninstrumented fast fast-path.}
 Note that ideally we would like to execute all transactions inside hardware with minimal instrumentation.

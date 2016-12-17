@@ -6,64 +6,68 @@
 The \emph{Transactional Memory (TM)} abstraction is a synchronization mechanism 
 that allows the programmer to \emph{speculatively} execute sequences of shared-memory
 operations as \emph{atomic transactions}.
-Most popular TM designs, subsequent to the original proposal in \cite{HM93} 
-have implemented all the functionality in software~\cite{norec, ST95,HLM+03, astm, fraser}.
+Several software TM designs~\cite{norec, ST95,HLM+03, astm, fraser} have been introduced subsequent to the original proposal TM proposal based in
+hardware~\cite{HM93}. 
 The original dynamic STM implementation DSTM~\cite{HLM+03} ensures \emph{progressiveness}: 
 a transaction aborts only if there is a read-write \emph{data conflict} with a concurrent
 transaction. However, read operations in DSTM must \emph{incrementally} validate
-every next read operation. This results in a quadratic  (in the size of the transaction's read
+the responses of all previous read operations to avoid inconsistent executions. 
+This results in a quadratic  (in the size of the transaction's read
 set) step-complexity bound. Subsequent STM 
 implementations like NOrec~\cite{norec} and TL2~\cite{DSS06}
 minimize the impact on performance due to incremental validation.
-NOrec uses a global versioned lock that is read at the start of a transaction and performs \emph{value-based}
-validation during read operations only if the value of the global lock has changed since reading it.
-TL2 eliminates incremental validation completely by associating a global versioned lock
-value with each data item updated: any read of a data item returns
-a value only if the version associated with it is the same as the 
-value of the versioned lock read at the start of the transaction. 
+NOrec uses a global sequence lock that is read at the start of a transaction and performs \emph{value-based}
+validation during read operations only if the value of the global lock has changed (by an updating transaction) 
+since reading it.
+TL2, on the other hand, eliminates incremental validation completely.
+Like NOrec, it uses a global sequence lock, but each data item also 
+has an associated sequence lock value that is updated alongside the data item.
+When a data item is read, if its associated sequence lock value is different 
+from the value that was read from the sequence lock at the start of the transaction, then the transaction aborts.
 
-In fact, state-of-the-art STM implementations ensure progress in the absence of conflicts with 
-$O$(1) read operations while still satisfying \emph{invisible reads} (read operations 
+In fact, STMs like TL2 and NOrec ensure progress in the absence of data conflicts with 
+$O$(1) step complexity read operations and \emph{invisible reads} (read operations 
 do not apply any nontrivial primitives on the shared memory).
 Nonetheless, TM designs that are implemented entirely in software still incur significant performance overhead.
 Thus, current CPUs have included instructions to mark a block of memory accesses as transactional~\cite{Rei12, asf, bluegene}, allowing them to be executed \emph{atomically} in hardware.
-Hardware transactions promise even better performance, but they offer no progress guarantees 
-since they may experience %\emph{conflict aborts} and
+Hardware transactions promise better performance than STMs, but they offer no progress guarantees 
+since they may experience 
 \emph{spurious} aborts. This motivates the need for
 \emph{hybrid} TMs in which the \emph{fast} hardware transactions are 
 complemented with \emph{slower} software transactions that do not experience spurious aborts.
 
 To allow hardware transactions in a HyTM to detect conflicts with software transactions, they must be \emph{instrumented} to perform additional metadata accesses, which introduces overhead.
-Hardware transactions typically provide automatic contention detection for every memory location accessed within one,
-thus ensuring that the transaction itself would be aborted.
-This is at least the case with the Intel Haswell's Transactional Synchronization Extensions~\cite{haswell}.
-The IBM Power8 ISA additionally allows hardware transactions to access metadata \emph{non-speculatively}, thus precluding
-contention detection for \emph{all} memory locations accessed. While this has the advantage of potentially reducing contention aborts
+Hardware transactions typically provide automatic conflict detection at cacheline granularity,
+thus ensuring that the transaction itself would be aborted if it experiences memory contention on the cacheline.
+This is at least the case with the Intel's Transactional Synchronization Extensions~\cite{haswell}.
+The IBM Power8 ISA additionally allows hardware transactions to access metadata \emph{non-speculatively}, 
+thus bypassing automatic conflict detection. While this has the advantage of potentially reducing contention aborts
 in hardware, this makes the design of HyTM implementations potentially harder to prove correct.
 
 In \cite{htmdisc15}, it was shown that hardware transactions in progressive HyTMs must perform
-an additional metadata access per transactional operation.
-In this paper, we show that in progressive HyTMs, 
+at least one metadata access per transactional read and write.
+In this paper, we show that in progressive HyTMs with invisible reads, 
 software transactions \textit{cannot} avoid incremental validation.
-Specifically, we prove that read operations of software transactions in progressive HyTMs
+Specifically, we prove that each read operation of a software transaction in a progressive HyTM
 must necessarily incur a validation cost that is \emph{linear} 
 in the size of the transaction's read set. 
-This is in stark contrast to progressive STMs like TL2 which has constant time read operations.
+This is in stark contrast to TL2 which is progressive and has constant step complexity read operations.
 Thus, in addition to the linear instrumentation cost on the hardware transactions, there is the quadratic
 step complexity cost on the software transactions.
 
 We then present \emph{opaque} HyTM algorithms providing \emph{progressiveness for a subset of transactions} that are  %both hardware and software transactions \trevor{maybe just ``transactions''?}
-optimal in terms of hardware instrumentation. We show 
-how \emph{some} hardware instrumentation can be performed \textit{non-speculatively} without violating opacity while exploring the concurrency vs. hardware instrumentation vs. software validation
+optimal in terms of hardware instrumentation. We sketch 
+how \emph{some} hardware instrumentation can be performed \textit{non-speculatively} 
+without violating opacity while exploring the concurrency vs. hardware instrumentation vs. software validation
 tradeoffs for these algorithms.
 Preliminary experiments on Intel Haswell (resp. IBM Power 8) not supporting (resp. supporting) non-speculative accesses inside hardware,
 seem to suggest that the inherent \emph{cost to concurrency} in HyTMs also exists in practice and discuss algorithmic techniques to overcome them.
 
-\paragraph{Roadmap.}
-\cref{sec:hytm} presents details of the HyTM model that extends the model introduced in \cite{htmdisc15} 
-to access memory locations non-speculatively.
-\cref{sec:lb} presents our main lower bound result on the step-complexity of progressive HyTMs
-while \cref{sec:hytmalgos} presents several opaque HyTM algorithms.
-\cref{sec:eval} summarizes resuls from our preliminary experiments on Intel Haswell and IBM Power 8 architectures.
-\cref{sec:rel} presents the related work along with concluding remarks.
+% \paragraph{Roadmap.}
+% \cref{sec:hytm} presents details of the HyTM model that extends the model introduced in \cite{htmdisc15} 
+% to access memory locations non-speculatively.
+% \cref{sec:lb} presents our main lower bound result on the step-complexity of progressive HyTMs
+% while \cref{sec:hytmalgos} presents several opaque HyTM algorithms.
+% \cref{sec:eval} summarizes resuls from our preliminary experiments on Intel Haswell and IBM Power 8 architectures.
+% \cref{sec:rel} presents the related work along with concluding remarks.
 %

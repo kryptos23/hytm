@@ -255,23 +255,20 @@ still providing \emph{progressiveness} (allowing transactional aborts only due t
 Hardware transactional memory (HTM) implementations promise even better performance, 
 but offer no progress guarantees.
 Thus, they must be combined with STMs, leading to \emph{hybrid} TMs (HyTM)
-in which hardware transactional accesses be \emph{instrumented} (i.e., access metadata) 
+in which hardware transactional accesses must be \emph{instrumented} (i.e., access metadata) 
 to detect contention with software transactions. 
 
-We show that, unlike in progressive STMs, in progressive HyTMs, software transactions 
-\textit{cannot} avoid incremental validation.
+We show that, unlike in progressive STMs, software transactions in progressive HyTMs
+cannot avoid incremental validation.
 In fact, this result holds even if hardware transactions can \emph{read} metadata 
-\emph{non-speculatively} (which intuitively reduces aborts due to metadata instrumentation).
+\emph{non-speculatively}. 
 We then present \emph{opaque} HyTM algorithms providing \emph{progressiveness for a subset of transactions} 
-that are  %both hardware and software transactions \trevor{maybe just ``transactions''?}
-optimal in terms of hardware instrumentation. We show 
-how \emph{some} hardware instrumentation can be performed \textit{non-speculatively} 
-without violating opacity while exploring the concurrency vs. hardware instrumentation vs. software validation
+that are  optimal in terms of hardware instrumentation. 
+We explore the concurrency vs. hardware instrumentation vs. software validation
 tradeoffs for these algorithms.
-Preliminary experiments on Intel Haswell (resp. IBM Power 8) not supporting 
-(resp. supporting) non-speculative accesses inside hardware,
+Preliminary experiments with Intel's HTM 
 seem to suggest that the inherent \emph{cost to concurrency} 
-in HyTMs also exists in practice and discuss algorithmic techniques to overcome them.
+in HyTMs also exists in practice. Finally, we discuss algorithmic techniques for cicumventing this cost.
 \end{abstract}
 
 %\newpage
