@@ -108,10 +108,9 @@ it increments gsl twice (quickly locking and releasing it and immediately commit
 window for fast path transactions to content on gsl is very small.
 
 \vspace{1mm}\noindent\textbf{Employing an uninstrumented fast fast-path.}
-Note that ideally we would like to execute all transactions inside hardware with minimal instrumentation.
-We now describe how every transaction may first be executed in a ``fast'' fast-path with almost no instrumentation
+We describe how every transaction may first be executed in a ``fast'' fast-path with almost no instrumentation
 and if unsuccessful, may be re-attempted in the fast-path and subsequently in slow-path.
-Specifically, we can describe a 
+Specifically, we describe a 
 generic transformation for any opaque HyTM $\mathcal{M}$ to an opaque
 HyTM $\mathcal{M}'$ by employing a shared \emph{fetch-and-add} metadata $F$ that slow-path updating transactions
 increment (and resp. decrement) at the start (and resp. end). The fast fast-path checks first checks if $F$ is $0$
