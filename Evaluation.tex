@@ -2,7 +2,7 @@
 \section{Evaluation}
 \label{sec:eval}
 %
-In this section, we study the performance characteristics of Algorithms~\ref{alg:inswrite}, \ref{alg:inswrite2} and Hybrid NOrec, as well as Transactional Lock Elision (TLE) and the popular STM TL2.
+In this section, we study the performance characteristics of Algorithms~\ref{alg:inswrite} and \ref{alg:inswrite2}, Hybrid NOrec, TLE and TL2.
 Our experimental goals are (G1) to study the performance impact of instrumentation on the fast-path and validation on the slow path, (G2) to understand how Algorithms~\ref{alg:inswrite} and \ref{alg:inswrite2} perform relative to the other algorithms, and (G3) to determine whether non-speculative accesses can be used to obtain significant performance improvements.
 We discuss (G1) and (G2), here.
 We are currently in the process of investigating (G3).
@@ -34,7 +34,8 @@ Each hybrid TM algorithm first attempts to execute a transaction on the fast pat
 \vspace{1mm}\noindent\textbf{Methodology.}
 We used a simple unbalanced binary search tree (BST) microbenchmark as a vehicle to study the performance of our implementations.
 The BST implements a dictionary, which contains a set of keys, each with an associated value.
-For each algorithm $A \in \{$TL2, TLE, Algorithm~1, Algorithm~2, Hybrid NOrec$\}$, and update rate $U \in \{40, 10, 0\}$, we run six timed \textit{trials} for several thread counts $n$.
+For each TM algorithm %$A$ %\in \{$TL2, TLE, Algorithm~1, Algorithm~2, Hybrid NOrec$\}$,
+and update rate $U \in \{40, 10, 0\}$, we run six timed \textit{trials} for several thread counts $n$.
 Each trial proceeds in two phases: \textit{prefilling} and \textit{measuring}.
 In the prefilling phase, $n$ concurrent threads perform 50\% \textit{Insert} and 50\% \textit{Delete} operations on keys drawn uniformly randomly from $[0, 10^5)$ until the size of the tree converges to a steady state (containing approximately $10^5/2$ keys).
 Next, the trial enters the measuring phase, during which threads begin counting how many operations they perform.
