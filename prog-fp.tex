@@ -11,17 +11,17 @@
 //\textbf{Code for fast-path transactions}
 start$_k$()
     l := L //\medcom cached read
-    if l & 1 $\neq$ 0 then return $A_k$
+    if l & 1 $\neq$ 0 then return $A_k$ //\vspace{-2mm}
 
 read$_k$(X$_j$)
     ov$_j$ := v$_j$ //\medcom cached read
-    return ov$_j$
+    return ov$_j$ //\vspace{-2mm}
 
 write$_k$(X$_j$, v)
     or$_j$ := r$_j$ //\medcom uncached read
     r$_j$ := or$_j$ + 2 //\medcom uncached write
     v$_j$ := v //\medcom cached write
-    return OK
+    return OK //\vspace{-2mm}
 
 try$C_k$()
     return commitCache$_i$() //\medcom returns $C_k$ or $A_k$
@@ -43,13 +43,11 @@ tryC$_k$()
         release(Wset(T$_k$))
         return $A_k$
     for each X$_j \in$ Wset(T$_k$) do v$_j$ := nv$_j$
-    release(Wset(T$_k$))
-    return $C_k$
+    release(Wset(T$_k$)); return $C_k$ //\vspace{-2mm}
     
 release(Q)
     for each X$_j \in$ Q do r$_j$ := nr$_j$ + 1
-    L := 0
-    return OK
+    L := 0 ; return OK
 \end{lstlisting}
 \end{minipage}
 \vspace{-1mm}
