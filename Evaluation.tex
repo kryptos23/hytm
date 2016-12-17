@@ -45,8 +45,10 @@ Uniformly random updates to an unbalanced BST have been proven to yield trees of
 Thus, in this type of workload, almost all transactions succeed in hardware, and the slow path is almost never used.
 %there is no need. and have small read and write sets This workload is highly disjoint access parallel, and the height of the tree is relatively small, so most transactions succeed in hardware.
 To study performance when transactions regularly run on the slow path, we introduced another operation called a \textit{RangeIncrement} that often fails in hardware and must run on the slow path.
-A \textit{RangeIncrement}$(low, hi)$ atomically increments the values associated with each key in the range $[low, hi]$ that is present in the tree.
-Note that a \textit{RangeIncrement} is more likely to experience data conflicts and capacity aborts than traditional BST updates, which only modify a single node.
+A \textit{RangeIncrement}$(low, hi)$ atomically increments the values 
+associated with each key in the range $[low, hi]$ present in the tree.
+Note that a \textit{RangeIncrement} is more likely to experience data 
+conflicts and capacity aborts than BST updates, which only modify a single node.
 
 We consider two types of workloads: (W1) all $n$ threads perform \textit{Insert}, \textit{Delete} and \textit{Search}, and (W2) $n-1$ threads perform \textit{Insert}, \textit{Delete} and \textit{Search} and one thread performs only \textit{RangeIncrement} operations.
 %In W2, one can think of the thread $p$ that performs \textit{RangeIncrement} operations as a tunable knob that controls the fraction of time in the execution that the slow path is being executed.
