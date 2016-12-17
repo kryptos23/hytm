@@ -256,7 +256,7 @@ still providing \emph{progressiveness} (allowing transactional aborts only due t
 Hardware transactional memory (HTM) implementations promise even better performance, 
 but offer no progress guarantees.
 Thus, they must be combined with STMs, leading to \emph{hybrid} TMs (HyTM)
-in which hardware transactional accesses must be \emph{instrumented} (i.e., access metadata) 
+in which hardware transactions must be \emph{instrumented} (i.e., access metadata) 
 to detect contention with software transactions. 
 
 We show that, unlike in progressive STMs, software transactions in progressive HyTMs
