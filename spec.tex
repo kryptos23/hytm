@@ -47,7 +47,7 @@ during its execution. The (partial) steps in our execution are depicted in Figur
 NOrec~\cite{norec} is a progressive opaque STM that minimizes the average step-complexity resulting from incremental 
 validation of t-reads. Transactions read a global versioned lock at the start, and perform value-based validation
 during t-read operations \emph{iff} the global version has changed.
-\emph{TL2}~\cite{DSS06} improves over NOrec by circumventing the lower bound
+TL2~\cite{DSS06} improves over NOrec by circumventing the lower bound
 of Theorem~\ref{th:impossibility}. Concretely, TL2 associates a global version with each t-object updated during
 a transaction and performs validation with $O$(1) complexity during t-reads by simply verifying if the version
 of the t-object is greater than the global version read at the start of the transaction. Technically,
