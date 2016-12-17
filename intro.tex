@@ -31,10 +31,9 @@ do not apply any nontrivial primitives on the shared memory).
 Nonetheless, TM designs that are implemented entirely in software still incur significant performance overhead.
 Thus, current CPUs have included instructions to mark a block of memory accesses as transactional~\cite{Rei12, asf, bluegene}, allowing them to be executed \emph{atomically} in hardware.
 Hardware transactions promise better performance than STMs, but they offer no progress guarantees 
-since they may experience 
-\emph{spurious} aborts. This motivates the need for
+since they may experience \emph{spurious} aborts. This motivates the need for
 \emph{hybrid} TMs in which the \emph{fast} hardware transactions are 
-complemented with \emph{slower} software transactions that do not experience spurious aborts.
+complemented with \emph{slower} software transactions that do not have spurious aborts.
 
 To allow hardware transactions in a HyTM to detect conflicts with software transactions, they must be \emph{instrumented} to perform additional metadata accesses, which introduces overhead.
 Hardware transactions typically provide automatic conflict detection at cacheline granularity,
@@ -51,7 +50,7 @@ software transactions \textit{cannot} avoid incremental validation.
 Specifically, we prove that each read operation of a software transaction in a progressive HyTM
 must necessarily incur a validation cost that is \emph{linear} 
 in the size of the transaction's read set. 
-This is in stark contrast to TL2 which is progressive and has constant step complexity read operations.
+This is in contrast to TL2 which is progressive and has constant complexity read operations.
 Thus, in addition to the linear instrumentation cost on the hardware transactions, there is the quadratic
 step complexity cost on the software transactions.
 
