@@ -43,7 +43,7 @@ distinct t-reads of t-objects $X_1,\ldots , X_m$. We show inductively that for e
 $i\in \{1,\ldots , m\}$; $m \in \mathbb{N}$, the $i^{\ms{th}}$ t-read must access $i-1$ distinct base objects
 during its execution. The (partial) steps in our execution are depicted in Figure~\ref{fig:indis}.
 
-\paragraph{How STM implementations avoid the lower bound.}
+\vspace{1mm}\noindent\textbf{How STM implementations avoid the lower bound.}
 NOrec~\cite{norec} is a progressive opaque STM that minimizes the average step-complexity resulting from incremental 
 validation of t-reads. Transactions read a global versioned lock at the start, and perform value-based validation
 during t-read operations \emph{iff} the global version has changed.
@@ -177,6 +177,7 @@ For all $i\in \{2,\ldots, m\}$ and $\ell \leq (i-1)$, $\mathcal{M}$ has an execu
 $\mathbb{E}_{2\ell}^{i}$.
 \end{claim}
 %
+The proof of the above claim is immediate.
 % \begin{proof}
 % %
 % For all $i \in \{2,\ldots, m\}$, $\pi^{i-1}$
@@ -206,7 +207,7 @@ $\mathbb{E}_{2\ell}^{i}$.
 % \end{proof}
 %
 %
-For all $i\in \{2,\ldots, m\}$, $j\in \{1,2\}$ and $\ell \leq (i-1)$, slow-path transaction $T_{\phi}$ must access
+We now show that for all $i\in \{2,\ldots, m\}$, $j\in \{1,2\}$ and $\ell \leq (i-1)$, slow-path transaction $T_{\phi}$ must access
 $(i-1)$ different base objects during the execution of $\Read_{\phi}(X_i)$ in the execution
 $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$.
 
@@ -214,7 +215,7 @@ Consider the $(i-1)$ different executions:
 $\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot \rho^i$ (cf. Figure~\ref{sfig:inv-3}).
 For all $\ell, \ell' \leq (i-1)$;$\ell' \neq \ell$, 
 $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \beta^{\ell'}$
-in which transactions $T_{\ell}$ and $T_{\ell'}$ access mutually disjoint data sets.
+in which fast-path transactions $T_{\ell}$ and $T_{\ell'}$ access mutually disjoint data sets.
 By invisible reads and Lemma~\ref{lm:hytm}, the pairs of transactions $T_{\ell'}$, $T_{i}$ and $T_{\ell'}$, $T_{\ell}$
 do not contend on any base object in this execution.
 This implies that $\pi^{i-1}\cdot \beta^{\ell} \cdot \beta^{\ell'} \cdot \rho^i$ is an execution of $\mathcal{M}$ in which
@@ -223,7 +224,7 @@ to mutually disjoint sets of base objects in the execution fragments $\beta^{\el
 
 This implies that for any $j\in \{1,2\}$, $\ell \leq (i-1)$, the configuration $C^i$ after $E^i$ differs from the configurations
 after $\mathbb{E}_{j\ell}^{i}$ only in the states of the base objects that are accessed in the fragment $\beta^{\ell}$.
-Consequently, transaction $T_{\phi}$ must access at least $i-1$ different base objects
+Consequently, slow-path transaction $T_{\phi}$ must access at least $i-1$ different base objects
 in the execution fragment $\pi_j^i$
 to distinguish configuration $C^i$ from the configurations
 that result after the $(i-1)$ different executions 

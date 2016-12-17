@@ -2,11 +2,9 @@
 \section{Hybrid transactional memory (HyTM)}
 \label{sec:hytm}
 %
-In this section, we extend the formal model of HyTMs originally proposed in \cite{htmdisc15} to accomodate non-speculative accesses within hardware transactions.
-The resulting model is sufficiently expressive to capture the executions of existing hardware transactions like \emph{Intel Haswell}~\cite{Rei12},
-\emph{IBM Power8}~\cite{bluegene} and \emph{AMD ASF}~\cite{asf}.
+In this section, we adopt the formal model of HyTMs originally proposed in \cite{htmdisc15}.
 
-\paragraph{Transactional memory (TM).} 
+\vspace{1mm}\noindent\textbf{Transactional memory (TM).} 
 A \emph{transaction} is a sequence of \emph{transactional operations}
 (or \emph{t-operations}), reads and writes, performed on a set of \emph{transactional objects} 
 (\emph{t-objects}). 
@@ -23,7 +21,7 @@ writes on t-objects using  a set of \emph{base objects}.
 % Additionally, we assume that a transaction $T_k$
 % may perform a $\mathit{start_k}$ that is the first t-operation performed by $T_k$ prior to invoking any $\mathit{read}_k$ or $\mathit{write}_k$.
 
-\paragraph{Configurations and executions.} 
+\vspace{1mm}\noindent\textbf{Configurations and executions.} 
 A \emph{configuration} of a TM implementation specifies the state of each base object and each process. 
 In the \emph{initial} configuration, each base object has its initial value and each process is in its initial state. 
 An \emph{event} (or \emph{step}) of a transaction invoked by some process is an invocation of a t-operation, 
@@ -49,13 +47,12 @@ of $E$.
 For every transaction identifier $k$,
 $E|k$ denotes the subsequence of $E$ restricted to events of
 transaction $T_k$.
-If $E|k$ is non-empty,
-we say that $T_k$ \emph{participates} in $E$,
-and let $\txns(E)$ denote the set of transactions that participate in $E$.
+% If $E|k$ is non-empty,
+% we say that $T_k$ \emph{participates} in $E$,
+% and let $\txns(E)$ denote the set of transactions that participate in $E$.
 Two executions $E$ and $E'$
 are \emph{indistinguishable} to a set $\mathcal{T}$ of transactions, if
 for each transaction $T_k \in \mathcal{T}$, $E|k=E'|k$.
-
 A transaction $T_k\in \txns(E)$ is \emph{complete in $E$} if
 $E|k$ ends with a response event.
 The execution $E$ is \emph{complete} if all transactions in $\txns(E)$
@@ -64,9 +61,9 @@ A transaction $T_k\in \txns(E)$ is \emph{t-complete} if $E|k$
 ends with $A_k$ or $C_k$; otherwise, $T_k$ is \emph{t-incomplete}.
 
 We assume that base objects are accessed with \emph{read-modify-write} (rmw) primitives. 
-A rmw primitive $\langle g,h \rangle$ applied to a base object 
-atomically updates the value of the object with a new value, which is
-a function $g(v)$ of the old value $v$, and returns a response $h(v)$.
+% A rmw primitive $\langle g,h \rangle$ applied to a base object 
+% atomically updates the value of the object with a new value, which is
+% a function $g(v)$ of the old value $v$, and returns a response $h(v)$.
 %A rmw primitive is \emph{trivial} if it never affects the value of a
 %base object, otherwise it is \emph{nontrivial}.
 A rmw primitive event on a base object is \emph{trivial} if, in any configuration, its application
@@ -76,7 +73,7 @@ Events $e$ and $e'$ of an execution $E$  \emph{contend} on a base
 object $b$ if they are both primitives on $b$ in $E$ and at least 
 one of them is nontrivial.
 
-\paragraph{Hybrid transactional memory executions.}
+\vspace{1mm}\noindent\textbf{Hybrid transactional memory executions.}
 We now describe the execution model of a \emph{Hybrid transactional memory (HyTM)} implementation.
 In our HyTM model, shared memory configurations may be modified by accessing base objects via two kinds of
 primitives: \emph{direct} and \emph{cached}.
@@ -84,7 +81,7 @@ primitives: \emph{direct} and \emph{cached}.
 the direct-access event atomically reads the value of the object in
 the shared memory and, if necessary, modifies it.
 (ii) In a cached access performed by a process $i$, the rmw primitive operates on the \emph{cached}
-state recorded in process $i$'s \emph{tracking set} $\tau_i$ (analogous to \emph{L1 cache} of process $i$). 
+state recorded in process $i$'s \emph{tracking set} $\tau_i$. 
 
 More precisely, $\tau_i$ is a set of triples $(b, v, m)$ where $b$ is a base object identifier, $v$ is a value, 
 and $m \in \{\shared, \exclusive\}$ is an access \emph{mode}. 
@@ -96,22 +93,22 @@ nontrivial, and to $\shared$ otherwise.
 % condition will be enforced by our model.
 A base object $b$ is \emph{present} in $\tau_i$ with mode $m$ if $\exists v, (b,v,m) \in \tau_i$.
 
-A trivial (resp.\ nontrivial) 
-cached primitive $\langle g,h \rangle$ applied to $b$ 
-by process $i$ 
-checks whether $b$ is present in exclusive
-(resp.\ any) mode in $\tau_j$ 
-for any $j\neq i$. If so, $\tau_i$ is set to $\emptyset$ and the
-primitive returns $\bot$. 
-%
-Otherwise, the triple $(b, v, \shared)$ (resp. $(b, g(v), \exclusive)$)
-is added to $\tau_i$,  where $v$ is the most recent cached value of $b$ in $\tau_i$
-(in case $b$ was previously accessed by $i$ within the current
-hardware transaction) or the value of $b$ in the current
-memory configuration, and finally $h(v)$ is returned.
+% A trivial (resp.\ nontrivial) 
+% cached primitive $\langle g,h \rangle$ applied to $b$ 
+% by process $i$ 
+% checks whether $b$ is present in exclusive
+% (resp.\ any) mode in $\tau_j$ 
+% for any $j\neq i$. If so, $\tau_i$ is set to $\emptyset$ and the
+% primitive returns $\bot$. 
+% %
+% Otherwise, the triple $(b, v, \shared)$ (resp. $(b, g(v), \exclusive)$)
+% is added to $\tau_i$,  where $v$ is the most recent cached value of $b$ in $\tau_i$
+% (in case $b$ was previously accessed by $i$ within the current
+% hardware transaction) or the value of $b$ in the current
+% memory configuration, and finally $h(v)$ is returned.
 %
 
-\paragraph{Hardware aborts.}
+\vspace{1mm}\noindent\textbf{Hardware aborts.}
 A tracking set can be \emph{invalidated} by a concurrent process: 
 if, in a configuration $C$ where  $(b,v,\exclusive)\in\tau_i$
 (resp.\ $(b,v,\shared)\in\tau_i)$,  a process $j\neq i$ applies any primitive 
@@ -127,7 +124,7 @@ a valid $\tau_i$ does the following: for each base object $b$ such that $(b,v,\e
 Finally, $\tau_i$ is set to $\emptyset$ and the primitive 
 returns $\textit{commit}$. 
 
-\paragraph{Slow-path and fast-path transactions.}
+\vspace{1mm}\noindent\textbf{Slow-path and fast-path transactions.}
 We partition HyTM transactions into \emph{fast-path transactions} and \emph{slow-path transactions}.
 A slow-path transaction models a regular software transaction.
 An event of a slow-path transaction is either an invocation or response of a t-operation, or
@@ -149,14 +146,14 @@ and let $e$ be any event (and resp. nontrivial event) that some process $j\neq i
 is $A_k$.
 \end{observation}
 %
-\paragraph{Non-cached reads inside fast-path.}
+\vspace{1mm}\noindent\textbf{Non-cached reads inside fast-path.}
 Note that we specifically allow hardware transactions to perform reads without adding the corresponding base object to
 the process's tracking set, thus modelling the non-speculative accesses inside hardware allowed by 
-IBM Power8 architectures. We remark that Intel Haswell does not support this feature: an event of a hardware transaction
+IBM Power8 architectures. We remark that Intel's HTM does not support this feature: an event of a hardware transaction
 does not include any direct access.
 
 %
-\paragraph{HyTM properties.}
+\vspace{1mm}\noindent\textbf{HyTM properties.}
 Throughout this paper, we consider the TM-correctness property of \emph{opacity}~\cite{tm-book}: an execution
 $E$ is opaque if there exists a \emph{legal} sequential execution $S$ equivalent to some t-completion of $E$
 that respects the \emph{real-time ordering} of transactions in $E$.
