@@ -41,7 +41,7 @@ Next, the trial enters the measuring phase, during which threads begin counting 
 In this phase, each thread performs $(U/2)$\% \textit{Insert}, $(U/2)$\% \textit{Delete} and $(100-U)$\% \textit{Search} operations, on keys/values drawn uniformly from $[0,10^5)$, for one second.
 
 Uniformly random updates to an unbalanced BST have been proven to yield trees of logarithmic height with high probability.
-Furthermore, updates and searches in an unbalanced BST are simple.
+%Furthermore, updates and searches in an unbalanced BST are simple.
 Thus, in this type of workload, almost all transactions succeed in hardware, and the slow path is almost never used.
 %there is no need. and have small read and write sets This workload is highly disjoint access parallel, and the height of the tree is relatively small, so most transactions succeed in hardware.
 To study performance when transactions regularly run on the slow path, we introduced another operation called a \textit{RangeIncrement} that often fails in hardware and must run on the slow path.
@@ -97,22 +97,27 @@ Since this is a read-only workload, this instrumentation is responsible for the 
 
 In the W1 workloads, TLE, Algorithm 2 and Hybrid NOrec perform similarly (with a small performance advantage for Hybrid NOrec at high thread counts).
 This is because the fast paths for these three algorithms have similar amounts of instrumentation.
-In each algorithm, there is no instrumentation for reads or writes, and each transaction is instrumented with one or two metadata accesses.
+In each algorithm, there is no instrumentation for reads or writes, 
+and the transaction itself incurs one or two metadata accesses.
 
 In contrast, in the W2 workloads, TLE performs quite poorly, compared to the HyTM algorithms.
-In these workloads, transactions must periodically run on the slow-path, and in TLE, this entails acquiring a global lock that prevents all other threads from making progress.
+In these workloads, transactions must periodically run on the slow-path, and in TLE, 
+this entails acquiring a global lock that restricts progress for all other threads.
 At high thread counts this significantly impacts performance.
 Its performance decreases as the sizes of the ranges passed to \textit{RangeIncrement} increase.
 Its performance is also negatively impacted by NUMA effects at thread counts higher than 24.
-(This is because, when a thread $p$ reads the lock and incurs a cache miss, if the lock was last held by another thread on the same socket, then $p$ can fill the cache miss by loading it from the shared L3 cache.
-However, if the lock was last held by a thread on a different socket, then $p$ must read the lock state from main memory, which is significantly more expensive.)
+(This is because, when a thread $p$ reads the lock and incurs a cache miss, 
+if the lock was last held by another thread on the same socket, 
+then $p$ can fill the cache miss by loading it from the shared L3 cache.
+However, if the lock was last held by a thread on a different socket, 
+then $p$ must read the lock state from main memory, which is significantly more expensive.)
 
 On the other hand, in each graph in the W2 workloads, the performance of each HyTM (and TL2) is similar to its performance in the corresponding graph in the W1 workloads.
 For Algorithm 1 (and TL2), this is because it is progressive.
 Although Algorithm 2 is not truly progressive, fast-path transactions will abort only if they are concurrent with the commit procedure of a slow-path transaction.
 In \textit{RangeIncrement} operations, there is a long read-only prefix (which is exceptionally long because of Algorithm 2's quadratic validation) followed by a relatively small set of writes.
 Thus, \textit{RangeIncrement} operations have relatively little impact on the fast-path.
-The explanation is similar for Hybrid NOrec (except we expect that it performs slightly less validation than Algorithm 2).
+The explanation is similar for Hybrid NOrec (except that it performs less validation than Algorithm 2).
 
 Observe that the performance of Hybrid NOrec decreases slightly, relative to Algorithm 2, after 24 threads.
 Recall that, in Hybrid NOrec, the global sequence number is a single point of contention on the fast-path.
