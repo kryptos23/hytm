@@ -22,6 +22,7 @@ In ongoing work, we are implementing our algorithms on the IBM POWER8 HTM implem
 non-cached accesses in hardware transactions.
 We hope to understand whether the instrumentation overheads we observed
 on Intel's HTM are also inherent to POWER8's HTM implementation.
-One important consequence of our work is the realization that, in order to achieve high performance in practice, one must either abandon progressiveness or develop a new HyTM algorithm that effectively uses non-speculative writes.
-Both directions are promising, and little work has been done in either in the context of today's HTMs.
+
 To our knowledge, ours is the first work to consider the theoretical foundations of the cost of concurrency in HyTMs.
+In order to achieve high performance in practice, one must either identify a new progress condition to replace progressiveness or develop a new HyTM algorithm that effectively uses non-speculative writes.
+Both directions are promising, and little work has been done in either in the context of today's HTMs.
