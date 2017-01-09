@@ -10,8 +10,10 @@
 # ==============================================================================
 
 EXTRAFLAGS := $(EXTRAFLAGS1) $(EXTRAFLAGS2) $(EXTRAFLAGS3) $(EXTRAFLAGS4)
-CC       := /opt/at9.0/bin/powerpc64le-linux-gnu-g++
-CFLAGS   := -O3 -g3 -Wall -fmessage-length=0 -mcpu=power8 -mtune=power8 -mcmodel=medium $(EXTRAFLAGS)
+#CC       := /opt/at9.0/bin/powerpc64le-linux-gnu-g++
+#CFLAGS   := -O3 -g3 -Wall -fmessage-length=0 -mcpu=power8 -mtune=power8 -mcmodel=medium $(EXTRAFLAGS)
+CC       := g++
+CFLAGS   := -O3 -g3 -Wall -fmessage-length=0 $(EXTRAFLAGS)
 CPP      := $(CC)
 CPPFLAGS := $(CFLAGS)
 LD       := $(CC)

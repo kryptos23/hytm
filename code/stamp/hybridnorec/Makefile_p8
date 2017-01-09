@@ -13,7 +13,7 @@ LIBNAME=hybridnorec
 EXTRAFLAGS := $(EXTRAFLAGS1) $(EXTRAFLAGS2) $(EXTRAFLAGS3) $(EXTRAFLAGS4)
 CC       := g++
 CFLAGS   := -O3 -g3 -Wall -fmessage-length=0 $(EXTRAFLAGS)
-CFLAGS   += -DRECORD_ABORTS
+#CFLAGS   += -DRECORD_ABORTS
 CFLAGS   += -std=c++11
 CPP      := $(CC)
 CPPFLAGS := $(CFLAGS)

@@ -10,7 +10,7 @@
 #TARGETS="seqtm tle tl2 hytm1 hytm2 hytm3 hybridnorec"
 #TARGETS="tl2 hytm1 hytm2 hytm3 hybridnorec"
 #TARGETS="hytm1 hytm2 hytm3 hybridnorec"
-TARGETS="tl2"
+TARGETS="tl2 hytm1 hytm2 hytm3 hybridnorec"
 PROGS="dsbench"
 
 #TARGETS="hytm3 hytm2"

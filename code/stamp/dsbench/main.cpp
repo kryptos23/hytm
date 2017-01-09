@@ -209,6 +209,10 @@ void prefill(DS_DECLARATION * tree) {
     COUTATOMIC("###############################"<<endl);
     COUTATOMIC(endl);
     __sync_synchronize();
+    if (keysum->getTotal() != tree->debugKeySum()) {
+        COUTATOMIC("ERROR: validation FAILED"<<endl);
+        exit(-1);
+    }
 }
 
 template <class MemMgmt>

@@ -39,8 +39,8 @@ void registerHTMAbort(struct c_debugCounters *cs, const int tid, const int statu
 void countersClear(struct c_debugCounters *cs) {
     int j=0;
     for (;j<NUMBER_OF_PATHS;++j) {
-        int i=0;
 #ifdef RECORD_ABORTS
+        int i=0;
         for (;i<MAX_ABORT_STATUS;++i) {
             counterClear(cs->htmAbort[j*MAX_ABORT_STATUS+i]);
         }
@@ -56,8 +56,8 @@ void countersInit(struct c_debugCounters *cs, const int numProcesses) {
     cs->NUM_PROCESSES = numProcesses;
     int j=0;
     for (;j<NUMBER_OF_PATHS;++j) {
-        int i=0;
 #ifdef RECORD_ABORTS
+        int i=0;
         for (;i<MAX_ABORT_STATUS;++i) {
             cs->htmAbort[j*MAX_ABORT_STATUS+i] = (struct c_debugCounter *) malloc(sizeof(struct c_debugCounter));
             counterInit(cs->htmAbort[j*MAX_ABORT_STATUS+i], cs->NUM_PROCESSES);
@@ -77,8 +77,8 @@ void countersInit(struct c_debugCounters *cs, const int numProcesses) {
 void countersDestroy(struct c_debugCounters *cs) {
     int j=0;
     for (;j<NUMBER_OF_PATHS;++j) {
-        int i=0;
 #ifdef RECORD_ABORTS
+        int i=0;
         for (;i<MAX_ABORT_STATUS;++i) {
             counterDestroy(cs->htmAbort[j*MAX_ABORT_STATUS+i]);
             free(cs->htmAbort[j*MAX_ABORT_STATUS+i]);

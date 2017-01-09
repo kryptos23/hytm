@@ -47,6 +47,16 @@ elif [ "$machine" == "theoryhtm" ]; then
     pin_cluster="IDENTITY"
     pin_none="NONE"
     cmdprefix=""
+elif [ "$machine" == "cheshire-r07u03" ]; then
+    xargs1=""
+    maxthreadcount="192"
+    overthreadcount1="192"
+    overthreadcount2="192"
+    threadcounts="1 4 8 16 24 32 48 72 96 120 144 168 192"
+    pin_scatter="IDENTITY"
+    pin_cluster="SOSCIP_CLUSTER"
+    pin_none="NONE"
+    cmdprefix=""
 else
     echo "ERROR: unknown machine $machine"
     exit 1

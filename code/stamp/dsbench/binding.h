@@ -18,6 +18,7 @@ const int X52_SOCKET1_THEN_SOCKET2 = 3; // specific to oracle x5-2
 const int POMELA6_SCATTER = 4;
 const int TAPUZ40_SCATTER = 5;
 const int TAPUZ40_CLUSTER = 6;
+const int SOSCIP_CLUSTER = 100;
 
 // cpu sets for binding threads to cores
 #ifdef THREAD_BINDING
@@ -33,7 +34,7 @@ void bindThread(const int tid, const int nprocessors) {
         }
         for (int i=0;i<nprocessors;++i) {
             if (CPU_ISSET_S(i, CPU_ALLOC_SIZE(nprocessors), cpusets[tid%nprocessors])) {
-                COUTATOMICTID("binding thread "<<tid<<" to cpu "<<i<<endl);
+                //COUTATOMICTID("binding thread "<<tid<<" to cpu "<<i<<endl);
     //        } else {
     //            COUTATOMICTID("ERROR binding to cpu "<<i<<endl);
     //            exit(-1);
@@ -89,6 +90,13 @@ void configureBindingPolicy(const int nprocessors) {
             case TAPUZ40_CLUSTER:
                 j = (i<12?i:(i<24?i+12:(i<36?i-12:i)));
                 break;
+            case SOSCIP_CLUSTER:
+#define SOSCIP_CLUSTER_coresPerSocket 12
+#define SOSCIP_CLUSTER_threadsPerCore 8
+#define SOSCIP_CLUSTER_threadsPerSocket ((SOSCIP_CLUSTER_coresPerSocket)*(SOSCIP_CLUSTER_threadsPerCore))
+                j = (i%SOSCIP_CLUSTER_coresPerSocket)*SOSCIP_CLUSTER_threadsPerCore
+                        + (i%SOSCIP_CLUSTER_threadsPerSocket)/SOSCIP_CLUSTER_coresPerSocket
+                        + (i/SOSCIP_CLUSTER_threadsPerSocket)*SOSCIP_CLUSTER_threadsPerSocket;
             case NONE:
                 break;
         }
