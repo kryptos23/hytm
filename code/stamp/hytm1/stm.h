@@ -120,8 +120,10 @@ __thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t
                                                     PAUSE(); \
                                                     continue; \
                                                 } \
+                                                LWSYNC; /* prevent the following CAS from being moved before read of lock (on power) */ \
                                                 if (__sync_bool_compare_and_swap(&tleLock, 0, 1)) { \
                                                     countersProbStartTime(c_counters, ___Self->UniqID, 0.); \
+                                                    SYNC_RMW; /* prevent instructions in the critical section from being moved before the lock (on power) */ \
                                                     break; \
                                                 } \
                                             } \

@@ -47,14 +47,12 @@ intptr_t cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr);
 
 /* =============================================================================
  * Memory Barriers
- *
- * http://mail.nl.linux.org/kernelnewbies/2002-11/msg00127.html
  * =============================================================================
  */
-#define MEMBARLDLD()                    /* nothing */
-#define MEMBARSTST()                    /* nothing */
-#define MEMBARSTLD()                    __asm__ __volatile__ ("" : : :"memory")
 
+#define LWSYNC /* not needed */
+#define SYNC __sync_synchronize()
+#define SYNC_RMW /* not needed */
 
 /* =============================================================================
  * Prefetching
@@ -95,35 +93,6 @@ void prefetchw (volatile void* x);
     __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi)); \
     ((TL2_TIMER_T)hi) << 32 | lo; \
 })
-
-/*
-Version with clock_gettime:
-
-#define TL2_TIMER_READ() ({ \
-
-      struct timespec time; \
-
-      clock_gettime(CLOCK_MONOTONIC, &time); \
-
-      (long)time.tv_sec * 1000000000L + (long)time.tv_nsec; \
-
-})
-*/
-
-/*
-Version with gettimeofday:
-
-#define TL2_TIMER_READ() ({ \
-
-    struct timeval time; \
-
-    gettimeofday(&time, NULL); \
-
-    (long)time.tv_sec * 1000000L + (long)time.tv_usec; \
-
-})
-*/
-
 
 #endif /* PLATFORM_X86_H */
 

@@ -116,14 +116,16 @@ __thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t
                                                 TxClearRWSets(STM_SELF); \
                                             } \
                                             ___Self->IsRO = 1; \
+                                            LWSYNC; /* prevent read of gsl from being moved before sigsetjmp (on power) */ \
                                             ___Self->sequenceLock = gsl; \
                                             while (___Self->sequenceLock & 1) { \
+                                                LWSYNC; /* prevent read of gsl from being moved previous reads (on power) */ \
                                                 ___Self->sequenceLock = gsl; \
                                                 PAUSE(); \
                                             } \
                                             /*TxStart(STM_SELF, &STM_JMPBUF, SETJMP_RETVAL, &STM_RO_FLAG);*/ \
+                                            SYNC_RMW; /* prevent instructions in the txn/critical section from being moved before this point (on power) */ \
                                             SOFTWARE_BARRIER; \
-                                            /*printf("begin software attempt\n");*/ \
                                         } while (0); /* enforce comma */
 
 #define STM_BEGIN_RD()                  STM_BEGIN(1)

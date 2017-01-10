@@ -97,13 +97,16 @@ __INLINE__ void acquireLock(volatile int *lock) {
             PAUSE();
             continue;
         }
+        LWSYNC; // prevent the following CAS from being moved before read of lock (on power)
         if (__sync_bool_compare_and_swap(lock, 0, 1)) {
+            SYNC_RMW; // prevent instructions in the critical section from being moved before the lock (on power)
             return;
         }
     }
 }
 
 __INLINE__ void releaseLock(volatile int *lock) {
+    LWSYNC; // prevent unlock from being moved before instructions in the critical section (on power)
     *lock = 0;
 }
 
@@ -169,39 +172,28 @@ public:
 //        __sync_synchronize();
         return retval;
     }
-//    __INLINE__ bool tryAcquire(void* thread) {
-//        if (thread == owner) return true; // reentrant acquire
-//        uint64_t val = lock & (~LOCKBIT);
-//        bool retval = __sync_bool_compare_and_swap(&lock, val, val+1);
-//        if (retval) {
-//            owner = thread;
-//        }
-//        return retval;
-//    }
-//    __INLINE__ bool tryAcquire(void* thread, vLockSnapshot& oldval) {
-//        if (thread == owner) return true; // reentrant acquire
-//        bool retval = __sync_bool_compare_and_swap(&lock, oldval.version(), oldval.version()+1);
-//        if (retval) {
-//            owner = thread;
-//        }
-//        return retval;
-//    }
     __INLINE__ void release(void* thread) {
+        // note: even without a membar here, the read of owner cannot be moved before our last lock acquisition (the global lock), after which the owner cannot change (for power)
         if (thread == owner) { // reentrant release (assuming the lock should be released on the innermost release() call)
-            owner = NULL;
+            owner = NULL; // cannot be moved earlier by a processor without violating single-thread consistency
             SOFTWARE_BARRIER;
+            LWSYNC; // prevent unlock from being moved before instructions in the critical section (on power)
             ++lock;
         }
     }
 
     __INLINE__ bool glockedAcquire(void* thread, vLockSnapshot& oldval) {
 //        if (thread == owner) return true; // reentrant acquire
+        // note: even without a membar here, nothing below can be moved before our last lock acquisition (on power)
         if (oldval.version() == lock) {
-            ++lock;
+            ++lock; // cannot be moved before the above read of lock by a processor without violating single-threaded consistency (on power)
             SOFTWARE_BARRIER;
+            LWSYNC; // prevent assignment of owner from being moved before lock acquisition (on power)
             owner = thread;
+            SYNC_RMW; // prevent instructions in the critical section from being moved before lock acquisition or owner assignment (on power)
             return true;
         }
+        SYNC_RMW; // prevent instructions in the critical section from being moved before lock acquisition or owner assignment (on power)
         return false;
     }
 
@@ -870,6 +862,16 @@ bool lockAll(Thread* Self, List* lockAVPairs) {
     AVPair* const stop = lockAVPairs->put;
     for (AVPair* curr = lockAVPairs->head; curr != stop; curr = curr->Next) {
         if (!curr->LockFor->isOwnedBy(Self)) {
+            /**
+             * note: there is a full membar at the end of every iteration of
+             * this loop, since one is implied by the lock acquisition attempt.
+             * 
+             * no extra membars are needed here (on power), because isOwnedBy
+             * is thread local, and instructions below can be moved before it
+             * only if doing so would not violate sequential consistency
+             * (meaning the result of isOwnedBy() cannot change).
+             */
+
             // determine when we first encountered curr->addr in txload or txstore.
             // curr->rdv contains when we first encountered it in a txSTORE,
             // so we also need to compare it with any rdv stored in the READ-set.
@@ -903,6 +905,7 @@ __INLINE__ bool glockedAcquireWS(Thread* Self) {
     AVPair* const stop = lockAVPairs->put;
     for (AVPair* curr = lockAVPairs->head; curr != stop; curr = curr->Next) {
         DEBUG2 aout("thread "<<Self->UniqID<<" releasing lock "<<*curr->LockFor<<" in releaseAll (will be ver "<<(curr->LockFor->getSnapshot().version()+2)<<")");
+        // note: any necessary membars here are implied by the lock release
         curr->LockFor->release(Self);
     }
 }
@@ -928,6 +931,7 @@ __INLINE__ bool validateLockVersions(Thread* Self, List* lockAVPairs/*, bool hol
     for (AVPair* curr = lockAVPairs->head; curr != stop; curr = curr->Next) {
         vLock* lock = curr->LockFor;
         vLockSnapshot locksnap = lock->getSnapshot();
+        LWSYNC; // prevent any following reads from being reordered before getSnapshot()
         if (locksnap.isLocked()) {
             if (lock->isOwnedBy(Self)) {
                 continue; // we own it
@@ -1047,6 +1051,8 @@ int TxCommit(void* _Self) {
     
     // software path
     if (Self->isFallback) {
+        SOFTWARE_BARRIER; // prevent compiler reordering of speculative execution before isFallback check in htm (for power)
+
         // return immediately if txn is read-only
         if (Self->IsRO) {
             DEBUG2 aout("thread "<<Self->UniqID<<" commits read-only txn");
@@ -1074,7 +1080,7 @@ int TxCommit(void* _Self) {
         }
         
         // perform the actual writes
-        __sync_synchronize();
+        LWSYNC; // prevent writes from being done before any validation (on power)
         Self->wrSet->writeForward();
         
         // release all locks
@@ -1107,6 +1113,7 @@ void TxAbort(void* _Self) {
     
     // software path
     if (Self->isFallback) {
+        SOFTWARE_BARRIER; // prevent compiler reordering of speculative execution before isFallback check in htm (for power)
         ++Self->Retries;
         //++Self->AbortsSW;
         if (Self->Retries > MAX_RETRIES) {
@@ -1132,6 +1139,7 @@ void TxAbort(void* _Self) {
 #endif
         
         // longjmp to start of txn
+        LWSYNC; // prevent any writes after the longjmp from being moved before this point (on power) // TODO: is this needed?
         SIGLONGJMP(*Self->envPtr, 1);
         ASSERT(0);
         
@@ -1140,50 +1148,6 @@ void TxAbort(void* _Self) {
         XABORT(0);
     }
 }
-
-// TODO: SWITCH BACK TO SEPARATE LISTS FOR LONG / FLOAT.
-// CAN'T UNDERSTAND WHY WRITES OF INTPTR_T SHOULD WORK WHEN WE
-// REALLY WANT TO WRITE A FLOAT...
-// it appears to screw up htm txns but not stm ones, for some reason
-// that i don't understand at all. (reads make sense, but not writes.)
-
-//__INLINE__ intptr_t TxLoad(void* _Self, volatile intptr_t* addr) {
-//    Thread* Self = (Thread*) _Self;
-//    
-//    // software path
-//    if (Self->isFallback) {
-////        printf("txLoad(id=%ld, addr=0x%lX) on fallback\n", Self->UniqID, (unsigned long)(void*) addr);
-//        
-//        // check whether addr is in the write-set
-//        AVPair* av = Self->wrSet->find(addr);
-//        if (av) return av->value;//unpackValue(av);
-//
-//        // addr is NOT in the write-set; abort if it is locked
-//        vLock* lock = PSLOCK(addr);
-//        vLockSnapshot locksnap = lock->getSnapshot();
-//        if (locksnap.isLocked()) {// && !lock->isOwnedBy(Self)) { // impossible for us to hold a lock on it.
-//            DEBUG2 aout("thread "<<Self->UniqID<<" TxRead saw lock "<<renamePointer(lock)<<" was held (not by us) -> aborting (retries="<<Self->Retries<<")");
-//            TxAbort(Self);
-//        }
-//        
-//        // read addr and add it to the read-set
-//        intptr_t val = *addr;
-//        Self->rdSet->insertReplace(Self, addr, val, lock, locksnap);
-//
-//        // validate reads
-//        if (!validateReadSet(Self)) {
-//            DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting (retries="<<Self->Retries<<")");
-//            TxAbort(Self);
-//        }
-//
-////        printf("    txLoad(id=%ld, ...) success\n", Self->UniqID);
-//        return val;
-//    
-//    // hardware path
-//    } else {
-//        return *addr;
-//    }
-//}
 
 intptr_t TxLoad_stm(void* _Self, volatile intptr_t* addr) {
     Thread* Self = (Thread*) _Self;
@@ -1201,10 +1165,12 @@ intptr_t TxLoad_stm(void* _Self, volatile intptr_t* addr) {
     }
 
     // read addr and add it to the read-set
+    LWSYNC; // prevent read of addr from being moved before read of its lock (on power)
     intptr_t val = *addr;
     Self->rdSet->insertReplace(Self, addr, val, lock, locksnap);
 
     // validate reads
+    LWSYNC; // prevent reads of locks in validation from being moved before the read of addr (on power)
     if (!validateReadSet(Self)) {
         DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting (retries="<<Self->Retries<<")");
         TxAbort(Self);
@@ -1215,34 +1181,6 @@ intptr_t TxLoad_stm(void* _Self, volatile intptr_t* addr) {
 intptr_t TxLoad_htm(void* _Self, volatile intptr_t* addr) {
     return *addr;
 }
-
-//__INLINE__ void TxStore(void* _Self, volatile intptr_t* addr, intptr_t value) {
-//    Thread* Self = (Thread*) _Self;
-//    
-//    // software path
-//    if (Self->isFallback) {
-////        printf("txStore(id=%ld, addr=0x%lX, val=%ld) on fallback\n", Self->UniqID, (unsigned long)(void*) addr, (long) value);
-//        
-////        // abort if addr is locked (since we do not hold any locks)
-//        vLock* lock = PSLOCK(addr);
-//        vLockSnapshot locksnap = lock->getSnapshot();
-//        // add addr to the write-set
-//        Self->wrSet->insertReplace(Self, addr, value, lock, locksnap);
-//        Self->IsRO = false; // txn is not read-only
-//
-////        printf("    txStore(id=%ld, ...) success\n", Self->UniqID);
-////        return value;
-//        
-//    // hardware path
-//    } else {
-//        // todo: also try buffering writes until commit time and using ONE tsuspend/tresume pair
-//        // increment version number (to notify s/w txns of the change)
-//        // and write value to addr (order unimportant because of h/w)
-//        vLock* lock = PSLOCK(addr);
-//        lock->htmIncrementVersion();
-//        *addr = value;
-//    }
-//}
 
 void TxStore_stm(void* _Self, volatile intptr_t* addr, intptr_t value) {
     Thread* Self = (Thread*) _Self;

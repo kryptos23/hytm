@@ -11,12 +11,14 @@
 #ifndef PLATFORM_H
 #define PLATFORM_H 1
 
-#if defined(SPARC) || defined(__sparc__)
+#if defined(__sparc)
 #  error SPARC is not supported
-#elif defined __PPC__ || defined __POWERPC__  || defined powerpc || defined _POWER || defined __ppc__ || defined __powerpc__
+#elif defined(__powerpc64__) || defined(__ppc64__) || defined(__PPC64__)
 #  include "platform_p8.h"
-#else
+#elif defined(__x86_64__) || defined(_M_X64)
 #  include "platform_x86.h"
+#else
+#  error UNKNOWN platform
 #endif
 
 #define CAS(m,c,s)  cas((intptr_t)(s),(intptr_t)(c),(intptr_t*)(m))

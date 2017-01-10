@@ -101,13 +101,16 @@ void acquireLock(volatile int *lock) {
             PAUSE();
             continue;
         }
+        LWSYNC; // prevent the following CAS from being moved before read of lock (on power)
         if (__sync_bool_compare_and_swap(lock, 0, 1)) {
+            SYNC_RMW; // prevent instructions in the critical section from being moved before the lock (on power)
             return;
         }
     }
 }
 
 void releaseLock(volatile int *lock) {
+    LWSYNC; // prevent unlock from being moved before instructions in the critical section (on power)
     *lock = 0;
 }
 
@@ -130,97 +133,6 @@ void releaseLock(volatile int *lock) {
  */
 
 class Thread;
-
-//#define LOCKBIT 1
-//class vLockSnapshot {
-//public:
-////private:
-//    uint64_t lockstate;
-//public:
-//    __INLINE__ vLockSnapshot() {}
-//    __INLINE__ vLockSnapshot(uint64_t _lockstate) {
-//        lockstate = _lockstate;
-//    }
-//    __INLINE__ bool isLocked() const {
-//        return lockstate & LOCKBIT;
-//    }
-//    __INLINE__ uint64_t version() const {
-////        cout<<"LOCKSTATE="<<lockstate<<" ~LOCKBIT="<<(~LOCKBIT)<<" VERSION="<<(lockstate & (~LOCKBIT))<<endl;
-//        return lockstate & (~LOCKBIT);
-//    }
-//    friend std::ostream& operator<<(std::ostream &out, const vLockSnapshot &obj);
-//};
-//
-//class vLock {
-//    union {
-//        struct {
-//            volatile uint64_t lock; // (Version,LOCKBIT)
-//            volatile void* volatile owner; // invariant: NULL when lock is not held; non-NULL (and points to thread that owns lock) only when lock is held (but sometimes may be NULL when lock is held). guarantees that a thread can tell if IT holds the lock (but cannot necessarily tell who else holds the lock).
-//        };
-////        char bytes[PREFETCH_SIZE_BYTES];
-//    };
-//private:
-//    __INLINE__ vLock(uint64_t lockstate) {
-//        lock = lockstate;
-//        owner = 0;
-//    }
-//public:
-//    __INLINE__ vLock() {
-//        lock = 0;
-//        owner = NULL;
-//    }
-//    __INLINE__ vLockSnapshot getSnapshot() const {
-//        vLockSnapshot retval (lock);
-////        __sync_synchronize();
-//        return retval;
-//    }
-////    __INLINE__ bool tryAcquire(void* thread) {
-////        if (thread == owner) return true; // reentrant acquire
-////        uint64_t val = lock & (~LOCKBIT);
-////        bool retval = __sync_bool_compare_and_swap(&lock, val, val+1);
-////        if (retval) {
-////            owner = thread;
-////        }
-////        return retval;
-////    }
-////    __INLINE__ bool tryAcquire(void* thread, vLockSnapshot& oldval) {
-////        if (thread == owner) return true; // reentrant acquire
-////        bool retval = __sync_bool_compare_and_swap(&lock, oldval.version(), oldval.version()+1);
-////        if (retval) {
-////            owner = thread;
-////        }
-////        return retval;
-////    }
-//    __INLINE__ void release(void* thread) {
-//        if (thread == owner) { // reentrant release (assuming the lock should be released on the innermost release() call)
-//            owner = NULL;
-//            SOFTWARE_BARRIER;
-//            ++lock;
-//        }
-//    }
-//
-//    __INLINE__ bool glockedAcquire(void* thread, vLockSnapshot& oldval) {
-////        if (thread == owner) return true; // reentrant acquire
-//        if (oldval.version() == lock) {
-//            ++lock;
-//            SOFTWARE_BARRIER;
-//            owner = thread;
-//            return true;
-//        }
-//        return false;
-//    }
-//
-//    // can be invoked only by a hardware transaction
-//    __INLINE__ void htmIncrementVersion() {
-//        lock += 2;
-//    }
-//
-//    __INLINE__ bool isOwnedBy(void* thread) {
-//        return (thread == owner);
-//    }
-//    
-//    friend std::ostream& operator<<(std::ostream &out, const vLock &obj);
-//};
 
 #include <map>
 map<const void*, unsigned> addrToIx;
@@ -274,49 +186,6 @@ string renamePointer(const void* p) {
         return stringifyIndex(it->second);
     }
 }
-
-//std::ostream& operator<<(std::ostream& out, const vLockSnapshot& obj) {
-//    return out<<"ver="<<obj.version()
-//                <<",locked="<<obj.isLocked()
-//                ;//<<"> (raw="<<obj.lockstate<<")";
-//}
-//
-//std::ostream& operator<<(std::ostream& out, const vLock& obj) {
-//    return out<<"<"<<obj.getSnapshot()<<",owner="<<(obj.owner?((Thread_void*) obj.owner)->UniqID:-1)<<">@"<<renamePointer(&obj);
-//}
-
-///*
-// * Consider 4M alignment for LockTab so we can use large-page support.
-// * Alternately, we could mmap() the region with anonymous DZF pages.
-// */
-//#define _TABSZ  (1<<20)
-//static vLock LockTab[_TABSZ];
-//
-///*
-// * With PS the versioned lock words (the LockTab array) are table stable and
-// * references will never fault.  Under PO, however, fetches by a doomed
-// * zombie txn can fault if the referent is free()ed and unmapped
-// */
-//#if 0
-//#define LDLOCK(a)                     LDNF(a)  /* for PO */
-//#else
-//#define LDLOCK(a)                     *(a)     /* for PS */
-//#endif
-//
-///*
-// * PSLOCK: maps variable address to lock address.
-// * For PW the mapping is simply (UNS(addr)+sizeof(int))
-// * COLOR attempts to place the lock(metadata) and the data on
-// * different D$ indexes.
-// */
-//#define TABMSK (_TABSZ-1)
-//#define COLOR (128)
-//
-///*
-// * ILP32 vs LP64.  PSSHIFT == Log2(sizeof(intptr_t)).
-// */
-//#define PSSHIFT ((sizeof(void*) == 4) ? 2 : 3)
-//#define PSLOCK(a) (LockTab + (((UNS(a)+COLOR) >> PSSHIFT) & TABMSK)) /* PS1M */
 
 
 
@@ -420,44 +289,6 @@ std::ostream& operator<<(std::ostream& out, const AVPair& obj) {
             //<<" rdv="<<obj.rdv<<"@"<<(uintptr_t)(long*)&obj
             <<"]@"<<renamePointer(&obj);
 }
-
-//template <typename T>
-//inline void assignValue(AVPair* e, T value);
-//template <>
-//inline void assignValue<long>(AVPair* e, long value) {
-//    e->value.l = value;
-//}
-//template <>
-//inline void assignValue<float>(AVPair* e, float value) {
-//    e->value.f[0] = value;
-//}
-//
-//template <typename T>
-//inline void replayStore(AVPair* e);
-//template <>
-//inline void replayStore<long>(AVPair* e) {
-//    *((long*)e->addr) = e->value.l;
-//}
-//template <>
-//inline void replayStore<float>(AVPair* e) {
-//    *((float*)e->addr) = e->value.f[0];
-//}
-//
-//template <typename T>
-//inline T unpackValue(AVPair* e);
-//template <>
-//inline long unpackValue<long>(AVPair* e) {
-//    return e->value.l;
-//}
-//template <>
-//inline float unpackValue<float>(AVPair* e) {
-//    return e->value.f[0];
-//}
-//
-//class Log;
-//
-//template <typename T>
-//inline Log * getTypedLog(TypeLogs * typelogs);
 
 enum hytm_config {
     INIT_WRSET_NUM_ENTRY = 1024,
@@ -899,55 +730,6 @@ std::ostream& operator<<(std::ostream& out, const List& obj) {
     return out;
 }
 
-//// can be invoked only by a transaction on the software path.
-//// writeSet must point to the write-set for this Thread that
-//// contains addresses/values of type T.
-//__INLINE__ bool validateGSLOrValues(Thread* Self, List* avpairs, bool holdingLocks) {
-//    DEBUG3 aout("validateGSLOrValues "<<*avpairs);//<<" "<<debug(holdingLocks));
-//    assert(Self->isFallback);
-//
-//    // the norec optimization: if the sequence number didn't change, then neither did any memory locations.
-//    int currGSL = gsl;
-//    if (currGSL == Self->sequenceLock) {
-//        return true;
-//    }
-//    
-//    // validation retry loop
-//    while (1) {
-//        
-//        // wait until sequence lock is not held
-//        while (currGSL & 1) {
-//            PAUSE();
-//            currGSL = gsl;
-//            if (holdingLocks) break;
-//        }
-//
-//        // do value based validation
-//        AVPair* const stop = avpairs->put;
-//        for (AVPair* curr = avpairs->head; curr != stop; curr = curr->Next) {
-//            if (curr->value != *curr->addr) {
-//                return false;
-//            }
-//        }
-//        
-//        // if sequence lock has not changed, then our value based validation saw a snapshot
-//        if (currGSL == gsl) {
-//            // save the new gsl value we read as the last time when we can serialize all reads that we did so far
-//            Self->sequenceLock = currGSL;
-//            return true;
-//        } else {
-//            currGSL = gsl;
-//        }
-//    }
-//}
-//
-//__INLINE__ bool validateReadSet(Thread* Self, bool holdingLocks) {
-////    return validateGSLOrValues(Self, &Self->rdSet->locks.list, holdingLocks);
-////    return validateGSLOrValues<long>(Self, &Self->rdSet->l.addresses.list)
-////        && validateGSLOrValues<float>(Self, &Self->rdSet->f.addresses.list);
-//    return validateGSLOrValues(Self, Self->rdSet, holdingLocks);
-//}
-
 __INLINE__ intptr_t AtomicAdd(volatile intptr_t* addr, intptr_t dx) {
     intptr_t v;
     for (v = *addr; CAS(addr, v, v + dx) != v; v = *addr) {}
@@ -1038,6 +820,8 @@ int TxCommit(void* _Self) {
     
     // software path
     if (Self->isFallback) {
+        SOFTWARE_BARRIER; // prevent compiler reordering of speculative execution before isFallback check in htm (for power)
+
         // return immediately if txn is read-only
         if (Self->IsRO) {
             DEBUG2 aout("thread "<<Self->UniqID<<" commits read-only txn");
@@ -1049,8 +833,11 @@ int TxCommit(void* _Self) {
         int oldval = Self->sequenceLock;
         while ((oldval & 1) || !__sync_bool_compare_and_swap(&gsl, oldval, oldval + 1)) {
             PAUSE();
+            LWSYNC; // prevent the read of gsl from being moved before the CAS, or this loop (on power)
             oldval = gsl;
+            SYNC_RMW; // prevent instructions after this point from being moved before the read of gsl (on power)
         }
+        SYNC_RMW; // prevent instructions in the critical section from being moved before the lock (on power)
         countersProbStartTime(c_counters, Self->UniqID, 0.);
         
         // acquire extra sequence lock
@@ -1066,32 +853,28 @@ int TxCommit(void* _Self) {
         //      the paper notes this in footnote 7.
         
         // validate the read-set
-//        if (failedFirst && !validateReadSet(Self, true)) {
-//            // release all locks and abort
-//            DEBUG2 aout("thread "<<Self->UniqID<<" TxCommit failed validation -> abort");
-//            esl = 0;
-//            ++gsl;
-//            __sync_synchronize();
-//            TxAbort(Self);
-//        }
-        
         // the norec optimization: if the sequence number didn't change, then neither did any memory locations.
         // do value based validation
         AVPair* const stop = Self->rdSet->put;
         for (AVPair* curr = Self->rdSet->head; curr != stop; curr = curr->Next) {
             if (curr->value != *curr->addr) {
-                esl = 0;
+                LWSYNC; // prevent esl from being set to zero prematurely (on power) [is this needed? i suspect not.]
+                esl = 0; // TODO: is this needed? i suspect not.
+                LWSYNC; // prevent gsl from being unlocked before esl (on power)
                 gsl = oldval + 2;
                 TxAbort(Self);
             }
         }
         
         // perform the actual writes
+        LWSYNC; // prevent the lock acquisition for esl from being moved before validation
         esl = 1;
-        //__sync_synchronize(); // not needed on x86/64 since the write to esl cannot be moved after these writes
+        LWSYNC; // prevent writes from being performed before esl is locked (on power)
         Self->wrSet->writeForward();
         // release gsl and esl
+        LWSYNC; // prevent esl from being released before writes are finished (on power)
         esl = 0;
+        LWSYNC; // prevent gsl from being unlocked before esl (on power)
         gsl = oldval + 2;
 
         countersProbEndTime(c_counters, Self->UniqID, c_counters->timingOnFallback);
@@ -1126,6 +909,8 @@ void TxAbort(void* _Self) {
     
     // software path
     if (Self->isFallback) {
+        SOFTWARE_BARRIER; // prevent compiler reordering of speculative execution before isFallback check in htm (for power)
+
         ++Self->Retries;
         ++Self->AbortsSW;
         if (Self->Retries > MAX_RETRIES) {
@@ -1150,6 +935,7 @@ void TxAbort(void* _Self) {
 #endif
         
         // longjmp to start of txn
+        LWSYNC; // prevent any writes after the longjmp from being moved before this point (on power) // TODO: is this needed?
         SIGLONGJMP(*Self->envPtr, 1);
         ASSERT(0);
         
@@ -1159,86 +945,12 @@ void TxAbort(void* _Self) {
     }
 }
 
-// TODO: SWITCH BACK TO SEPARATE LISTS FOR LONG / FLOAT.
-// CAN'T UNDERSTAND WHY WRITES OF INTPTR_T SHOULD WORK WHEN WE
-// REALLY WANT TO WRITE A FLOAT...
-// it appears to screw up htm txns but not stm ones, for some reason
-// that i don't understand at all. (reads make sense, but not writes.)
-
-//__INLINE__ intptr_t TxLoad(void* _Self, volatile intptr_t* addr) {
-//    Thread* Self = (Thread*) _Self;
-//    
-//    // software path
-//    if (Self->isFallback) {
-////        printf("txLoad(id=%ld, addr=0x%lX) on fallback\n", Self->UniqID, (unsigned long)(void*) addr);
-//        
-//        // check whether addr is in the write-set
-//        AVPair* av = Self->wrSet->find(addr);
-//        if (av) return av->value;//unpackValue(av);
-//
-//        // addr is NOT in the write-set, so we read it
-//        intptr_t val = *addr;
-//
-//        // add the value we read to the read-set
-//        // note: if addr changed, it was not changed by us (since we write only in commit)
-//        Self->rdSet->insertReplace(Self, addr, val, true);
-//        
-//        // validate reads
-//
-//        // the norec optimization: if the sequence number didn't change, then neither did any memory locations.
-//        AVPair* stop = NULL;
-//        int currGSL = gsl;
-//        if (currGSL == Self->sequenceLock) {
-//            goto validated;
-//        }
-//        // validation retry loop
-//        while (1) {
-//            // wait until sequence lock is not held
-//            while (currGSL & 1) {
-//                PAUSE();
-//                currGSL = gsl;
-//            }
-//            // do value based validation
-//            stop = Self->rdSet->put;
-//            for (AVPair* curr = Self->rdSet->head; curr != stop; curr = curr->Next) {
-//                if (curr->value != *curr->addr) {
-//                    DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting (retries="<<Self->Retries<<")");
-//                    TxAbort(Self);
-//                }
-//            }
-//            // if sequence lock has not changed, then our value based validation saw a snapshot
-//            if (currGSL == gsl) {
-//                // save the new gsl value we read as the last time when we can serialize all reads that we did so far
-//                Self->sequenceLock = currGSL; // assert: even number (unlocked)
-//                break;
-//            } else {
-//                currGSL = gsl;
-//            }
-//        }
-//validated:
-//        
-////        if (!validateReadSet(Self, false)) {
-////            DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting (retries="<<Self->Retries<<")");
-////            TxAbort(Self);
-////        }
-//
-//        //        printf("    txLoad(id=%ld, ...) success\n", Self->UniqID);
-//        return val;
-//        
-//    // hardware path
-//    } else {
-//        // actually read addr
-//        intptr_t val = *addr;
-//        return val;
-//    }
-//}
-
 intptr_t TxLoad_stm(void* _Self, volatile intptr_t* addr) {
     Thread* Self = (Thread*) _Self;
     
     // check whether addr is in the write-set
     AVPair* av = Self->wrSet->find(addr);
-    if (av) return av->value;//unpackValue(av);
+    if (av) return av->value;
 
     // addr is NOT in the write-set, so we read it
     intptr_t val = *addr;
@@ -1251,6 +963,7 @@ intptr_t TxLoad_stm(void* _Self, volatile intptr_t* addr) {
 
     // the norec optimization: if the sequence number didn't change, then neither did any memory locations.
     AVPair* stop = NULL;
+    LWSYNC; // prevent read of gsl from being moved before read of addr (on power)
     int currGSL = gsl;
     if (currGSL == Self->sequenceLock) {
         goto validated;
@@ -1260,9 +973,11 @@ intptr_t TxLoad_stm(void* _Self, volatile intptr_t* addr) {
         // wait until sequence lock is not held
         while (currGSL & 1) {
             PAUSE();
-            currGSL = gsl;
+            SYNC_RMW; // prevent the read of gsl from being moved earlier by the processor (on power)
+            currGSL = gsl; // volatile read, so compiler cannot optimize it out or move it
         }
         // do value based validation
+        SYNC_RMW; // prevent reads in validation from being moved before the read of gsl (on power)
         stop = Self->rdSet->put;
         for (AVPair* curr = Self->rdSet->head; curr != stop; curr = curr->Next) {
             if (curr->value != *curr->addr) {
@@ -1271,22 +986,17 @@ intptr_t TxLoad_stm(void* _Self, volatile intptr_t* addr) {
             }
         }
         // if sequence lock has not changed, then our value based validation saw a snapshot
+        LWSYNC; // prevent read of gsl from being moved before reads in validation (on power)
         if (currGSL == gsl) {
             // save the new gsl value we read as the last time when we can serialize all reads that we did so far
             Self->sequenceLock = currGSL; // assert: even number (unlocked)
             break;
         } else {
+            LWSYNC; // prevent read of gsl from being moved before read of gsl in the if clause above (on power)
             currGSL = gsl;
         }
     }
 validated:
-
-//        if (!validateReadSet(Self, false)) {
-//            DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting (retries="<<Self->Retries<<")");
-//            TxAbort(Self);
-//        }
-
-    //        printf("    txLoad(id=%ld, ...) success\n", Self->UniqID);
     return val;
 }
 

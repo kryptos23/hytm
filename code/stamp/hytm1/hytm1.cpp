@@ -99,13 +99,16 @@ __INLINE__ void acquireLock(volatile int *lock) {
             PAUSE();
             continue;
         }
+        LWSYNC; // prevent the following CAS from being moved before read of lock (on power)
         if (__sync_bool_compare_and_swap(lock, 0, 1)) {
+            SYNC_RMW; // prevent instructions in the critical section from being moved before the lock (on power)
             return;
         }
     }
 }
 
 __INLINE__ void releaseLock(volatile int *lock) {
+    LWSYNC; // prevent unlock from being moved before instructions in the critical section (on power)
     *lock = 0;
 }
 
@@ -824,6 +827,7 @@ void TxAbort(void* _Self) {
     
     // software path
     if (Self->isFallback) {
+        SOFTWARE_BARRIER; // prevent compiler reordering of speculative execution before isFallback check in htm (for power)
         /* Clean up after an abort. Restore any modified locations. */
         Self->wrSet->writeBackward();
         
@@ -855,6 +859,7 @@ void TxAbort(void* _Self) {
 #endif
 
         // longjmp to start of txn
+        LWSYNC; // prevent any writes after the longjmp from being moved before this point (on power) // TODO: is this needed?
         SIGLONGJMP(*Self->envPtr, 1);
         ASSERT(0);
         

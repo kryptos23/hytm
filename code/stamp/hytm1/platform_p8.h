@@ -47,16 +47,16 @@ intptr_t cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr);
 
 /* =============================================================================
  * Memory Barriers
- *
- * http://mail.nl.linux.org/kernelnewbies/2002-11/msg00127.html
  * =============================================================================
  */
 
-// TODO: FIX THIS TO USE LESS EXPENSIVE BARRIERS
-#define MEMBARLDLD()                    /* nothing */
-#define MEMBARSTST()                    /* nothing */
-#define MEMBARSTLD()                    __asm__ __volatile__ ("" : : :"memory")
+#ifndef __TM_FENCE__
+#   error __TM_FENCE__ must be defined for POWER systems: use an up to date version of GCC
+#endif
 
+#define LWSYNC asm volatile("lwsync" ::: "memory")
+#define SYNC asm volatile("sync" ::: "memory")
+#define SYNC_RMW asm volatile("sync" ::: "memory")
 
 /* =============================================================================
  * Prefetching
@@ -86,45 +86,6 @@ void prefetchw (volatile void* x);
 #define PAUSE()                         /* nothing */
 
 
-/* =============================================================================
- * Timer functions
- * =============================================================================
- */
-/* CCM: low overhead timer; also works with simulator */
-/*#define TL2_TIMER_READ() ({ \
-    unsigned int lo; \
-    unsigned int hi; \
-    __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi)); \
-    ((TL2_TIMER_T)hi) << 32 | lo; \
-})*/
-
-/*
-Version with clock_gettime:
-
-#define TL2_TIMER_READ() ({ \
-
-      struct timespec time; \
-
-      clock_gettime(CLOCK_MONOTONIC, &time); \
-
-      (long)time.tv_sec * 1000000000L + (long)time.tv_nsec; \
-
-})
-*/
-
-/*
-Version with gettimeofday:
-
-#define TL2_TIMER_READ() ({ \
-
-    struct timeval time; \
-
-    gettimeofday(&time, NULL); \
-
-    (long)time.tv_sec * 1000000L + (long)time.tv_usec; \
-
-})
-*/
 
 
 #endif /* PLATFORM_P8_H */

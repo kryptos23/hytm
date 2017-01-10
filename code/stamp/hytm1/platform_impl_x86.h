@@ -45,21 +45,7 @@
 inline intptr_t
 cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr)
 {
-    intptr_t prevVal;
-
-    __asm__ __volatile__ (
-        "lock \n"
-#ifdef __LP64__
-        "cmpxchgq %1,%2 \n"
-#else
-        "cmpxchgl %k1,%2 \n"
-#endif
-        : "=a" (prevVal)
-        : "q"(newVal), "m"(*ptr), "0" (oldVal)
-        : "memory"
-    );
-
-    return prevVal;
+    return __sync_val_compare_and_swap(ptr, oldVal, newVal);
 }
 
 /* =============================================================================
