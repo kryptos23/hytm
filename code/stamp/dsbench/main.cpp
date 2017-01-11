@@ -29,6 +29,7 @@ typedef long test_type; // really want compile-time assert that this is the same
 #include "globals_extern.h"
 #include "recordmgr/machineconstants.h"
 #include "binding.h"
+#include "../hytm1/platform_impl.h" // for SYNC_RMW primitive
 
 #ifndef EXPERIMENT_FN
 #define EXPERIMENT_FN trial
@@ -148,6 +149,7 @@ void thread_prefill(void *unused) {
         }
     }
     running.fetch_add(-1);
+    SYNC_RMW;
     PRCU_UNREGISTER;
     TM_THREAD_EXIT();
 }
@@ -183,6 +185,7 @@ void prefill(DS_DECLARATION * tree) {
         
         start = false;
         done = false;
+        SYNC_RMW;
 
         sz = prefillSize->getTotal();
         //sz = tree->getSize();
@@ -320,6 +323,7 @@ void thread_timed(void *unused) {
     }
     
     running.fetch_add(-1);
+    SYNC_RMW;
     VERBOSE COUTATOMICTID("termination"<<endl);
     
     PRCU_UNREGISTER;
@@ -360,6 +364,7 @@ void trial() {
     
     thread_shutdown();
     TM_SHUTDOWN();
+    SYNC_RMW;
 }
 
 #ifdef BST
@@ -649,6 +654,7 @@ int main(int argc, char** argv) {
     PRINTS(STR(EXPERIMENT_FN));
 //    PRINTI(MAX_FAST_HTM_RETRIES);
 //    PRINTI(MAX_SLOW_HTM_RETRIES);
+    PRINTI(HTM_ATTEMPT_THRESH);
     PRINTI(PREFILL);
     PRINTI(MILLIS_TO_RUN);
     PRINTI(INS);

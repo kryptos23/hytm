@@ -101,7 +101,7 @@ void acquireLock(volatile int *lock) {
             PAUSE();
             continue;
         }
-        LWSYNC; // prevent the following CAS from being moved before read of lock (on power)
+        SYNC_RMW; // prevent the following CAS from being moved before read of lock (on power)
         if (__sync_bool_compare_and_swap(lock, 0, 1)) {
             SYNC_RMW; // prevent instructions in the critical section from being moved before the lock (on power)
             return;
@@ -110,8 +110,9 @@ void acquireLock(volatile int *lock) {
 }
 
 void releaseLock(volatile int *lock) {
-    LWSYNC; // prevent unlock from being moved before instructions in the critical section (on power)
+    SYNC_RMW; // prevent unlock from being moved before instructions in the critical section (on power)
     *lock = 0;
+SYNC_RMW; /***********************************/
 }
 
 
@@ -815,81 +816,89 @@ void TxClearRWSets(void* _Self) {
 //    Self->LocalUndo->clear();
 }
 
+int validate(Thread* Self) {
+    // the norec optimization: if the sequence number didn't change, then neither did any memory locations.
+    // validation retry loop
+    int currGSL;
+    do {
+        // wait until sequence lock is not held
+        do {
+            SYNC_RMW; // prevent first read of gsl from being moved before validation starts, and subsequent gsl reads being moved before this loop iteration, by the processor (on power)
+            currGSL = gsl; // volatile read, so compiler cannot optimize it out or move it
+            PAUSE();
+        } while (currGSL & 1);
+        // do value based validation
+        SYNC_RMW; // prevent reads in validation from being moved before the read of gsl (on power)
+        AVPair* stop = Self->rdSet->put;
+        for (AVPair* curr = Self->rdSet->head; curr != stop; curr = curr->Next) {
+            if (curr->value != *curr->addr) {
+                DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting (retries="<<Self->Retries<<")");
+                TxAbort(Self);
+            }
+        }
+        // if sequence lock has not changed, then our value based validation saw a snapshot
+        SYNC_RMW; // prevent read of gsl from being moved before reads in validation (on power)
+    } while (currGSL != gsl);
+    return currGSL;
+}
+
 int TxCommit(void* _Self) {
     Thread* Self = (Thread*) _Self;
     
     // software path
     if (Self->isFallback) {
         SOFTWARE_BARRIER; // prevent compiler reordering of speculative execution before isFallback check in htm (for power)
-
+SYNC_RMW; /***********************************/
         // return immediately if txn is read-only
-        if (Self->IsRO) {
-            DEBUG2 aout("thread "<<Self->UniqID<<" commits read-only txn");
-            ++Self->CommitsSW;
-            goto success;
-        }
-        
-        // acquire global sequence lock
-        int oldval = Self->sequenceLock;
-        while ((oldval & 1) || !__sync_bool_compare_and_swap(&gsl, oldval, oldval + 1)) {
-            PAUSE();
-            LWSYNC; // prevent the read of gsl from being moved before the CAS, or this loop (on power)
-            oldval = gsl;
-            SYNC_RMW; // prevent instructions after this point from being moved before the read of gsl (on power)
-        }
-        SYNC_RMW; // prevent instructions in the critical section from being moved before the lock (on power)
-        countersProbStartTime(c_counters, Self->UniqID, 0.);
-        
-        // acquire extra sequence lock
-        // note: the original alg writes sequenceLock+1, where sequenceLock was read from gsl, 
-        //      which is NOT the same sequence as esl, so they do NOT know
-        //      that esl monotonically increases.
-        //      however, this is not a problem, since the only purpose in changing
-        //      esl is (a) to cause concurrent hardware transactions to abort due to
-        //      conflicts (and, of course, htm is not susceptible to the aba problem),
-        //      and (b) to indicate (odd esl) that program data values are being changed
-        //      by the stm path.
-        //      realizing this, we can just use a single bit.
-        //      the paper notes this in footnote 7.
-        
-        // validate the read-set
-        // the norec optimization: if the sequence number didn't change, then neither did any memory locations.
-        // do value based validation
-        AVPair* const stop = Self->rdSet->put;
-        for (AVPair* curr = Self->rdSet->head; curr != stop; curr = curr->Next) {
-            if (curr->value != *curr->addr) {
-                LWSYNC; // prevent esl from being set to zero prematurely (on power) [is this needed? i suspect not.]
-                esl = 0; // TODO: is this needed? i suspect not.
-                LWSYNC; // prevent gsl from being unlocked before esl (on power)
-                gsl = oldval + 2;
-                TxAbort(Self);
+        if (!Self->IsRO) {
+            // acquire global sequence lock
+            while (!__sync_bool_compare_and_swap(&gsl, Self->sequenceLock, Self->sequenceLock+1)) {
+                // note: validate() starts with a SYNC_RMW barrier, so we don't need one just above this line
+                Self->sequenceLock = validate(Self);
             }
-        }
-        
-        // perform the actual writes
-        LWSYNC; // prevent the lock acquisition for esl from being moved before validation
-        esl = 1;
-        LWSYNC; // prevent writes from being performed before esl is locked (on power)
-        Self->wrSet->writeForward();
-        // release gsl and esl
-        LWSYNC; // prevent esl from being released before writes are finished (on power)
-        esl = 0;
-        LWSYNC; // prevent gsl from being unlocked before esl (on power)
-        gsl = oldval + 2;
+            SYNC_RMW; // prevent instructions in the critical section from being moved before the lock (on power)
+            countersProbStartTime(c_counters, Self->UniqID, 0.);
 
-        countersProbEndTime(c_counters, Self->UniqID, c_counters->timingOnFallback);
+            // acquire extra sequence lock
+            // note: the original alg writes sequenceLock+1, where sequenceLock was read from gsl, 
+            //      which is NOT the same sequence as esl, so they do NOT know
+            //      that esl monotonically increases.
+            //      however, this is not a problem, since the only purpose in changing
+            //      esl is (a) to cause concurrent hardware transactions to abort due to
+            //      conflicts (and, of course, htm is not susceptible to the aba problem),
+            //      and (b) to indicate (odd esl) that program data values are being changed
+            //      by the stm path.
+            //      realizing this, we can just use a single bit.
+            //      the paper notes this in footnote 7.
+
+            // perform the actual writes
+            SYNC_RMW; // prevent the lock acquisition for esl from being moved before validation
+            esl = 1;
+            SYNC_RMW; // prevent writes from being performed before esl is locked (on power)
+            Self->wrSet->writeForward();
+            // release gsl and esl
+            SYNC_RMW; // prevent esl from being released before writes are finished (on power)
+            esl = 0;
+            SYNC_RMW; // prevent gsl from being unlocked before esl (on power)
+            gsl = Self->sequenceLock + 2;
+SYNC_RMW; /***********************************/
+            countersProbEndTime(c_counters, Self->UniqID, c_counters->timingOnFallback);
+        }
         ++Self->CommitsSW;
         counterInc(c_counters->htmCommit[PATH_FALLBACK], Self->UniqID);
         
     // hardware path
     } else {
+SYNC_RMW; /***********************************/
         if (!Self->IsRO) {
             int seq = gsl;
             if (seq & 1) {
                 TxAbort(Self);
             }
+SYNC_RMW; /***********************************/
             gsl = seq + 2;
         }
+SYNC_RMW; /***********************************/
         XEND();
         ++Self->CommitsHW;
         counterInc(c_counters->htmCommit[PATH_FAST_HTM], Self->UniqID);
@@ -910,7 +919,7 @@ void TxAbort(void* _Self) {
     // software path
     if (Self->isFallback) {
         SOFTWARE_BARRIER; // prevent compiler reordering of speculative execution before isFallback check in htm (for power)
-
+SYNC_RMW; /***********************************/
         ++Self->Retries;
         ++Self->AbortsSW;
         if (Self->Retries > MAX_RETRIES) {
@@ -927,7 +936,7 @@ void TxAbort(void* _Self) {
         }
         registerHTMAbort(c_counters, Self->UniqID, 0, PATH_FALLBACK);
         countersProbEndTime(c_counters, Self->UniqID, c_counters->timingOnFallback);
-        
+SYNC_RMW; /***********************************/
 #ifdef TXNL_MEM_RECLAMATION
         // "abort" speculative allocations and speculative frees
         tmalloc_releaseAllReverse(Self->allocPtr, NULL);
@@ -935,13 +944,15 @@ void TxAbort(void* _Self) {
 #endif
         
         // longjmp to start of txn
-        LWSYNC; // prevent any writes after the longjmp from being moved before this point (on power) // TODO: is this needed?
+        SYNC_RMW; // prevent any writes after the longjmp from being moved before this point (on power) // TODO: is this needed?
         SIGLONGJMP(*Self->envPtr, 1);
         ASSERT(0);
         
     // hardware path
     } else {
+SYNC_RMW; /***********************************/
         XABORT(0);
+SYNC_RMW; /***********************************/
     }
 }
 
@@ -949,97 +960,47 @@ intptr_t TxLoad_stm(void* _Self, volatile intptr_t* addr) {
     Thread* Self = (Thread*) _Self;
     
     // check whether addr is in the write-set
+    SYNC_RMW; /***********************************/
     AVPair* av = Self->wrSet->find(addr);
     if (av) return av->value;
 
+    SYNC_RMW; /***********************************/
     // addr is NOT in the write-set, so we read it
     intptr_t val = *addr;
-
+    SYNC_RMW; // prevent gsl from being read before *addr (on power)
+    // validate reads
+    while (Self->sequenceLock != gsl) {
+        SYNC_RMW; /***********************************/
+        Self->sequenceLock = validate(Self);
+        SYNC_RMW; /***********************************/
+        val = *addr;
+    }
+SYNC_RMW; /***********************************/
     // add the value we read to the read-set
     // note: if addr changed, it was not changed by us (since we write only in commit)
     Self->rdSet->insertReplace(Self, addr, val, true);
-
-    // validate reads
-
-    // the norec optimization: if the sequence number didn't change, then neither did any memory locations.
-    AVPair* stop = NULL;
-    LWSYNC; // prevent read of gsl from being moved before read of addr (on power)
-    int currGSL = gsl;
-    if (currGSL == Self->sequenceLock) {
-        goto validated;
-    }
-    // validation retry loop
-    while (1) {
-        // wait until sequence lock is not held
-        while (currGSL & 1) {
-            PAUSE();
-            SYNC_RMW; // prevent the read of gsl from being moved earlier by the processor (on power)
-            currGSL = gsl; // volatile read, so compiler cannot optimize it out or move it
-        }
-        // do value based validation
-        SYNC_RMW; // prevent reads in validation from being moved before the read of gsl (on power)
-        stop = Self->rdSet->put;
-        for (AVPair* curr = Self->rdSet->head; curr != stop; curr = curr->Next) {
-            if (curr->value != *curr->addr) {
-                DEBUG2 aout("thread "<<Self->UniqID<<" TxRead failed validation -> aborting (retries="<<Self->Retries<<")");
-                TxAbort(Self);
-            }
-        }
-        // if sequence lock has not changed, then our value based validation saw a snapshot
-        LWSYNC; // prevent read of gsl from being moved before reads in validation (on power)
-        if (currGSL == gsl) {
-            // save the new gsl value we read as the last time when we can serialize all reads that we did so far
-            Self->sequenceLock = currGSL; // assert: even number (unlocked)
-            break;
-        } else {
-            LWSYNC; // prevent read of gsl from being moved before read of gsl in the if clause above (on power)
-            currGSL = gsl;
-        }
-    }
-validated:
+SYNC_RMW; /***********************************/
     return val;
 }
 
 intptr_t TxLoad_htm(void* _Self, volatile intptr_t* addr) {
+SYNC_RMW; /***********************************/
     return *addr;
 }
-
-//__INLINE__ void TxStore(void* _Self, volatile intptr_t* addr, intptr_t value) {
-//    Thread* Self = (Thread*) _Self;
-//    Self->IsRO = false; // txn is not read-only
-//    
-//    // software path
-//    if (Self->isFallback) {
-////        printf("txStore(id=%ld, addr=0x%lX, val=%ld) on fallback\n", Self->UniqID, (unsigned long)(void*) addr, (long) value);
-//        
-//        // add addr to the write-set
-//        Self->wrSet->insertReplace(Self, addr, value, false);
-//
-////        printf("    txStore(id=%ld, ...) success\n", Self->UniqID);
-////        return value;
-//        
-//        // think through 2 writes
-//        // think through write then read
-//        // validate after reading from write-set??
-//        // add new testing.cpp kernel that is like a double or triple increment with multiple reads and writes... but still easy to verify...
-//        
-//    // hardware path
-//    } else {
-//        *addr = value;
-//    }
-//}
 
 void TxStore_stm(void* _Self, volatile intptr_t* addr, intptr_t value) {
     Thread* Self = (Thread*) _Self;
     Self->IsRO = false; // txn is not read-only
-    
+    SYNC_RMW; /***********************************/
     // add addr to the write-set
     Self->wrSet->insertReplace(Self, addr, value, false);
+    SYNC_RMW; /***********************************/
     // think through 2 writes
     // think through write then read
 }
 
 void TxStore_htm(void* _Self, volatile intptr_t* addr, intptr_t value) {
+SYNC_RMW; /***********************************/
     *addr = value;
 }
 
