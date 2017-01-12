@@ -110,9 +110,8 @@ void acquireLock(volatile int *lock) {
 }
 
 void releaseLock(volatile int *lock) {
-    SYNC_RMW; // prevent unlock from being moved before instructions in the critical section (on power)
+    LWSYNC; // prevent unlock from being moved before instructions in the critical section (on power)
     *lock = 0;
-SYNC_RMW; /***********************************/
 }
 
 
@@ -823,12 +822,12 @@ int validate(Thread* Self) {
     do {
         // wait until sequence lock is not held
         do {
-            SYNC_RMW; // prevent first read of gsl from being moved before validation starts, and subsequent gsl reads being moved before this loop iteration, by the processor (on power)
+            SYNC_RMW; // prevent first read of gsl from being moved before validation starts, and subsequent gsl reads being moved before this loop iteration, by the processor (on power) [todo: can this be LWSYNC?]
             currGSL = gsl; // volatile read, so compiler cannot optimize it out or move it
-            PAUSE();
+            //PAUSE();
         } while (currGSL & 1);
         // do value based validation
-        SYNC_RMW; // prevent reads in validation from being moved before the read of gsl (on power)
+        LWSYNC; // prevent reads in validation from being moved before the read of gsl (on power)
         AVPair* stop = Self->rdSet->put;
         for (AVPair* curr = Self->rdSet->head; curr != stop; curr = curr->Next) {
             if (curr->value != *curr->addr) {
@@ -837,7 +836,7 @@ int validate(Thread* Self) {
             }
         }
         // if sequence lock has not changed, then our value based validation saw a snapshot
-        SYNC_RMW; // prevent read of gsl from being moved before reads in validation (on power)
+        LWSYNC; // prevent read of gsl from being moved before reads in validation (on power)
     } while (currGSL != gsl);
     return currGSL;
 }
@@ -848,7 +847,6 @@ int TxCommit(void* _Self) {
     // software path
     if (Self->isFallback) {
         SOFTWARE_BARRIER; // prevent compiler reordering of speculative execution before isFallback check in htm (for power)
-SYNC_RMW; /***********************************/
         // return immediately if txn is read-only
         if (!Self->IsRO) {
             // acquire global sequence lock
@@ -857,6 +855,9 @@ SYNC_RMW; /***********************************/
                 Self->sequenceLock = validate(Self);
             }
             SYNC_RMW; // prevent instructions in the critical section from being moved before the lock (on power)
+            assert((Self->sequenceLock & 1) == 0);
+            assert((gsl & 1) == 1);
+            assert(gsl == Self->sequenceLock + 1);
             countersProbStartTime(c_counters, Self->UniqID, 0.);
 
             // acquire extra sequence lock
@@ -872,16 +873,16 @@ SYNC_RMW; /***********************************/
             //      the paper notes this in footnote 7.
 
             // perform the actual writes
-            SYNC_RMW; // prevent the lock acquisition for esl from being moved before validation
-            esl = 1;
-            SYNC_RMW; // prevent writes from being performed before esl is locked (on power)
+            assert((esl & 1) == 0);
+            esl = 1;//Self->sequenceLock + 1;
+            LWSYNC; // prevent writes from being performed before esl is locked (on power)
+            assert((esl & 1) == 1);
             Self->wrSet->writeForward();
             // release gsl and esl
-            SYNC_RMW; // prevent esl from being released before writes are finished (on power)
-            esl = 0;
-            SYNC_RMW; // prevent gsl from being unlocked before esl (on power)
+            LWSYNC; // prevent esl from being released before writes are finished (on power)
+            esl = 0;//Self->sequenceLock + 2;
+            LWSYNC; // prevent gsl from being unlocked before esl (on power)
             gsl = Self->sequenceLock + 2;
-SYNC_RMW; /***********************************/
             countersProbEndTime(c_counters, Self->UniqID, c_counters->timingOnFallback);
         }
         ++Self->CommitsSW;
@@ -889,16 +890,13 @@ SYNC_RMW; /***********************************/
         
     // hardware path
     } else {
-SYNC_RMW; /***********************************/
         if (!Self->IsRO) {
             int seq = gsl;
             if (seq & 1) {
                 TxAbort(Self);
             }
-SYNC_RMW; /***********************************/
             gsl = seq + 2;
         }
-SYNC_RMW; /***********************************/
         XEND();
         ++Self->CommitsHW;
         counterInc(c_counters->htmCommit[PATH_FAST_HTM], Self->UniqID);
@@ -919,7 +917,6 @@ void TxAbort(void* _Self) {
     // software path
     if (Self->isFallback) {
         SOFTWARE_BARRIER; // prevent compiler reordering of speculative execution before isFallback check in htm (for power)
-SYNC_RMW; /***********************************/
         ++Self->Retries;
         ++Self->AbortsSW;
         if (Self->Retries > MAX_RETRIES) {
@@ -936,7 +933,6 @@ SYNC_RMW; /***********************************/
         }
         registerHTMAbort(c_counters, Self->UniqID, 0, PATH_FALLBACK);
         countersProbEndTime(c_counters, Self->UniqID, c_counters->timingOnFallback);
-SYNC_RMW; /***********************************/
 #ifdef TXNL_MEM_RECLAMATION
         // "abort" speculative allocations and speculative frees
         tmalloc_releaseAllReverse(Self->allocPtr, NULL);
@@ -944,15 +940,13 @@ SYNC_RMW; /***********************************/
 #endif
         
         // longjmp to start of txn
-        SYNC_RMW; // prevent any writes after the longjmp from being moved before this point (on power) // TODO: is this needed?
+        LWSYNC; // prevent any writes after the longjmp from being moved before this point (on power) // TODO: is this needed?
         SIGLONGJMP(*Self->envPtr, 1);
         ASSERT(0);
         
     // hardware path
     } else {
-SYNC_RMW; /***********************************/
         XABORT(0);
-SYNC_RMW; /***********************************/
     }
 }
 
@@ -960,47 +954,41 @@ intptr_t TxLoad_stm(void* _Self, volatile intptr_t* addr) {
     Thread* Self = (Thread*) _Self;
     
     // check whether addr is in the write-set
-    SYNC_RMW; /***********************************/
     AVPair* av = Self->wrSet->find(addr);
     if (av) return av->value;
 
-    SYNC_RMW; /***********************************/
     // addr is NOT in the write-set, so we read it
     intptr_t val = *addr;
-    SYNC_RMW; // prevent gsl from being read before *addr (on power)
+    LWSYNC; // prevent gsl from being read before *addr (on power)
     // validate reads
     while (Self->sequenceLock != gsl) {
-        SYNC_RMW; /***********************************/
+        // note: validate begins with SYNC_RMW, so we don't need one here to prevent parts of validation from being moved before the read of gsl (on power)
         Self->sequenceLock = validate(Self);
-        SYNC_RMW; /***********************************/
+        // note: validate ends with LWSYNC, so we don't need an LWSYNC here to prevent the read of *addr from being moved before the last read of gsl in validate (on power)
         val = *addr;
     }
-SYNC_RMW; /***********************************/
     // add the value we read to the read-set
     // note: if addr changed, it was not changed by us (since we write only in commit)
     Self->rdSet->insertReplace(Self, addr, val, true);
-SYNC_RMW; /***********************************/
     return val;
 }
 
 intptr_t TxLoad_htm(void* _Self, volatile intptr_t* addr) {
-SYNC_RMW; /***********************************/
     return *addr;
 }
 
 void TxStore_stm(void* _Self, volatile intptr_t* addr, intptr_t value) {
     Thread* Self = (Thread*) _Self;
     Self->IsRO = false; // txn is not read-only
-    SYNC_RMW; /***********************************/
     // add addr to the write-set
     Self->wrSet->insertReplace(Self, addr, value, false);
-    SYNC_RMW; /***********************************/
     // think through 2 writes
     // think through write then read
 }
 
 void TxStore_htm(void* _Self, volatile intptr_t* addr, intptr_t value) {
-SYNC_RMW; /***********************************/
+    Thread* Self = (Thread*) _Self;
+    Self->IsRO = false;
     *addr = value;
 }
 
@@ -1023,7 +1011,7 @@ SYNC_RMW; /***********************************/
 void TxOnce() {
 //    CTASSERT((_TABSZ & (_TABSZ - 1)) == 0); /* must be power of 2 */
     
-    initSighandler(); /**** DEBUG CODE ****/
+//    initSighandler(); /**** DEBUG CODE ****/
     c_counters = (c_debugCounters *) malloc(sizeof(c_debugCounters));
     countersInit(c_counters, MAX_TID_POW2);                
     printf("%s %s\n", TM_NAME, "system ready\n");

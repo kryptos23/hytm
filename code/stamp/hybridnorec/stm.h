@@ -71,34 +71,33 @@ typedef struct Thread_void {
 #define STM_INIT_THREAD(t, id)          TxInitThread(t, id)
 #define STM_FREE_THREAD(t)              TxFreeThread(t)
 
-__thread intptr_t (*sharedReadFunPtr)(void* Self, volatile intptr_t* addr);
-__thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t val);
+__thread intptr_t (* sharedReadFunPtr)(void* Self, volatile intptr_t* addr);
+__thread void (* sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t val);
 
 
 #  define STM_BEGIN(isReadOnly)         do { \
-SYNC_RMW; /***********************************/ \
-                                            sharedReadFunPtr = &TxLoad_htm; \
-                                            sharedWriteFunPtr = &TxStore_htm; \
                                             STM_JMPBUF_T STM_JMPBUF; \
                                             \
-                                            Thread_void* ___Self = (Thread_void*) STM_SELF; \
-                                            TxClearRWSets(STM_SELF); \
-                                            \
                                             XBEGIN_ARG_T ___xarg; \
+                                            Thread_void* ___Self = (Thread_void*) STM_SELF; \
                                             ___Self->Retries = 0; \
+                                            ___Self->envPtr = &STM_JMPBUF; \
+                                            \
+                                            TxClearRWSets(STM_SELF); \
+                                            SOFTWARE_BARRIER; \
+                                            sharedReadFunPtr = &TxLoad_htm; \
+                                            sharedWriteFunPtr = &TxStore_htm; \
+                                            SOFTWARE_BARRIER; \
                                             ___Self->isFallback = 0; \
                                             ___Self->IsRO = 1; \
-                                            ___Self->envPtr = &STM_JMPBUF; \
+                                            \
                                             int ___htmattempts; \
                                             /*printf("HTM_ATTEMPT_THRESH=%d\n", HTM_ATTEMPT_THRESH);*/ \
                                             for (___htmattempts = 0 ; ___htmattempts < HTM_ATTEMPT_THRESH; ++___htmattempts) { \
                                                 /*printf("h/w loop iteration\n");*/ \
-SYNC_RMW; /***********************************/ \
-                                                while (esl) { PAUSE(); } \
+                                                while (esl /*& 1*/) { PAUSE(); } \
                                                 if (XBEGIN(___xarg)) { \
-SYNC_RMW; /***********************************/ \
-                                                    if (esl) XABORT(0); \
-SYNC_RMW; /***********************************/ \
+                                                    if (esl /*& 1*/) XABORT(0); \
                                                     break; \
                                                 } else { /* if we aborted */ \
                                                     registerHTMAbort(c_counters, ___Self->UniqID, X_ABORT_GET_STATUS(___xarg), PATH_FAST_HTM); \
@@ -106,29 +105,26 @@ SYNC_RMW; /***********************************/ \
                                                 } \
                                             } \
                                             /*printf("exited loop\n");*/ \
-SYNC_RMW; /***********************************/ \
                                             if (___htmattempts < HTM_ATTEMPT_THRESH) break; \
-SYNC_RMW; /***********************************/ \
                                             /*printf("passed h/w break\n");*/ \
                                             /* STM attempt */ \
                                             /*DEBUG2 aout("thread "<<___Self->UniqID<<" started s/w tx attempt "<<(___Self->AbortsSW+___Self->CommitsSW)<<"; s/w commits so far="<<___Self->CommitsSW);*/ \
                                             /*DEBUG1 if ((___Self->CommitsSW % 50000) == 0) aout("thread "<<___Self->UniqID<<" has committed "<<___Self->CommitsSW<<" s/w txns");*/ \
                                             DEBUG2 printf("thread %ld started s/w tx; attempts so far=%ld, s/w commits so far=%ld\n", ___Self->UniqID, (___Self->AbortsSW+___Self->CommitsSW), ___Self->CommitsSW); \
                                             DEBUG1 if ((___Self->CommitsSW % 100) == 0) printf("thread %ld has committed %ld s/w txns (over all threads so far=%ld)\n", ___Self->UniqID, ___Self->CommitsSW, CommitTallySW); \
-SYNC_RMW; /***********************************/ \
                                             if (sigsetjmp(STM_JMPBUF, 1)) { \
                                                 TxClearRWSets(STM_SELF); \
                                             } \
-SYNC_RMW; /***********************************/ \
-                                            ___Self->IsRO = 1; \
-                                            ___Self->isFallback = 1; \
+                                            SOFTWARE_BARRIER; \
                                             sharedReadFunPtr = &TxLoad_stm; \
                                             sharedWriteFunPtr = &TxStore_stm; \
-SYNC_RMW; /***********************************/ \
+                                            SOFTWARE_BARRIER; \
+                                            ___Self->isFallback = 1; \
+                                            ___Self->IsRO = 1; \
                                             do { \
-                                                SYNC_RMW; /* prevent read of gsl from being moved before previous reads (on power) */ \
+                                                LWSYNC; /* prevent read of gsl from being moved before previous reads (on power) */ \
                                                 ___Self->sequenceLock = gsl; \
-                                                PAUSE(); \
+                                                /*PAUSE();*/ \
                                             } while (___Self->sequenceLock & 1); \
                                             /*TxStart(STM_SELF, &STM_JMPBUF, SETJMP_RETVAL, &STM_RO_FLAG);*/ \
                                             SYNC_RMW; /* prevent instructions in the txn/critical section from being moved before this point (on power) */ \
