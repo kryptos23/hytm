@@ -29,7 +29,7 @@ typedef long test_type; // really want compile-time assert that this is the same
 #include "globals_extern.h"
 #include "recordmgr/machineconstants.h"
 #include "binding.h"
-#include "../hytm1/platform_impl.h" // for SYNC_RMW primitive
+//#include "../hytm1/platform_impl.h" // for SYNC_RMW primitive
 
 #ifndef EXPERIMENT_FN
 #define EXPERIMENT_FN trial

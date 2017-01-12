@@ -74,8 +74,10 @@ __thread intptr_t (*sharedReadFunPtr)(void* Self, volatile intptr_t* addr);
 __thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t val);
 
 #  define STM_BEGIN(isReadOnly)         do { \
+                                            SOFTWARE_BARRIER; \
                                             sharedReadFunPtr = &TxLoad_htm; \
                                             sharedWriteFunPtr = &TxStore_htm; \
+                                            SOFTWARE_BARRIER; \
                                             STM_JMPBUF_T STM_JMPBUF; \
                                             /*int STM_RO_FLAG = isReadOnly;*/ \
                                             \
@@ -106,10 +108,12 @@ __thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t
                                             if (sigsetjmp(STM_JMPBUF, 1)) { \
                                                 TxClearRWSets(STM_SELF); \
                                             } \
-                                            ___Self->isFallback = 1; \
+                                            SOFTWARE_BARRIER; \
                                             sharedReadFunPtr = &TxLoad_stm; \
                                             sharedWriteFunPtr = &TxStore_stm; \
-                                            /*TxStart(STM_SELF, &STM_JMPBUF, SETJMP_RETVAL, &STM_RO_FLAG);*/ \
+                                            SOFTWARE_BARRIER; \
+                                            ___Self->isFallback = 1; \
+                                            ___Self->IsRO = 1; \
                                             SYNC_RMW; /* prevent instructions in the txn/critical section from being moved before this point (on power) */ \
                                             SOFTWARE_BARRIER; \
                                         } while (0); /* enforce comma */

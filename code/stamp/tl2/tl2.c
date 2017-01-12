@@ -267,7 +267,7 @@ __INLINE__ intptr_t
 AtomicAdd (volatile intptr_t* addr, intptr_t dx)
 {
     intptr_t v;
-    for (v = *addr; CAS(addr, v, v+dx) != v; v = *addr) {}
+    for (v = *addr; CAS(addr, v, v+dx) != v; v = *addr) { SYNC_RMW; }
     return (v+dx);
 }
 
@@ -280,7 +280,7 @@ __INLINE__ intptr_t
 AtomicIncrement (volatile intptr_t* addr)
 {
     intptr_t v;
-    for (v = *addr; CAS(addr, v, v+1) != v; v = *addr) {}
+    for (v = *addr; CAS(addr, v, v+1) != v; v = *addr) { SYNC_RMW; }
     return (v+1);
 }
 
@@ -361,15 +361,15 @@ GVRead (Thread* Self)
 #  define GVGenerateWV                  GVGenerateWV_GV4
 #endif
 
-#if _GVCONFIGURATION == 5
-#  define _GVFLAVOR                     "GV5"
-#  define GVGenerateWV                  GVGenerateWV_GV5
-#endif
-
-#if _GVCONFIGURATION == 6
-#  define _GVFLAVOR                     "GV6"
-#  define GVGenerateWV                  GVGenerateWV_GV6
-#endif
+//#if _GVCONFIGURATION == 5
+//#  define _GVFLAVOR                     "GV5"
+//#  define GVGenerateWV                  GVGenerateWV_GV5
+//#endif
+//
+//#if _GVCONFIGURATION == 6
+//#  define _GVFLAVOR                     "GV6"
+//#  define GVGenerateWV                  GVGenerateWV_GV6
+//#endif
 
 
 /* =============================================================================
@@ -393,6 +393,7 @@ GVRead (Thread* Self)
 __INLINE__ vwLock
 GVGenerateWV_GV4 (Thread* Self, vwLock maxv)
 {
+    SYNC_RMW; // prevent read of _GCLOCK from being moved earlier (on power)
     vwLock gv = _GCLOCK;
     vwLock wv = gv + 2;
     vwLock k = CAS(&_GCLOCK, gv, wv);
@@ -422,43 +423,43 @@ GVGenerateWV_GV4 (Thread* Self, vwLock maxv)
  *
  *  CONSIDER: use MAX(_GCLOCK, Self->rv, Self->wv, maxv, VERSION(Self->abv))+2
  * =============================================================================
- */
-__INLINE__ vwLock
-GVGenerateWV_GV5 (Thread* Self, vwLock maxv)
-{
-    vwLock wv = _GCLOCK + 2;
-    if (maxv > wv) {
-        wv = maxv + 2;
-    }
-    ASSERT(wv != 0); /* overflow */
-    ASSERT(wv > Self->rv);
-    ASSERT(wv >= Self->wv);
-    Self->wv = wv;
-    return wv;
-}
-
-
-/* =============================================================================
- * GVGenerateWV_GV6
- *
- * Composite of GV4 and GV5
- *
- * Trade-off -- abort-rate vs SMP cache-coherence costs.
- *
- * TODO: make the frequence mask adaptive at runtime.
- * Let the abort-rate or abort:success ratio drive the mask.
- * =============================================================================
- */
-__INLINE__ vwLock
-GVGenerateWV_GV6 (Thread* Self, vwLock maxv)
-{
-    long rnd = (long)MarsagliaXOR(Self->xorrng);
-    if ((rnd & 0x1F) == 0) {
-        return GVGenerateWV_GV4(Self, maxv);
-    } else {
-        return GVGenerateWV_GV5(Self, maxv);
-    }
-}
+// */
+//__INLINE__ vwLock
+//GVGenerateWV_GV5 (Thread* Self, vwLock maxv)
+//{
+//    vwLock wv = _GCLOCK + 2;
+//    if (maxv > wv) {
+//        wv = maxv + 2;
+//    }
+//    ASSERT(wv != 0); /* overflow */
+//    ASSERT(wv > Self->rv);
+//    ASSERT(wv >= Self->wv);
+//    Self->wv = wv;
+//    return wv;
+//}
+//
+//
+///* =============================================================================
+// * GVGenerateWV_GV6
+// *
+// * Composite of GV4 and GV5
+// *
+// * Trade-off -- abort-rate vs SMP cache-coherence costs.
+// *
+// * TODO: make the frequence mask adaptive at runtime.
+// * Let the abort-rate or abort:success ratio drive the mask.
+// * =============================================================================
+// */
+//__INLINE__ vwLock
+//GVGenerateWV_GV6 (Thread* Self, vwLock maxv)
+//{
+//    long rnd = (long)MarsagliaXOR(Self->xorrng);
+//    if ((rnd & 0x1F) == 0) {
+//        return GVGenerateWV_GV4(Self, maxv);
+//    } else {
+//        return GVGenerateWV_GV5(Self, maxv);
+//    }
+//}
 
 
 /* =============================================================================
@@ -487,18 +488,18 @@ GVGenerateWV_GV6 (Thread* Self, vwLock maxv)
 __INLINE__ long
 GVAbort (Thread* Self)
 {
-#if _GVCONFIGURATION != 4
-    vwLock abv = Self->abv;
-    if (abv & LOCKBIT) {
-        return 0; /* normal interference */
-    }
-    vwLock gv = _GCLOCK;
-    if (Self->rv == gv && abv > gv) {
-        CAS(&_GCLOCK, gv, abv); /* advance to either (gv+2) or abv */
-        /* If this was a GV5/GV6-specific false+ abort then do not delay */
-        return 1; /* false+ abort */
-    }
-#endif
+//#if _GVCONFIGURATION != 4
+//    vwLock abv = Self->abv;
+//    if (abv & LOCKBIT) {
+//        return 0; /* normal interference */
+//    }
+//    vwLock gv = _GCLOCK;
+//    if (Self->rv == gv && abv > gv) {
+//        CAS(&_GCLOCK, gv, abv); /* advance to either (gv+2) or abv */
+//        /* If this was a GV5/GV6-specific false+ abort then do not delay */
+//        return 1; /* false+ abort */
+//    }
+//#endif
     return 0; /* normal interference */
 }
 
@@ -922,7 +923,7 @@ TrackLoad (Thread* Self, volatile vwLock* LockFor)
 
     AVPair* e = k->put;
     if (e == NULL) {
-        if (!ReadSetCoherentPessimistic(Self)) {
+        if (!ReadSetCoherentPessimistic(Self)) { // TODO: need barrier to prevent reads of locks in this from being moved earlier?
             return 0;
         }
         k->ovf++;
@@ -963,7 +964,7 @@ useAfterFreeHandler (int signum, siginfo_t* siginfo, void* context)
     }
 
     if (Self->Mode == TTXN) {
-        if (!ReadSetCoherentPessimistic(Self)) {
+        if (!ReadSetCoherentPessimistic(Self)) { // todo: need barrier?
             TxAbort(Self);
         }
     }
@@ -1034,7 +1035,7 @@ TxOnce ()
 
     pthread_key_create(&global_key_self, NULL); /* CCM: do before we register handler */
     registerUseAfterFreeHandler();
-
+    SYNC_RMW; // just to be safe
 }
 
 
@@ -1045,6 +1046,7 @@ TxOnce ()
 void
 TxShutdown ()
 {
+    SYNC_RMW; // just to be safe
     printf("TL2 system shutdown:\n"
            "  GCLOCK=0x%lX Starts=%li Aborts=%li\n"
            "  Overflows: R=%li W=%li L=%li\n",
@@ -1081,7 +1083,7 @@ TxNewThread ()
     assert(t);
 
     PROF_STM_NEWTHREAD_END();
-
+    SYNC_RMW; // just to be safe
     return t;
 }
 
@@ -1095,6 +1097,7 @@ TxNewThread ()
 void
 TxFreeThread (Thread* t)
 {
+    SYNC_RMW; // just to be safe
     AtomicAdd((volatile intptr_t*)((void*)(&ReadOverflowTally)),  t->rdSet.ovf);
 
     long wrSetOvf = 0;
@@ -1169,6 +1172,7 @@ TxInitThread (Thread* t, long id)
 #ifdef TL2_EAGER
     t->tmpLockEntry.Owner = t;
 #endif /* TL2_EAGER */
+    SYNC_RMW; // just to be safe
 }
 
 
@@ -1274,7 +1278,7 @@ ReadSetCoherent (Thread* Self)
     AVPair* e;
 
     ASSERT((rv & LOCKBIT) == 0);
-
+// TODO: need barrier to prevent reads of locks from being moved earlier?
     for (e = rd->List; e != EndOfList; e = e->Next) {
         ASSERT(e->LockFor != NULL);
         vwLock v = LDLOCK(e->LockFor);
@@ -1315,7 +1319,7 @@ ReadSetCoherentPessimistic (Thread* Self)
     AVPair* e;
 
     ASSERT((rv & LOCKBIT) == 0);
-
+// TODO: need barrier to prevent reads of locks from being moved earlier?
     for (e = rd->List; e != EndOfList; e = e->Next) {
         ASSERT(e->LockFor != NULL);
         vwLock v = LDLOCK(e->LockFor);

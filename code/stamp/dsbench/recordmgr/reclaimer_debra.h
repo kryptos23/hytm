@@ -16,6 +16,16 @@
 #include "reclaimer_interface.h"
 using namespace std;
 
+#if defined(__powerpc64__) || defined(__ppc64__) || defined(__PPC64__)
+#   define LWSYNC asm volatile("lwsync" ::: "memory")
+#   define SYNC asm volatile("sync" ::: "memory")
+#elif defined(__x86_64__) || defined(_M_X64)
+#   define LWSYNC /* nothing */
+#   define SYNC /* nothing */
+#else
+#   error UNKNOWN platform
+#endif
+
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_debra : public reclaimer_interface<T, Pool> {
 protected:
@@ -102,7 +112,9 @@ public:
         if (otherTid >= this->NUM_PROCESSES) {
             const int c = ++checked[tid*PREFETCH_SIZE_WORDS];
             if (c > MINIMUM_OPERATIONS_BEFORE_NEW_EPOCH) {
+                // note: __sync functions imply membars in gcc (for power)
                 __sync_bool_compare_and_swap(&epoch, readEpoch, readEpoch+EPOCH_INCREMENT);
+                // note: __sync functions imply membars in gcc (for power)
             }
         } else {
             assert(otherTid >= 0);
@@ -111,12 +123,16 @@ public:
                     || QUIESCENT(otherAnnounce)) {
                 const int c = ++checked[tid*PREFETCH_SIZE_WORDS];
                 if (c >= this->NUM_PROCESSES && c > MINIMUM_OPERATIONS_BEFORE_NEW_EPOCH) {
+                    // note: __sync functions imply membars in gcc (for power)
                     __sync_bool_compare_and_swap(&epoch, readEpoch, readEpoch+EPOCH_INCREMENT);
+                    // note: __sync functions imply membars in gcc (for power)
                 }
             }
         }
         SOFTWARE_BARRIER;
+        LWSYNC; // prevent announcement from being moved earlier (on power) [is this actually necessary?]
         announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(readEpoch, memory_order_relaxed);
+        // note: SYNC is not needed here, since a full membar is placed just after this return statement by the record manager (for power)
         return result;
     }
     inline void enterQuiescentState(const int tid) {

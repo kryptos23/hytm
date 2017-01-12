@@ -47,6 +47,9 @@ cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr)
 	return __sync_val_compare_and_swap(ptr, oldVal, newVal);
 }
 
+#define LWSYNC asm volatile("lwsync" ::: "memory")
+#define SYNC asm volatile("sync" ::: "memory")
+#define SYNC_RMW asm volatile("sync" ::: "memory")
 
 /* =============================================================================
  * Memory Barriers
@@ -55,10 +58,9 @@ cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr)
  * =============================================================================
  */
 
-// TODO: FIX THIS TO USE LESS EXPENSIVE BARRIERS
-#define MEMBARLDLD()                    /* nothing */
-#define MEMBARSTST()                    /* nothing */
-#define MEMBARSTLD()                    __asm__ __volatile__ ("" : : :"memory")
+#define MEMBARLDLD()                    asm volatile("lwsync" ::: "memory")
+#define MEMBARSTST()                    asm volatile("lwsync" ::: "memory")
+#define MEMBARSTLD()                    asm volatile("sync" ::: "memory")
 
 
 /* =============================================================================

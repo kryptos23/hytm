@@ -54,6 +54,9 @@ cas (intptr_t newVal, intptr_t oldVal, intptr_t* ptr)
 #define MEMBARSTST()   /* nothing */
 #define MEMBARSTLD()   __asm__ __volatile__ ("membar #StoreLoad" : : :"memory")
 
+#define LWSYNC /* nothing */
+#define SYNC /* nothing */
+#define SYNC_RMW /* nothing */
 
 /* =============================================================================
  * Prefetching

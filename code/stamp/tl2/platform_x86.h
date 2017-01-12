@@ -74,6 +74,9 @@ cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr)
 #define MEMBARSTST()                    /* nothing */
 #define MEMBARSTLD()                    __asm__ __volatile__ ("" : : :"memory")
 
+#define LWSYNC /* nothing */
+#define SYNC __sync_synchronize()
+#define SYNC_RMW /* nothing */
 
 /* =============================================================================
  * Prefetching
