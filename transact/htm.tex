@@ -1,0 +1,302 @@
+%\documentclass[nocopyrightspace,numbers,10pt,preprint]{sigplanconf}
+%\documentclass[conference,compsocconf,letterpaper]{sig-alternate-05-2015}
+\documentclass[11pt,pdftex,a4paper]{article}%
+%\documentclass{llncs}
+%\usepackage{llncsdoc}
+\usepackage{verbatim}
+\usepackage{amssymb}
+\usepackage{lipsum}
+\usepackage{multicol}
+\usepackage{amsmath}
+\usepackage{framed}
+\usepackage{float}
+% \floatstyle{boxed} 
+ \restylefloat{figure}
+\usepackage{subfig}
+%\usepackage{mdframed}
+%\usepackage{amsthm}
+\usepackage{tikz}
+\usepackage[margin=0.99in]{geometry}
+\usepackage{hyperref}
+\usepackage{color}
+\usepackage{soul}
+\usepackage{tabularx}
+%\usepackage{fullpage}
+\usepackage{enumitem}
+\setlist{nolistsep}
+%\setenumerate{itemsep=0pt}
+\usepackage{tikz}
+\usepackage{cleveref}
+\crefname{section}{\S}{\S\S}
+\newif\ifcode
+\codefalse
+%%%
+% comment this if you do not have
+% algpseudocode package for algorithms.
+\codetrue
+%%%
+\usepackage{macros}
+\ifcode
+\usepackage[ruled]{algorithm}
+\usepackage{algpseudocode}
+\usepackage{ioa_code}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%=
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%pour avoir plus de place
+% \topmargin 0pt
+% \advance \topmargin by -\headheight
+% \advance \topmargin by -\headsep
+% \textheight 8.9in
+% \oddsidemargin 0pt
+% \evensidemargin \oddsidemargin
+% \marginparwidth 0.5in
+% \textwidth 6.5in
+% \setlength{\baselineskip}{13.2pt} % standard value is 13.75pt
+\def\algofont{\footnotesize} %fonte pour les algos
+%\interfootnotelinepenalty=10
+%fin de pour avoir plus de place
+%du coup il faut commenter la suite
+%\textwidth 130mm
+%\textheight 215mm
+%jusqu'ici
+%\renewcommand{\baselinestretch}{1.5}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Definitions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newtheorem{theorem}{Theorem}
+%\newtheorem{reptheorem}[]{Theorem \ref{th:sl}}
+%\newreptheorem{theorem}{Theorem}
+\newtheorem{axiom}[theorem]{Axiom}
+\newtheorem{case}[theorem]{Case}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{proposition}{Proposition}
+\newtheorem{explanation}[theorem]{Explanation}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{fact}[theorem]{Fact}
+% \newtheorem{conclusion}[theorem]{Conclusion}
+% \newtheorem{condition}[theorem]{Condition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{corollary}[theorem]{Corollary}
+% \newtheorem{criterion}[theorem]{Criterion}
+\newtheorem{definition}{Definition}
+% \newtheorem{exercise}[theorem]{Exercise}
+\newtheorem{lemma}[theorem]{Lemma}
+% \newtheorem{notation}[theorem]{Notation}
+% \newtheorem{problem}[theorem]{Problem}
+%\newtheorem{proposition}[theorem]{Proposition}
+% \newtheorem{remark}[theorem]{Remark}
+% \newtheorem{solution}[theorem]{Solution}
+% \newtheorem{summary}[theorem]{Summary}
+\newtheorem{observation}[theorem]{Observation}
+\newenvironment{proof}[1][Proof]{\noindent\textbf{#1.} }{\hfill $\Box$\\[2mm]} %\rule{0.5em}{0.5em}\\}
+%\newenvironment{proof}[1][Proof]{\noindent\textbf{#1.} }{\hfill $\Box$\\[2mm]}
+\newenvironment{proofsketch}[1][Proof sketch]{\noindent\textbf{#1.} }{\hfill $\Box$\\[2mm]}
+
+
+\newenvironment{reptheorem}[1][Theorem]{\noindent\textbf{#1}}{}
+\def\lf{\tiny}
+\def\rrnnll{\setcounter{linenumber}{0}}
+\def\nnll{\refstepcounter{linenumber}\lf\thelinenumber}
+\newcounter{linenumber}
+\newenvironment{algorithmfig}{\hrule\vskip 3mm}{ \vskip 3mm \hrule }
+
+\def\P{\ensuremath{\mathcal{P}}}
+\def\DP{\ensuremath{\Diamond\mathcal{P}}}
+\def\DS{\ensuremath{\Diamond\mathcal{S}}}
+%\def\T{\ensuremath{\mathcal{T}}}
+\def\Time{\mathbb{T}}
+\def\S{\ensuremath{\mathcal{S}}}
+\def\D{\ensuremath{\mathcal{D}}}
+\def\W{\ensuremath{\mathcal{W}}}
+\def\A{\ensuremath{\mathcal{A}}}
+\def\B{\ensuremath{\mathcal{B}}}
+\def\F{\ensuremath{\mathcal{F}}}
+\def\R{\ensuremath{\mathcal{R}}}
+\def\N{\ensuremath{\mathcal{N}}}
+\def\I{\ensuremath{\mathcal{I}}}
+\def\O{\ensuremath{\mathcal{O}}}
+\def\Q{\ensuremath{\mathcal{Q}}}
+\def\K{\ensuremath{\mathcal{K}}}
+\def\L{\ensuremath{\mathcal{L}}}
+\def\M{\ensuremath{\mathcal{M}}}
+\def\V{\ensuremath{\mathcal{V}}}
+\def\E{\ensuremath{\mathcal{E}}}
+\def\C{\ensuremath{\mathcal{C}}}
+\def\T{\ensuremath{\mathcal{T}}}
+\def\X{\ensuremath{\mathcal{X}}}
+\def\Y{\ensuremath{\mathcal{Y}}}
+\def\Nat{\ensuremath{\mathbb{N}}}
+\def\Om{\ensuremath{\Omega}}
+\def\ve{\varepsilon}
+\def\fd{failure detector}
+\def\cfd{\ensuremath{?\P+\DS}}
+\def\afd{timeless}
+\def\env{\ensuremath{\mathcal{E}}}
+%\def\faulty{unreliable}
+\def\bounded{one-shot}
+\def\cons{\textit{cons}}
+\def\val{\textit{val}}
+\def\code{\textit{code}}
+
+\def\HSS{\mathit{h}}
+\def\argmin{\mathit{argmin}}
+\def\proper{\mathit{proper}}
+\def\content{\mathit{content}}
+\def\Level{\mathit{L}}
+\def\Blocked{\mathit{Blocked}}
+\def\Set{\mathit{Set}}
+\def\TS{\mathit{TS}}
+\def\shared{\mathit{shared}}
+\def\exclusive{\mathit{exclusive}}
+
+\newcommand{\correct}{\mathit{correct}}
+\newcommand{\RNum}[1]{\uppercase\expandafter{\romannumeral #1\relax}}
+\newcommand	{\faulty}{\mathit{faulty}}
+\newcommand{\infi}{\mathit{inf}}
+\newcommand{\live}{\mathit{live}}
+\newcommand{\true}{\mathit{true}}
+\newcommand{\false}{\mathit{false}}
+\newcommand{\stable}{\mathit{Stable}}
+\newcommand{\setcon}{\mathit{setcon}}
+\newcommand{\remove}[1]{}
+
+\newcommand{\Wset}{\textit{Wset}}
+\newcommand{\Rset}{\textit{Rset}}
+\newcommand{\Dset}{\textit{Dset}}
+
+%\newcommand{\parts}{\textit{parts}}
+\newcommand{\txns}{\textit{txns}}
+
+\newcommand{\Read}{\textit{read}}
+\newcommand{\Write}{\textit{write}}
+\newcommand{\TryC}{\textit{tryC}}
+\newcommand{\TryA}{\textit{tryA}}
+\newcommand{\ok}{\textit{ok}}
+
+\newcommand{\trylock}{\textit{trylock}}
+\newcommand{\multitrylock}{\textit{multi-trylock}}
+\newcommand{\CAS}{\textit{CAS}}
+\newcommand{\mCAS}{\textit{mCAS}}
+
+\def\Nomega{\ensuremath{\neg\Omega}}
+\def\Vomega{\ensuremath{\overrightarrow{\Omega}}}
+
+\newcommand{\id}[1]{\mbox{\textit{#1}}}% for identifiers in code
+\newcommand{\res}[1]{\mbox{\textbf{#1}}}% reserved words
+
+\newcommand{\ignore}[1]{}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+
+\definecolor{gpcolor}{rgb}{0.6,0.2,0.3}
+\newboolean{showcomments}
+\setboolean{showcomments}{true}
+\ifthenelse{\boolean{showcomments}}
+{ \newcommand{\mynote}[3]{
+    \fbox{\bfseries\sffamily\scriptsize#1}
+    {\small$\blacktriangleright$\textsf{\emph{\color{#3}{#2}}}$\blacktriangleleft$}}
+}
+{ 
+\newcommand{\mynote}[3]{}}
+\newcommand{\sr}[1]{\mynote{SR}{#1}{magenta}}
+
+\newcommand{\comnospace}{\mbox{$\triangleright$}}
+\newcommand{\com}{\mbox{\comnospace\ }}
+\usepackage{tabto}
+\newcommand{\medcom}[1]{\tabto{5cm} \com \mbox{#1}}
+\usepackage{listings}
+\lstset{numbers=left,numberblanklines=false}
+\usepackage{microtype}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[scaled]{beramono}
+\newcommand\Small{\fontsize{7.6}{7.6}\selectfont}
+\newcommand*\LSTfont{\Small\ttfamily\SetTracking{encoding=*}{-60}\lsstyle}
+\lstdefinestyle{customc}{
+    belowcaptionskip=1\baselineskip,
+    breaklines=true,
+    frame=L,
+    xleftmargin=\parindent,
+    language=C,
+    showstringspaces=false,
+    escapeinside={//}{\^^M},
+    basicstyle=\LSTfont, %\scriptsize\ttfamily,
+    keywordstyle=\bfseries\color{green!40!black},
+    commentstyle=\itshape\color{gray!60!black},
+    identifierstyle=\color{blue!50!black},
+    stringstyle=\color{orange},
+    numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=5pt,                   % how far the line-numbers are from the code
+    numberstyle=\tiny\color{black},  % the style that is used for the line-numbers
+    otherkeywords={then,word,process_local,type,xbegin,xabort,xend}
+}
+
+\begin{document}
+
+\title{Cost of Concurrency in Hybrid Transactional Memory}
+	   
+\maketitle
+
+\newcommand{\trevor}[1]{\textbf{[[#1--Trevor]]}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\begin{abstract}
+State-of-the-art \emph{software transactional memory (STM)} implementations achieve 
+good performance by carefully avoiding the overhead of \emph{incremental validation} 
+(i.e., re-reading previously read data items to avoid inconsistency) while
+still providing \emph{progressiveness} (allowing transactional aborts only due to \emph{data conflicts}).
+Hardware transactional memory (HTM) implementations promise even better performance, 
+but offer no progress guarantees.
+Thus, they must be combined with STMs, leading to \emph{hybrid} TMs (HyTM)
+in which hardware transactions must be \emph{instrumented} (i.e., access metadata) 
+to detect contention with software transactions. 
+
+We show that, unlike in progressive STMs, software transactions in progressive HyTMs
+cannot avoid incremental validation.
+In fact, this result holds even if hardware transactions can \emph{read} metadata 
+\emph{non-speculatively}. 
+We then present \emph{opaque} HyTM algorithms providing \emph{progressiveness for a subset of transactions} 
+that are  optimal in terms of hardware instrumentation. 
+We explore the concurrency vs. hardware instrumentation vs. software validation
+tradeoffs for these algorithms.
+Preliminary experiments with Intel's HTM 
+seem to suggest that the inherent \emph{cost to concurrency} 
+in HyTMs also exists in practice. Finally, we discuss algorithmic techniques for cicumventing this cost.
+\end{abstract}
+
+\newpage
+\pagenumbering{arabic}\setcounter{page}{1}
+
+\input{intro}
+%
+\input{model_alt}
+%
+\input{spec}
+%
+\input{algos}
+%
+\input{Evaluation}
+%
+\input{related}
+
+%\input{conc}
+%
+\newpage
+%
+\bibliographystyle{abbrv}
+\bibliography{references2}
+\end{document}
+%%% Local Variables:
+%%% mode: latex
+%%% mode: flyspell
+%%% Local IspellDict: "american"
+%%% mode: outline-minor
+%%% End:
+

@@ -1,0 +1,27 @@
+%!TEX root = htm.tex
+\section{Related work and discussion}
+\label{sec:rel}
+%
+%\vspace{1mm}\noindent\textbf{HyTM complexity.}
+The proof of Theorem~\ref{th:impossibility} is based on the analogous proof for step complexity of STMs that are \emph{disjoint-access parallel}~\cite{prog15-pact}.
+%Our model extends the HyTM model in \cite{hytm14disc} which did not allow uncached accesses on the fast-path.
+%\vspace{1mm}\noindent\textbf{HyTM implementations.}
+% An early HyTM implementation described in \cite{damronhytm} uses the \emph{ROCK} processor~\cite{rock} as the underlying HTM
+% while \cite{kumarhytm} described an implementation that requires support for \emph{non-cached accesses} in a hardware transaction. 
+Early HyTMs like the ones described in \cite{damronhytm, kumarhytm} provided progressiveness, but
+subsequent HyTM proposals sacrificed progressiveness for lesser instrumentation overheads.
+Recent work has investigated fallback to \emph{reduced} hardware transactions~\cite{MS13}
+in which an all-software slow-path is replaced by a mix of hardware and software transactions. 
+% Afek \emph{et al}. proposed amalgamated lock elision (ALE)~\cite{ale15} which improves over TLE
+% by executing the slow-path as a series of segments, each of which is a dynamic length hardware transaction.
+Our implementation of Hybrid NOrec follows \cite{hynorecriegel}, which additionally proposed the use of non-speculative accesses
+in fast-path transactions to reduce instrumentation overhead. %(supported in the AMD ASF architectures).
+
+%\vspace{1mm}\noindent\textbf{Concluding remarks.}
+In ongoing work, we are implementing our algorithms on the IBM POWER8 HTM implementation which supports
+non-cached accesses in hardware transactions.
+We hope to understand whether the instrumentation overheads we observed
+on Intel's HTM are also inherent to POWER8's HTM implementation.
+To our knowledge, ours is the first work to consider the theoretical foundations of the cost of concurrency in HyTMs.
+In order to achieve high performance in practice, one must either identify a new progress condition to replace progressiveness or develop a new HyTM algorithm that effectively uses non-speculative writes.
+Both directions are promising, and little work has been done in either in the context of today's HTMs.

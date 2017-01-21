@@ -1,0 +1,54 @@
+\begin{algorithm*}[!ht]
+\caption{Opaque HyTM implementation with sequential slow-path and progressive fast-path TM-progress; code for $T_k$ by process $p_i$}
+\label{alg:inswrite2}
+\vspace{-2mm}
+\noindent\lstset{style=customc}
+\begin{minipage}{0.49\textwidth}
+\begin{lstlisting}[frame=none,firstnumber=1,mathescape=true]
+//\textbf{Shared objects}
+    L, global single-bit lock
+
+//\textbf{Code for fast-path transactions}
+start$_k$()
+    l := L //\medcom cached read
+    if l & 1 $\neq$ 0 then return $A_k$ //\vspace{-2mm}
+
+read$_k$(X$_j$)
+    ov$_j$ := v$_j$ //\medcom cached read
+    return ov$_j$ //\vspace{-2mm}
+
+write$_k$(X$_j$, v)
+    or$_j$ := r$_j$ //\medcom uncached read
+    r$_j$ := or$_j$ + 2 //\medcom uncached write
+    v$_j$ := v //\medcom cached write
+    return OK //\vspace{-2mm}
+
+try$C_k$()
+    return commitCache$_i$() //\medcom returns $C_k$ or $A_k$
+\end{lstlisting}
+\end{minipage}
+\begin{minipage}{0.49\textwidth}
+\begin{lstlisting}[frame=none,firstnumber=last,mathescape=true]
+//\textbf{Code for slow-path transactions}
+tryC$_k$()
+    if Wset(T$_k$) = $\emptyset$ then return $C_k$
+    while not flag do flag := CAS(L, 0, 1)
+    for each X$_j \in$ Wset(T$_k$)
+        nr$_j$ := r$_j$
+        if or$_j \neq$ nr$_j$ then
+            release(Wset(T$_k$))
+            return $A_k$
+    for each X$_j \in$ Wset(T$_k$) do r$_j$ := nr$_j$ + 1
+    if validate() then
+        release(Wset(T$_k$))
+        return $A_k$
+    for each X$_j \in$ Wset(T$_k$) do v$_j$ := nv$_j$
+    release(Wset(T$_k$)); return $C_k$ //\vspace{-2mm}
+    
+Function: release(Q)
+    for each X$_j \in$ Q do r$_j$ := nr$_j$ + 1
+    L := 0; return OK
+\end{lstlisting}
+\end{minipage}
+\vspace{-2mm}
+\end{algorithm*}
