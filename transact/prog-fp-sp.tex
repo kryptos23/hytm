@@ -17,7 +17,7 @@ read$_k(X_j)$
     return ov$_j$ //\vspace{-2mm}
 
 write$_k(X_j,v)$
-    $\textit{or}_j := \Read(r_j)$ //\medcom cached read \label{line:m1}
+    $\textit{or}_j := r_j$ //\medcom cached read \label{line:m1}
     if or$_j$ & 1 then return $A_k$
     r$_j$ := or$_j$+2 // \label{line:m2}
     v$_j$ := v //\medcom uncached write \label{line:lin2} 

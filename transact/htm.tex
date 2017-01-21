@@ -1,6 +1,6 @@
-%\documentclass[nocopyrightspace,numbers,10pt,preprint]{sigplanconf}
+\documentclass[nocopyrightspace,numbers,10pt,preprint]{sigplanconf}
 %\documentclass[conference,compsocconf,letterpaper]{sig-alternate-05-2015}
-\documentclass[11pt,pdftex,a4paper]{article}%
+%\documentclass[11pt,pdftex,a4paper]{article}%
 %\documentclass{llncs}
 %\usepackage{llncsdoc}
 \usepackage{verbatim}
@@ -16,7 +16,7 @@
 %\usepackage{mdframed}
 %\usepackage{amsthm}
 \usepackage{tikz}
-\usepackage[margin=0.99in]{geometry}
+%\usepackage[margin=0.99in]{geometry}
 \usepackage{hyperref}
 \usepackage{color}
 \usepackage{soul}
@@ -240,7 +240,13 @@
 \begin{document}
 
 \title{Cost of Concurrency in Hybrid Transactional Memory}
-	   
+\authorinfo{Trevor Brown}
+           {University of Toronto}
+           {tabrown@cs.toronto.ca}
+\authorinfo{Srivatsan Ravi}
+           {Purdue University}
+           {srivatsanravi@purdue.edu}
+
 \maketitle
 
 \newcommand{\trevor}[1]{\textbf{[[#1--Trevor]]}}
@@ -271,7 +277,6 @@ seem to suggest that the inherent \emph{cost to concurrency}
 in HyTMs also exists in practice. Finally, we discuss algorithmic techniques for cicumventing this cost.
 \end{abstract}
 
-\newpage
 \pagenumbering{arabic}\setcounter{page}{1}
 
 \input{intro}

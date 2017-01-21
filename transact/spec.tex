@@ -29,7 +29,7 @@ Formally, we say that a HyTM implementation $\mathcal{M}$ is progressive
 for a set $\mathcal{T}$ of transactions
 if in any execution $E$ of $\mathcal{M}$; $\mathcal{T} \subseteq \ms{txns}(E)$, 
 if any transaction $T_k \in \mathcal{T}$ returns $A_k$ in $E$, there exists 
-another concurrent transaction $T_m$ that \emph{conflicts} (both access the same t-object and at least one writes) with $T_k$ in $E$.
+another concurrent transaction $T_m$ that \emph{conflicts} (both access the same t-object and at least one writes) with $T_k$ in $E$~\cite{tm-book}.
 %
 \begin{theorem}
 \label{th:impossibility}
@@ -42,18 +42,6 @@ For the proof, we construct an execution of a read-only slow-path transaction $T
 distinct t-reads of t-objects $X_1,\ldots , X_m$. We show inductively that for each 
 $i\in \{1,\ldots , m\}$; $m \in \mathbb{N}$, the $i^{\ms{th}}$ t-read must access $i-1$ distinct base objects
 during its execution. The (partial) steps in our execution are depicted in Figure~\ref{fig:indis}.
-
-\vspace{1mm}\noindent\textbf{How STM implementations avoid the lower bound.}
-NOrec~\cite{norec} is a progressive opaque STM that minimizes the average step-complexity resulting from incremental 
-validation of t-reads. Transactions read a global versioned lock at the start, and perform value-based validation
-during t-read operations \emph{iff} the global version has changed.
-TL2~\cite{DSS06} improves over NOrec by circumventing the lower bound
-of Theorem~\ref{th:impossibility}. Concretely, TL2 associates a global version with each t-object updated during
-a transaction and performs validation with $O$(1) complexity during t-reads by simply verifying if the version
-of the t-object is greater than the global version read at the start of the transaction. Technically,
-NOrec and algorithms in this paper provide a stronger definition of progressiveness: a transaction may abort
-only if there is a prefix in which it conflicts with another transaction and both are t-incomplete. TL2 on the other hand allows
-a transaction to abort due to a concurrent conflicting transaction.
 
 The proof of the lemma below is a simple extension of the analogous lemmas from \cite{hytm14disc}
 allowing direct trivial accesses inside fast-path transactions. This intuively follows from the fact that
@@ -114,9 +102,9 @@ Then, $T_1$ and $T_2$ do not contend on any base object in $E_1 \cdot E_2$.
 % \end{enumerate}
 % \end{proof}
 
-The formal proof of the theorem follows.
+The proof sketch of the theorem follows. The complete proof will be available in the full version of the paper.
 
-\begin{proof}
+\begin{proofsketch}
 We construct an execution of a progressive opaque HyTM in which every t-read performed by a read-only slow-path transaction
 must access linear (in the size of the read set) number of distinct base objects.
 
@@ -234,6 +222,17 @@ $\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot
 
 Thus, for all $i \in \{2,\ldots, m\}$, slow-path transaction $T_{\phi}$ must perform at least $i-1$ steps 
 while executing the $i^{th}$ t-read in $\pi_{j}^i$.
-\end{proof}
+\end{proofsketch}
 %
 %
+\vspace{1mm}\noindent\textbf{How STM implementations avoid the lower bound.}
+NOrec~\cite{norec} is a progressive opaque STM that minimizes the average step-complexity resulting from incremental 
+validation of t-reads. Transactions read a global versioned lock at the start, and perform value-based validation
+during t-read operations \emph{iff} the global version has changed.
+TL2~\cite{DSS06} improves over NOrec by circumventing the lower bound
+of Theorem~\ref{th:impossibility}. Concretely, TL2 associates a global version with each t-object updated during
+a transaction and performs validation with $O$(1) complexity during t-reads by simply verifying if the version
+of the t-object is greater than the global version read at the start of the transaction. Technically,
+NOrec and algorithms in this paper provide a stronger definition of progressiveness: a transaction may abort
+only if there is a prefix in which it conflicts with another transaction and both are t-incomplete. TL2 on the other hand allows
+a transaction to abort due to a concurrent conflicting transaction.
