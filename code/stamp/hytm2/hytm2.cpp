@@ -179,13 +179,25 @@ public:
 //    }
     __INLINE__ bool tryAcquire(void* thread, vLockSnapshot& oldval) {
 //        if (thread == owner) return true; // reentrant acquire
-        bool retval = __sync_bool_compare_and_swap(&lock, oldval.version(), oldval.version()+1);
-        if (retval) {
+#if defined __PPC__ || defined __POWERPC__  || defined powerpc || defined _POWER || defined __ppc__ || defined __powerpc__
+        uint64_t v = (uint64_t) __ldarx(&lock);
+        if (v == oldval.version() && __stdcx(&lock, oldval.version()+1)) {
             LWSYNC; // prevent assignment of owner from being moved before lock acquisition (on power)
             owner = thread;
+            SYNC_RMW; // prevent instructions in the critical section from being moved before lock acquisition or owner assignment (on power)
+            return true;
         }
-        SYNC_RMW; // prevent instructions in the critical section from being moved before lock acquisition or owner assignment (on power)
+        //SYNC_RMW; // prevent instructions in the critical section from being moved before lock acquisition or owner assignment (on power)
+        return false;
+#else
+        bool retval = __sync_bool_compare_and_swap(&lock, oldval.version(), oldval.version()+1);
+        if (retval) {
+            //LWSYNC; // prevent assignment of owner from being moved before lock acquisition (on power)
+            owner = thread;
+        }
+        //SYNC_RMW; // prevent instructions in the critical section from being moved before lock acquisition or owner assignment (on power)
         return retval;
+#endif
     }
     __INLINE__ void release(void* thread) {
         // note: even without a membar here, the read of owner cannot be moved before our last lock acquisition (on power)
@@ -1310,7 +1322,7 @@ void TxStore_htm(void* _Self, volatile intptr_t* addr, intptr_t value) {
 void TxOnce() {
     CTASSERT((_TABSZ & (_TABSZ - 1)) == 0); /* must be power of 2 */
     
-    initSighandler(); /**** DEBUG CODE ****/
+//    initSighandler(); /**** DEBUG CODE ****/
     c_counters = (c_debugCounters *) malloc(sizeof(c_debugCounters));
     countersInit(c_counters, MAX_TID_POW2);
     

@@ -97,7 +97,7 @@ __thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t
                                                     break; \
                                                 } else { /* if we aborted */ \
                                                     ++___Self->AbortsHW; \
-                                                    registerHTMAbort(c_counters, ___Self->UniqID, X_ABORT_GET_STATUS(___xarg), PATH_FAST_HTM); \
+                                                    registerHTMAbort(c_counters, ___Self->UniqID, ___xarg, PATH_FAST_HTM); \
                                                     while (lockflag) { \
                                                         PAUSE(); \
                                                     } \
@@ -109,15 +109,15 @@ __thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t
                                             /*DEBUG1 if ((___Self->CommitsSW % 50000) == 0) aout("thread "<<___Self->UniqID<<" has committed "<<___Self->CommitsSW<<" s/w txns");*/ \
                                             DEBUG2 printf("thread %ld started s/w tx; attempts so far=%ld, s/w commits so far=%ld\n", ___Self->UniqID, (___Self->AbortsSW+___Self->CommitsSW), ___Self->CommitsSW); \
                                             DEBUG1 if ((___Self->CommitsSW % 25000) == 0) printf("thread %ld has committed %ld s/w txns (over all threads so far=%ld)\n", ___Self->UniqID, ___Self->CommitsSW, CommitTallySW); \
-                                            if (sigsetjmp(STM_JMPBUF, 1)) { \
-                                                TxClearRWSets(STM_SELF); \
-                                            } \
                                             SOFTWARE_BARRIER; \
                                             sharedReadFunPtr = &TxLoad_stm; \
                                             sharedWriteFunPtr = &TxStore_stm; \
                                             SOFTWARE_BARRIER; \
                                             ___Self->isFallback = 1; \
                                             ___Self->IsRO = 1; \
+                                            if (sigsetjmp(STM_JMPBUF, 1)) { \
+                                                TxClearRWSets(STM_SELF); \
+                                            } \
                                             SYNC_RMW; /* prevent instructions in the txn/critical section from being moved before this point (on power) */ \
                                             SOFTWARE_BARRIER; \
                                         } while (0); /* enforce comma */

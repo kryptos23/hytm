@@ -19,6 +19,7 @@
 #include "rtm_x86.h"
 #include "common.h"
 
+#define SYS_X86_64
 
 /* =============================================================================
  * Compare-and-swap

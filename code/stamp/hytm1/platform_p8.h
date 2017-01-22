@@ -19,6 +19,8 @@
 #include "rtm_p8.h"
 #include "common.h"
 
+#define SYS_POWER8
+
 
 /* =============================================================================
  * Compare-and-swap
@@ -43,6 +45,27 @@
  * =============================================================================
  */
 intptr_t cas (intptr_t newVal, intptr_t oldVal, volatile intptr_t* ptr);
+
+
+#define __ldarx(base) 		\
+  ({unsigned long long result;	       			\
+    typedef  struct {char a[8];} doublewordsize;	\
+    doublewordsize *ptrp = (doublewordsize*)(void*)(base);	\
+  __asm__ volatile ("ldarx %0,%y1"			\
+	   : "=r" (result)				\
+	   : "Z" (*ptrp));				\
+result; })
+
+#define __stdcx(base, value) 	\
+  ({unsigned long long result;				\
+    typedef  struct {char a[8];} doublewordsize;	\
+    doublewordsize *ptrp = (doublewordsize*)(void*)(base);	\
+  __asm__ volatile ("stdcx. %2,%y1\n"			\
+	   "\tmfocrf %0,0x80"				\
+	   : "=r" (result),				\
+	     "=Z" (*ptrp)				\
+	   : "r" (value) : "cr0");			\
+((result & 0x20000000) >> 29); })
 
 
 /* =============================================================================

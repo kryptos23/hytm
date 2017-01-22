@@ -118,6 +118,10 @@
 #include "tlewrapper/stm.h"
 #include "tle.h"
 #warning Using TLE
+#elif defined notm
+#include "tlewrapper/stm.h"
+#include "../hytm1/platform.h"
+#warning Not using any synchronization
 #endif
 
 #endif	/* DSBENCH_TM_H */

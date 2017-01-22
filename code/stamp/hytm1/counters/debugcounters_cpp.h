@@ -19,18 +19,11 @@ using namespace std;
 
 string cpp_getAutomaticAbortNames(const int compressedStatus) {
     stringstream ss;
-#define _XABORT_EXPLICIT	(1 << 0)
-#define _XABORT_RETRY		(1 << 1)
-#define _XABORT_CONFLICT	(1 << 2)
-#define _XABORT_CAPACITY	(1 << 3)
-#define _XABORT_DEBUG		(1 << 4)
-#define _XABORT_NESTED		(1 << 5)
-    if (compressedStatus & _XABORT_EXPLICIT) ss<<" explicit";
-    if (compressedStatus & _XABORT_RETRY) ss<<" retry";
-    if (compressedStatus & _XABORT_CONFLICT) ss<<" conflict";
-    if (compressedStatus & _XABORT_CAPACITY) ss<<" capacity";
-    if (compressedStatus & _XABORT_DEBUG) ss<<" __debug";
-    if (compressedStatus & _XABORT_NESTED) ss<<" nested";
+    if (compressedStatus & (1<<BIT_USER)) ss<<" explicit";
+    if (compressedStatus & (1<<BIT_CAPACITY)) ss<<" capacity";
+    if (compressedStatus & (1<<BIT_CONFLICT)) ss<<" conflict";
+    if (compressedStatus & (1<<BIT_RETRY)) ss<<" retry";
+    if (compressedStatus & (1<<BIT_ILLEGAL)) ss<<" illegal";
     return ss.str();
 //    return "";
 }

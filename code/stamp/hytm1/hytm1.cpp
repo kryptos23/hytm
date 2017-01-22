@@ -33,7 +33,9 @@ using namespace std;
 #include "counters/debugcounters_cpp.h"
 struct c_debugCounters *c_counters;
 
+#ifndef PREFETCH_SIZE_BYTES
 #define PREFETCH_SIZE_BYTES 192
+#endif
 
 #define USE_FULL_HASHTABLE
 //#define USE_BLOOM_FILTER
@@ -110,6 +112,7 @@ __INLINE__ void acquireLock(volatile int *lock) {
 __INLINE__ void releaseLock(volatile int *lock) {
     LWSYNC; // prevent unlock from being moved before instructions in the critical section (on power)
     *lock = 0;
+//    SYNC_RMW;
 }
 
 
@@ -803,7 +806,10 @@ int TxCommit(void* _Self) {
     
     // software path
     if (Self->isFallback) {
+        // release global lock
+        countersProbEndTime(c_counters, Self->UniqID, c_counters->timingOnFallback);
         releaseLock(&tleLock);
+
 #ifdef TXNL_MEM_RECLAMATION
         tmalloc_clear(Self->allocPtr);
         tmalloc_releaseAllForward(Self->freePtr, NULL);
@@ -904,7 +910,7 @@ void TxStore_stm(void* _Self, volatile intptr_t* addr, intptr_t value) {
  */
 
 void TxOnce() {
-    initSighandler(); /**** DEBUG CODE ****/
+//    initSighandler(); /**** DEBUG CODE ****/
     c_counters = (c_debugCounters *) malloc(sizeof(c_debugCounters));
     countersInit(c_counters, MAX_TID_POW2);
     printf("%s %s\n", TM_NAME, "system ready\n");

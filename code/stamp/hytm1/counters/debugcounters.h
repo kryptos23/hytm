@@ -13,6 +13,7 @@ extern "C" {
 #endif
 
 #include "debugcounter.h"
+#include "../platform.h"
 #include <time.h>
 
 #define NUMBER_OF_PATHS 3
@@ -48,7 +49,7 @@ struct c_debugCounters {
     struct c_debugCounter * timingOnFallback; // per process total DURATIONS over execution (scaled down by the probability of timing on a countersProbStartTime call)
 };
 
-void registerHTMAbort(struct c_debugCounters *cs, const int tid, const int status, const int path);
+void registerHTMAbort(struct c_debugCounters *cs, const int tid, const XBEGIN_ARG_T arg, const int path);
 void countersClear(struct c_debugCounters *cs);
 void countersInit(struct c_debugCounters *cs, const int numProcesses);
 void countersDestroy(struct c_debugCounters *cs);

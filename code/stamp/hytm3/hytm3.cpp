@@ -31,7 +31,9 @@ using namespace std;
 #include "../hytm1/counters/debugcounters_cpp.h"
 struct c_debugCounters *c_counters;
 
+#ifndef PREFETCH_SIZE_BYTES
 #define PREFETCH_SIZE_BYTES 192
+#endif
 
 #define USE_FULL_HASHTABLE
 //#define USE_BLOOM_FILTER
@@ -1220,7 +1222,7 @@ void TxStore_htm(void* _Self, volatile intptr_t* addr, intptr_t value) {
 void TxOnce() {
     CTASSERT((_TABSZ & (_TABSZ - 1)) == 0); /* must be power of 2 */
     
-    initSighandler(); /**** DEBUG CODE ****/
+//    initSighandler(); /**** DEBUG CODE ****/
     c_counters = (c_debugCounters *) malloc(sizeof(c_debugCounters));
     countersInit(c_counters, MAX_TID_POW2);                
     printf("%s %s\n", TM_NAME, "system ready\n");

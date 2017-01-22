@@ -100,7 +100,7 @@ __thread void (* sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_
                                                     if (esl /*& 1*/) XABORT(0); \
                                                     break; \
                                                 } else { /* if we aborted */ \
-                                                    registerHTMAbort(c_counters, ___Self->UniqID, X_ABORT_GET_STATUS(___xarg), PATH_FAST_HTM); \
+                                                    registerHTMAbort(c_counters, ___Self->UniqID, ___xarg, PATH_FAST_HTM); \
                                                     ++___Self->AbortsHW; \
                                                 } \
                                             } \

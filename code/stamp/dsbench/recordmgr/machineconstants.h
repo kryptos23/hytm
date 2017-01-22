@@ -18,9 +18,9 @@
 // the following definition is only used to pad data to avoid false sharing.
 // although the number of words per cache line is actually 8, we inflate this
 // figure to counteract the effects of prefetching multiple adjacent cache lines.
-#define PREFETCH_SIZE_WORDS 16
-#define PREFETCH_SIZE_BYTES 192
-#define BYTES_IN_CACHE_LINE 64
+#define PREFETCH_SIZE_WORDS 32
+#define PREFETCH_SIZE_BYTES 256
+#define BYTES_IN_CACHE_LINE 128
     
 // set this to if(1) if you want verbose status messages
 #ifndef VERBOSE

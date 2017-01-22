@@ -38,21 +38,17 @@
 #define XABORT(arg) (___XABORT((arg)))
 #define XSUSPEND()
 #define XRESUME()
-#define X_ABORT_GET_STATUS(arg) ((arg))
-#define X_ABORT_COMPRESS_STATUS(status) (((status)&0x3f) | ((((status)>>24)&0xff)<<6))
-#define X_ABORT_DECOMPRESS_STATUS(cstatus) (((cstatus)&0x3f) | (((cstatus)&(~0x3f))<<24))
-#define X_ABORT_STATUS_USERCODE(status) (((status)>>24)&0xff)
-#define X_ABORT_STATUS_IS_USER(status) ((status)&0x1)
-#define X_ABORT_STATUS_IS_CAPACITY(status) (((status)>>3)&0x1)
-#define X_ABORT_STATUS_IS_NESTING(status) (((status)>>5)&0x1)
-#define X_ABORT_STATUS_IS_CONFLICT(status) (((status)>>2)&0x1)
-#define X_ABORT_STATUS_IS_RETRY(status) (!(((status)>>1)&0x1))
-//#define X_IS_ABORT_USER(arg, code) ({ (code) = _XABORT_CODE((arg)); (arg) & _XABORT_EXPLICIT; })
-//#define X_IS_ABORT_CAPACITY(arg) ((arg) & _XABORT_CAPACITY)
-//#define X_IS_ABORT_NESTING(arg) ((arg) & _XABORT_NESTED)
-//#define X_IS_ABORT_CONFLICT(arg) ((arg) & _XABORT_CONFLICT)
-//#define X_IS_ABORT_RETRY(arg) ((arg) & _XABORT_RETRY)
-//#define X_IS_ABORT_ILLEGAL(arg) false
+//#define X_ABORT_GET_STATUS(arg) ((arg))
+//#define X_ABORT_COMPRESS_STATUS(status) (((status)&0x3f) | ((((status)>>24)&0xff)<<6))
+//#define X_ABORT_DECOMPRESS_STATUS(cstatus) (((cstatus)&0x3f) | (((cstatus)&(~0x3f))<<24))
+//#define X_ABORT_STATUS_USERCODE(status) (((status)>>24)&0xff)
+#define X_ABORT_STATUS_IS_USER(arg) ((arg)&0x1)
+#define X_ABORT_STATUS_IS_CAPACITY(arg) (((arg)>>3)&0x1)
+#define X_ABORT_STATUS_IS_NESTING(arg) (((arg)>>5)&0x1)
+#define X_ABORT_STATUS_IS_CONFLICT(arg) (((arg)>>2)&0x1)
+#define X_ABORT_STATUS_IS_RETRY(arg) (!(((arg)>>1)&0x1))
+#define X_ABORT_STATUS_IS_ILLEGAL(arg) (0) /* unavailable on intel */
+#define X_ABORT_FAILURE_ADDRESS(arg) (0) /* unavailable on intel (except via PEBS) */
 
 static __rtm_force_inline int ___XBEGIN(void)
 {

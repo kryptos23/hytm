@@ -19,6 +19,8 @@ const int POMELA6_SCATTER = 4;
 const int TAPUZ40_SCATTER = 5;
 const int TAPUZ40_CLUSTER = 6;
 const int SOSCIP_CLUSTER = 100;
+const int SOSCIP_CLUSTER48 = 101;
+const int SOSCIP_SCATTER = 102;
 
 // cpu sets for binding threads to cores
 #ifdef THREAD_BINDING
@@ -97,6 +99,16 @@ void configureBindingPolicy(const int nprocessors) {
                 j = (i%SOSCIP_CLUSTER_coresPerSocket)*SOSCIP_CLUSTER_threadsPerCore
                         + (i%SOSCIP_CLUSTER_threadsPerSocket)/SOSCIP_CLUSTER_coresPerSocket
                         + (i/SOSCIP_CLUSTER_threadsPerSocket)*SOSCIP_CLUSTER_threadsPerSocket;
+            case SOSCIP_CLUSTER48:
+#define SOSCIP_CLUSTER48_coresPerSocket 12
+#define SOSCIP_CLUSTER48_threadsPerCore 2
+#define SOSCIP_CLUSTER48_threadsPerSocket ((SOSCIP_CLUSTER48_coresPerSocket)*(SOSCIP_CLUSTER48_threadsPerCore))
+                j = (i%SOSCIP_CLUSTER48_coresPerSocket)*SOSCIP_CLUSTER48_threadsPerCore
+                        + (i%SOSCIP_CLUSTER48_threadsPerSocket)/SOSCIP_CLUSTER48_coresPerSocket
+                        + (i/SOSCIP_CLUSTER48_threadsPerSocket)*SOSCIP_CLUSTER48_threadsPerSocket;
+            case SOSCIP_SCATTER:
+                // output = MOD(A1,J$5*J$4)*J$6+INT(A1/J$5/J$4) where a1=i, j4=sockets, j5=cores/socket, j6=threads/core
+                j = (i%(2*SOSCIP_CLUSTER_coresPerSocket))*SOSCIP_CLUSTER_threadsPerCore + (i/SOSCIP_CLUSTER48_coresPerSocket/SOSCIP_CLUSTER_threadsPerCore);
             case NONE:
                 break;
         }

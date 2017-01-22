@@ -12,8 +12,15 @@
 extern "C" {
 #endif
 
+#include <stdio.h>
 #include "debugcounters.h"
     
+#ifdef RECORD_ABORT_ADDRESSES
+#define MAX_ABORT_ADDR (1<<20)
+int numAbortAddr = 0; // for thread 0
+long abortAddr[MAX_ABORT_ADDR];
+#endif
+
 //int getCompressedStatus(const int status) {
 //    return (status & 63) | ((status >> 24)<<6);
 //}
@@ -30,9 +37,31 @@ extern "C" {
 //    return status >> 24;
 //}
 
-void registerHTMAbort(struct c_debugCounters *cs, const int tid, const int status, const int path) {
+#define BIT_USER 0
+#define BIT_CAPACITY 1
+#define BIT_CONFLICT 2
+#define BIT_RETRY 3
+#define BIT_ILLEGAL 4
+
+void registerHTMAbort(struct c_debugCounters *cs, const int tid, const XBEGIN_ARG_T arg, const int path) {
 #ifdef RECORD_ABORTS
-    counterInc(cs->htmAbort[path*MAX_ABORT_STATUS+getCompressedStatus(status)], tid);
+    int s = 0;
+    if (arg) {
+        s = (X_ABORT_STATUS_IS_USER(arg) << BIT_USER)
+          | (X_ABORT_STATUS_IS_CAPACITY(arg) << BIT_CAPACITY)
+          | (X_ABORT_STATUS_IS_CONFLICT(arg) << BIT_CONFLICT)
+          | (X_ABORT_STATUS_IS_RETRY(arg) << BIT_RETRY)
+          | (X_ABORT_STATUS_IS_ILLEGAL(arg) << BIT_ILLEGAL);
+#ifdef RECORD_ABORT_ADDRESSES
+        if (tid == 0) {
+            long a = X_ABORT_FAILURE_ADDRESS(arg);
+            if (a && numAbortAddr < MAX_ABORT_ADDR) {
+                abortAddr[numAbortAddr++] = a;
+            }
+        }
+#endif
+    }
+    counterInc(cs->htmAbort[path*MAX_ABORT_STATUS+s], tid);
 #endif
 }
 
@@ -93,6 +122,16 @@ void countersDestroy(struct c_debugCounters *cs) {
     free(cs->timingTemp);
     counterDestroy(cs->timingOnFallback);
     free(cs->timingOnFallback);
+
+#ifdef RECORD_ABORT_ADDRESSES
+    // output abort addresses
+    FILE * pFile;
+    pFile = fopen ("abortaddresses.txt","w");
+    for (int i=0;i<numAbortAddr;++i) {
+        fprintf(pFile, "%lx\n", abortAddr[i]);
+    }
+    fclose(pFile);
+#endif
 }
 
 #define TIMING_PROBABILITY_THRESH 0.01

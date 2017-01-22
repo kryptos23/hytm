@@ -92,15 +92,13 @@ __thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t
                                             ___Self->envPtr = &STM_JMPBUF; \
                                             unsigned ___htmattempts; \
                                             for (___htmattempts = 0; ___htmattempts < HTM_ATTEMPT_THRESH; ++___htmattempts) { \
+                                                while (tleLock) { SYNC_RMW; /*PAUSE();*/ } \
                                                 if (XBEGIN(___xarg)) { \
                                                     if (tleLock) XABORT(1); \
                                                     break; \
                                                 } else { /* if we aborted */ \
                                                     ++___Self->AbortsHW; \
-                                                    registerHTMAbort(c_counters, ___Self->UniqID, X_ABORT_GET_STATUS(___xarg), PATH_FAST_HTM); \
-                                                    while (tleLock) { \
-                                                        PAUSE(); \
-                                                    } \
+                                                    registerHTMAbort(c_counters, ___Self->UniqID, ___xarg, PATH_FAST_HTM); \
                                                 } \
                                             } \
                                             if (___htmattempts < HTM_ATTEMPT_THRESH) break; \
@@ -121,7 +119,7 @@ __thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t
                                             /** acquire global lock **/ \
                                             while (1) { \
                                                 if (tleLock) { \
-                                                    PAUSE(); \
+                                                    /*PAUSE();*/ \
                                                     continue; \
                                                 } \
                                                 LWSYNC; /* prevent the following CAS from being moved before read of lock (on power) */ \

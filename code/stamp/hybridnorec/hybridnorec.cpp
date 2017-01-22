@@ -32,7 +32,9 @@ using namespace std;
 #include "../hytm1/counters/debugcounters_cpp.h"
 struct c_debugCounters *c_counters;
 
+#ifndef PREFETCH_SIZE_BYTES
 #define PREFETCH_SIZE_BYTES 192
+#endif
 
 #define USE_FULL_HASHTABLE
 //#define USE_BLOOM_FILTER
