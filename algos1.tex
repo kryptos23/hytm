@@ -4,7 +4,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{figure*}[!h]
       
-     \scalebox{.9}[.9]{
+     \scalebox{.85}[.85]{
      \begin{tabularx}{\textwidth}{c|c|c|c|c}
 %	\hline
 	~~~~~ & Algorithm~\ref{alg:inswrite} & Algorithm~\ref{alg:inswrite2} & TLE & HybridNorec\\ \hline
@@ -32,7 +32,6 @@ $\textit{or}_j$ $\mathrel{\&} 1=1$ after $E$, where $\textit{or}_j$ is the value
 For a fast-path transaction $T_k$ executed by process $p_i$, the $\Read_k(X_j)$ implementation first reads $r_j$ (uncached)
 and returns $A_k$ if some other process $p_j$ holds a lock on $X_j$.
 Otherwise, it returns the value of $X_j$.
-Updating fast-path transactions 
 As with $\Read_k(X_j)$, the $\Write (X_j,v)$ implementation returns $A_k$ if some other process $p_j$ holds a lock on $X_j$.
 Process $p_i$ then increments the value of $r_j$ by $2$ via a direct access and stores the cached state of $X_j$ along with its value $v$.
 If the cache has not been invalidated, $p_i$ updates the shared memory
@@ -59,21 +58,11 @@ If all the locks on the write set were acquired successfully, $T_k$ performs val
 \vspace{1mm}\noindent\textit{Non-cached accesses inside fast-path:}
 As indicated in the pseudocode of Algorithm~\ref{alg:inswrite}, some accesses may be performed uncached (as allowed
 in IBM Power 8) and the resulting implementation would still be opaque. 
-% We can now prove the following theorem:
-% %
-% \begin{theorem}
-% \label{th:inswrite}
-% Algorithm~\ref{alg:inswrite} implements an opaque HyTM that provides invisible reads, progressiveness
-% such that in its every execution $E$, every fast-path transaction $T\in \ms{txns}(E)$
-% accesses $m=|\Dset(T_k)|$ distinct metadata base objects.
-% \end{theorem}
-%
 
 \vspace{1mm}\noindent\textbf{Instrumentation-optimal HyTMs that are progressive only for a subset of transactions.}
 Algorithm~\ref{alg:inswrite2} does not incur the linear instrumentation cost
 on the fast-path reading transactions (as in Algorithm~\ref{alg:inswrite}, but provides progressiveness only
-for slow-path reading transactions.
-%
+for slow-path reading transactions. The instrumentation cost on fast-path t-reads is avoided by using a global single-bit lock $L$ that serializes all updating slow-path transactions.%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \input{prog-fp}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -7,7 +7,7 @@
 \begin{lstlisting}[frame=none,firstnumber=1,mathescape=true]
 //\textbf{Shared objects}
     $v_j$, value of each t-object $X_j$ 
-    $r_{j}$, a sequence lock for each t-object $X_j$
+    $r_{j}$, a sequence lock of each t-object $X_j$
 
 //\textbf{Code for fast-path transactions}
 read$_k(X_j)$
@@ -32,11 +32,11 @@ Function: release(Q)
 	
 Function: acquire(Q)
     for each X$_j$ $\in Q$	
-	if r$_j.\lit{setV}()$  // \label{line:acq1}
+	if r$_j.\lit{isSet}()$  // \medcom CAS (LL/SC) on Intel (Power8); \label{line:acq1}
 	    Lset(T$_k$) := Lset(T$_k$) $\cup$ {X$_j$}
-	    return true
 	release(Lset(T$_k$))
 	return false
+    return true
 \end{lstlisting}
 \end{minipage}
 \begin{minipage}{0.49\textwidth}
@@ -66,8 +66,8 @@ tryC$_k$()
 	    return $A_k$ 
     for each X$_j$ $\in$ Wset(T$_k$)
 	    v_j:= nv$_j$ //\label{line:write}
-	    release(Wset(T$_k$))  // \label{line:rel}	
-	    return $C_k$  //\vspace{-2mm}
+    release(Wset(T$_k$))  // \label{line:rel}	
+    return $C_k$  //\vspace{-2mm}
 
 Function: validate()
     if $\exists$ X$_j$ $\in$ Rset(T$_k$):or$_j \neq$ r$_j$ then return false // \label{line:valid}

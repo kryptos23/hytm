@@ -4,7 +4,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{figure*}[!h]
       
-     \scalebox{.9}[.9]{
+     \scalebox{.85}[.85]{
      \begin{tabularx}{\textwidth}{c|c|c|c|c}
 %	\hline
 	~~~~~ & Algorithm~\ref{alg:inswrite} & Algorithm~\ref{alg:inswrite2} & TLE & HybridNorec\\ \hline
@@ -62,8 +62,7 @@ in IBM Power 8) and the resulting implementation would still be opaque.
 \vspace{1mm}\noindent\textbf{Instrumentation-optimal HyTMs that are progressive only for a subset of transactions.}
 Algorithm~\ref{alg:inswrite2} does not incur the linear instrumentation cost
 on the fast-path reading transactions (as in Algorithm~\ref{alg:inswrite}, but provides progressiveness only
-for slow-path reading transactions.
-%
+for slow-path reading transactions. The instrumentation cost on fast-path t-reads is avoided by using a global single-bit lock $L$ that serializes all updating slow-path transactions.%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \input{prog-fp}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
