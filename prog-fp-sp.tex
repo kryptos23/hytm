@@ -63,11 +63,11 @@ tryC$_k$()
     if not acquire(Wset(T$_k$)) then return $A_k$ // \label{line:acq}
     if not validate() // \label{line:abort3}
 	    release(Wset(T$_k$)) 
-	    return $A_k$ 
+	    return A$_k$ 
     for each X$_j$ $\in$ Wset(T$_k$)
-	    v_j:= nv$_j$ //\label{line:write}
+	    v$_j$:= nv$_j$ //\label{line:write}
     release(Wset(T$_k$))  // \label{line:rel}	
-    return $C_k$  //\vspace{-2mm}
+    return C$_k$  //\vspace{-2mm}
 
 Function: validate()
     if $\exists$ X$_j$ $\in$ Rset(T$_k$):or$_j \neq$ r$_j$ then return false // \label{line:valid}

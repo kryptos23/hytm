@@ -17,10 +17,10 @@ read$_k(X_j)$
     return ov$_j$ //\vspace{-2mm}
 
 write$_k(X_j,v)$
-    $\textit{or}_j := r_j$ //\medcom cached read \label{line:m1}
+    or$_j$ := r$_j$ //\medcom uncached read \label{line:m1}
     if or$_j$ & 1 then return $A_k$
-    r$_j$ := or$_j$+2 // \label{line:m2}
-    v$_j$ := v //\medcom uncached write \label{line:lin2} 
+    r$_j$ := or$_j$+2 //\medcom uncached write \label{line:m2}
+    v$_j$ := v //\medcom cached write \label{line:lin2} 
     return OK //\vspace{-2mm}
 
 tryC$_k$()
@@ -32,7 +32,7 @@ Function: release(Q)
 	
 Function: acquire(Q)
     for each X$_j$ $\in Q$	
-	if r$_j.\lit{isSet}()$  // \medcom CAS (LL/SC) on Intel (Power8); \label{line:acq1}
+	if r$_j.\lit{isSet}()$  // \medcom CAS/LLSC \label{line:acq1}
 	    Lset(T$_k$) := Lset(T$_k$) $\cup$ {X$_j$}
 	release(Lset(T$_k$))
 	return false
@@ -63,11 +63,11 @@ tryC$_k$()
     if not acquire(Wset(T$_k$)) then return $A_k$ // \label{line:acq}
     if not validate() // \label{line:abort3}
 	    release(Wset(T$_k$)) 
-	    return $A_k$ 
+	    return A$_k$ 
     for each X$_j$ $\in$ Wset(T$_k$)
-	    v_j:= nv$_j$ //\label{line:write}
+	    v$_j$:= nv$_j$ //\label{line:write}
     release(Wset(T$_k$))  // \label{line:rel}	
-    return $C_k$  //\vspace{-2mm}
+    return C$_k$  //\vspace{-2mm}
 
 Function: validate()
     if $\exists$ X$_j$ $\in$ Rset(T$_k$):or$_j \neq$ r$_j$ then return false // \label{line:valid}
