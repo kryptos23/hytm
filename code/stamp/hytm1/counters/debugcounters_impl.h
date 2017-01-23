@@ -16,7 +16,7 @@ extern "C" {
 #include "debugcounters.h"
     
 #ifdef RECORD_ABORT_ADDRESSES
-#define MAX_ABORT_ADDR (1<<20)
+#define MAX_ABORT_ADDR (1<<24)
 int numAbortAddr = 0; // for thread 0
 long abortAddr[MAX_ABORT_ADDR];
 #endif
@@ -37,29 +37,84 @@ long abortAddr[MAX_ABORT_ADDR];
 //    return status >> 24;
 //}
 
-#define BIT_USER 0
-#define BIT_CAPACITY 1
-#define BIT_CONFLICT 2
-#define BIT_RETRY 3
-#define BIT_ILLEGAL 4
-
 void registerHTMAbort(struct c_debugCounters *cs, const int tid, const XBEGIN_ARG_T arg, const int path) {
 #ifdef RECORD_ABORTS
     int s = 0;
+    char userAbortName = 0;
     if (arg) {
-        s = (X_ABORT_STATUS_IS_USER(arg) << BIT_USER)
-          | (X_ABORT_STATUS_IS_CAPACITY(arg) << BIT_CAPACITY)
-          | (X_ABORT_STATUS_IS_CONFLICT(arg) << BIT_CONFLICT)
-          | (X_ABORT_STATUS_IS_RETRY(arg) << BIT_RETRY)
-          | (X_ABORT_STATUS_IS_ILLEGAL(arg) << BIT_ILLEGAL);
-#ifdef RECORD_ABORT_ADDRESSES
+#   if defined(__powerpc64__) || defined(__ppc64__) || defined(__PPC64__)
+        // FOR P8 TEXASR BIT DEFINITIONS, SEE PAGE 803 IN (http://fileadmin.cs.lth.se/cs/education/EDAN25/PowerISA_V2.07_PUBLIC.pdf)
+#       define P8_MASK_ABORT_CODE ((1<<7)-1)
+#       define P8_BIT_PERSISTENT 7
+#       define P8_BIT_DISALLOWED 8
+#       define P8_BIT_NESTING 9
+#       define P8_BIT_FOOTPRINT 10
+#       define P8_BIT_CONFLICT_SELF 11
+#       define P8_BIT_CONFLICT_NONTX 12
+#       define P8_BIT_CONFLICT_TX 13
+#       define P8_BIT_CONFLICT_TLBINVAL 14
+#       define P8_BIT_IMPL_SPECIFIC 15
+#       define P8_BIT_CONFLICT_INSTRFETCH 16
+#       define P8_MASK_RESERVED ((((1LL<<31)-1)&(~((1<<17)-1))) | (1LL<<33) | (((1LL<<52)-1)&(~((1LL<<39)-1))))
+#       define P8_BIT_EXPLICIT 31
+#       define P8_BIT_SUSPENDED 32
+#       define P8_MASK_PRIVILEGED ((1LL<<34)|(1LL<<35))
+#       define P8_BIT_ABORTADDR_EXACT 37
+
+#       define getbit(bit) ((texasr>>(bit))&1)
+        unsigned long texasr = __builtin_get_texasr();
+        
+#       define BIT_USER 1
+#       define BIT_CAPACITY 2
+#       define BIT_CONFLICT 3
+#       define BIT_RETRY 4
+#       define BIT_ILLEGAL 5
+#       define BIT_OTHER 6
+#       define BIT_RESERVED 7
+#       define BIT_PRIVILEGED 8
+#       define BIT_USER_NAME_START 9
+#       define NUM_USER_NAME_BITS 3
+
+        s = (getbit(P8_BIT_EXPLICIT) << BIT_USER)
+          | (getbit(P8_BIT_FOOTPRINT) << BIT_CAPACITY)
+          | ((getbit(P8_BIT_CONFLICT_SELF) | getbit(P8_BIT_CONFLICT_NONTX) | getbit(P8_BIT_CONFLICT_TX) | getbit(P8_BIT_CONFLICT_TLBINVAL) | getbit(P8_BIT_CONFLICT_INSTRFETCH)) << BIT_CONFLICT)
+          | ((getbit(P8_BIT_PERSISTENT) == 0) << BIT_RETRY)
+          | (getbit(P8_BIT_DISALLOWED) << BIT_ILLEGAL)
+          | ((getbit(P8_BIT_NESTING) | getbit(P8_BIT_IMPL_SPECIFIC) | getbit(P8_BIT_SUSPENDED)) << BIT_OTHER)
+          | (((texasr & P8_MASK_RESERVED) > 0) << BIT_RESERVED)
+          | (((texasr & P8_MASK_PRIVILEGED) > 0) << BIT_PRIVILEGED);
+        if (getbit(P8_BIT_EXPLICIT)) {
+            s |= (((texasr&P8_MASK_ABORT_CODE) & /* further limit abort code size: */ ((1<<NUM_USER_NAME_BITS)-1)) << (BIT_USER_NAME_START));
+        }
+#       ifdef RECORD_ABORT_ADDRESSES
         if (tid == 0) {
             long a = X_ABORT_FAILURE_ADDRESS(arg);
             if (a && numAbortAddr < MAX_ABORT_ADDR) {
                 abortAddr[numAbortAddr++] = a;
             }
         }
-#endif
+#       endif
+#   else
+#       define BIT_USER 1
+#       define BIT_CAPACITY 2
+#       define BIT_CONFLICT 3
+#       define BIT_RETRY 4
+#       define BIT_ILLEGAL 5
+#       define BIT_USER_NAME_START 6
+#       define NUM_USER_NAME_BITS 3
+
+        s = (X_ABORT_STATUS_IS_USER(arg) << BIT_USER)
+          | (X_ABORT_STATUS_IS_CAPACITY(arg) << BIT_CAPACITY)
+          | (X_ABORT_STATUS_IS_CONFLICT(arg) << BIT_CONFLICT)
+          | (X_ABORT_STATUS_IS_RETRY(arg) << BIT_RETRY)
+          | (X_ABORT_STATUS_IS_ILLEGAL(arg) << BIT_ILLEGAL)
+          | (X_ABORT_STATUS_IS_USER_NAMED(arg, &userAbortName) << BIT_USER_NAME_START);
+        if (s & (1<<BIT_USER_NAME_START)) s |= ((userAbortName&((1<<NUM_USER_NAME_BITS)-1)) << BIT_USER_NAME_START);
+#   endif
+    }
+    if (s >= MAX_ABORT_STATUS) {
+        cout<<"ERROR: s ("<<s<<") >= MAX_ABORT_STATUS ("<<MAX_ABORT_STATUS<<")"<<endl;
+        exit(-1);
     }
     counterInc(cs->htmAbort[path*MAX_ABORT_STATUS+s], tid);
 #endif
@@ -131,6 +186,7 @@ void countersDestroy(struct c_debugCounters *cs) {
         fprintf(pFile, "%lx\n", abortAddr[i]);
     }
     fclose(pFile);
+    cout<<"NUM_ABORT_ADDRESSES="<<numAbortAddr<<endl;
 #endif
 }
 

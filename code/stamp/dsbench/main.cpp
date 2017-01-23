@@ -100,7 +100,7 @@ const test_type POS_INFTY = 2000000000;
     #define PRCU_INIT 
     #define PRCU_REGISTER(tid)
     #define PRCU_UNREGISTER
-    #define CLEAR_COUNTERS tree->clearCounters()
+    #define CLEAR_COUNTERS tree->clearCounters();
 #endif
 
 template <class MemMgmt>
@@ -667,6 +667,11 @@ int main(int argc, char** argv) {
     PRINTS(POOL_TYPE);
     PRINTI(PRINT_TREE);
     PRINTI(THREAD_BINDING);
+#ifdef RECORD_ABORT_ADDRESSES
+    cout<<"RECORD_ABORT_ADDRESSES=1"<<endl;
+#else
+    cout<<"RECORD_ABORT_ADDRESSES=0"<<endl;
+#endif
     
     prefillSize = new debugCounter(TOTAL_THREADS);
     keysum = new debugCounter(TOTAL_THREADS);

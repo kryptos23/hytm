@@ -160,11 +160,14 @@ public:
         lock = 0;
         owner = 0;
     }
-    __INLINE__ vLockSnapshot getSnapshot() const {
-        vLockSnapshot retval (lock);
-//        __sync_synchronize();
-        return retval;
+    __INLINE__ uint64_t getSnapshot() const {
+        return lock;
     }
+//    __INLINE__ vLockSnapshot getSnapshot() const {
+//        vLockSnapshot retval (lock);
+////        __sync_synchronize();
+//        return retval;
+//    }
 //    __INLINE__ bool tryAcquire(void* thread) {
 //        if (thread == owner) return true; // reentrant acquire
 //        uint64_t val = lock & (~LOCKBIT);
@@ -177,25 +180,25 @@ public:
 ////        __sync_synchronize();
 //        return retval;
 //    }
-    __INLINE__ bool tryAcquire(void* thread, vLockSnapshot& oldval) {
+    __INLINE__ bool tryAcquire(void* thread, uint64_t oldval) {
 //        if (thread == owner) return true; // reentrant acquire
 #if defined __PPC__ || defined __POWERPC__  || defined powerpc || defined _POWER || defined __ppc__ || defined __powerpc__
-        uint64_t v = (uint64_t) __ldarx(&lock);
-        if (v == oldval.version() && __stdcx(&lock, oldval.version()+1)) {
-            LWSYNC; // prevent assignment of owner from being moved before lock acquisition (on power)
-            owner = thread;
-            SYNC_RMW; // prevent instructions in the critical section from being moved before lock acquisition or owner assignment (on power)
-            return true;
+        if (oldval & 1) return false;
+        while (1) {
+            uint64_t v = (uint64_t) __ldarx(&lock);
+            if (v != oldval) return false;
+            if (__stdcx(&lock, oldval+1)) {
+                LWSYNC; // prevent assignment of owner from being moved before lock acquisition (on power)
+                owner = thread;
+                SYNC_RMW; // prevent instructions in the critical section from being moved before lock acquisition or owner assignment (on power)
+                return true;
+            }
         }
-        //SYNC_RMW; // prevent instructions in the critical section from being moved before lock acquisition or owner assignment (on power)
-        return false;
 #else
-        bool retval = __sync_bool_compare_and_swap(&lock, oldval.version(), oldval.version()+1);
+        bool retval = __sync_bool_compare_and_swap(&lock, oldval, oldval+1);
         if (retval) {
-            //LWSYNC; // prevent assignment of owner from being moved before lock acquisition (on power)
             owner = thread;
         }
-        //SYNC_RMW; // prevent instructions in the critical section from being moved before lock acquisition or owner assignment (on power)
         return retval;
 #endif
     }
@@ -322,7 +325,7 @@ static vLockSpace *LockTab;
  */
 #define PSSHIFT ((sizeof(void*) == 4) ? 2 : 3)
 #define PSLOCK(a) ((vLock*) (LockTab + (((UNS(a)+COLOR) >> PSSHIFT) & TABMSK))) /* PS1M */
-
+//#define PSLOCK(a) ({ uintptr_t ___p = (UNS((a)) >> PSSHIFT); ___p ^= ___p >> 16; ___p *= 0x85ebca6b; ___p ^= ___p >> 13; ___p *= 0xc2b2ae35; ___p ^= ___p >> 16; ((vLock*) (LockTab + (___p & TABMSK))); })
 
 
 
@@ -403,7 +406,7 @@ public:
 //        intptr_t p;
 //    } value;
     vLock* LockFor;     /* points to the vLock covering addr */
-    vLockSnapshot rdv;  /* read-version @ time of 1st read - observed */
+    uint64_t rdv;  /* read-version @ time of 1st read - observed */
     long Ordinal;
     AVPair** hashTableEntry;
 //    int32_t hashTableIx;
@@ -835,7 +838,7 @@ public:
     }
     
 private:
-    __INLINE__ AVPair* append(Thread* Self, volatile intptr_t* addr, intptr_t value, vLock* _LockFor, vLockSnapshot _rdv) {
+    __INLINE__ AVPair* append(Thread* Self, volatile intptr_t* addr, intptr_t value, vLock* _LockFor, uint64_t _rdv) {
         AVPair* e = put;
         if (e == NULL) e = extendList();
         tail = e;
@@ -850,7 +853,7 @@ private:
     }
     
 public:
-    __INLINE__ void insertReplace(Thread* Self, volatile intptr_t* addr, intptr_t value, vLock* _LockFor, vLockSnapshot _rdv) {
+    __INLINE__ void insertReplace(Thread* Self, volatile intptr_t* addr, intptr_t value, vLock* _LockFor, uint64_t _rdv) {
         DEBUG3 aout("list "<<renamePointer(this)<<" insertReplace("<<debug(renamePointer((const void*) (void*) addr))<<","<<debug(value)<<","<<debug(renamePointer(_LockFor))<<","<<debug(_rdv)<<")");
         AVPair* e = find(addr);
         if (e) {
@@ -860,7 +863,7 @@ public:
 #ifdef USE_FULL_HASHTABLE
             // insert in hash table
             tab.insertFresh(e);
-            if (tab.requiresExpansion()) tab.expandAndRehashFromList(head, put); // TODO: enable table expansion
+            if (tab.requiresExpansion()) tab.expandAndRehashFromList(head, put);
 #elif defined(USE_BLOOM_FILTER)
             tab.insertFresh(addr);
 #endif
@@ -911,19 +914,19 @@ std::ostream& operator<<(std::ostream& out, const List& obj) {
 }
 
 
-__INLINE__ vLockSnapshot* minLockSnapshot(vLockSnapshot* a, vLockSnapshot* b) {
-    if (a && b) {
-        return (a->version() < b->version()) ? a : b;
-    } else {
-        return a ? a : b; // note: might return NULL
-    }
-}
+//__INLINE__ uint64_t* minLockSnapshot(uint64_t *a, uint64_t *b) {
+//    if (a && b) {
+//        return (((*a)>>1) < ((*b)>>1)) ? a : b;
+//    } else {
+//        return a ? a : b; // note: might return NULL
+//    }
+//}
 
-__INLINE__ vLockSnapshot* getMinLockSnap(AVPair* a, AVPair* b) {
+__INLINE__ uint64_t getMinLockSnap(AVPair* a, AVPair* b) {
     if (a && b) {
-        return minLockSnapshot(&a->rdv, &b->rdv);
+        return (a->rdv < b->rdv ? a->rdv : b->rdv); // minLockSnapshot(&a->rdv, &b->rdv);
     } else {
-        return a ? &a->rdv : (b ? &b->rdv : NULL);
+        return a ? a->rdv : (b ? b->rdv : 0x7fffffffffffffffLL);
     }
 }
 
@@ -950,16 +953,12 @@ bool lockAll(Thread* Self, List* lockAVPairs) {
             // curr->rdv contains when we first encountered it in a txSTORE,
             // so we also need to compare it with any rdv stored in the READ-set.
             AVPair* readLogEntry = Self->rdSet->find(curr->addr);
-            vLockSnapshot *encounterTime = getMinLockSnap(curr, readLogEntry);
-            assert(encounterTime);
-    //        if (encounterTime->version() != readLogEntry->rdv.version()) {
-    //            fprintf(stderr, "WARNING: read encounter time was not taken as the minimum\n");
-    //        }
-
-    //        vLockSnapshot currsnap = curr->rdv;
+            uint64_t encounterTime = getMinLockSnap(curr, readLogEntry);
+            assert(encounterTime != 0x7fffffffffffffff);
+            //assert(encounterTime);
             DEBUG2 aout("thread "<<Self->UniqID<<" trying to acquire lock "
                         <<*curr->LockFor
-                        <<" with old-ver "<<encounterTime->version()
+                        <<" with old-ver "<<(encounterTime>>1)
                         //<<" (and curr-ver "<<currsnap.version()<<" raw="<<currsnap.lockstate<<" raw&(~1)="<<(currsnap.lockstate&(~1))<<")"
                         //<<" to protect val "<<(*((T*) curr->addr))
                         //<<" (and write new-val "<<unpackValue<T>(curr)
@@ -967,13 +966,13 @@ bool lockAll(Thread* Self, List* lockAVPairs) {
 
             // try to acquire locks
             // (and fail if their versions have changed since encounterTime)
-            if (!curr->LockFor->tryAcquire(Self, *encounterTime)) {
+            if (!curr->LockFor->tryAcquire(Self, encounterTime)) {
                 DEBUG2 aout("thread "<<Self->UniqID<<" failed to acquire lock "<<*curr->LockFor);
                 // if we fail to acquire a lock, we must
                 // unlock all previous locks that we acquired
                 for (AVPair* toUnlock = lockAVPairs->head; toUnlock != curr; toUnlock = toUnlock->Next) {
                     toUnlock->LockFor->release(Self);
-                    DEBUG2 aout("thread "<<Self->UniqID<<" releasing lock "<<*curr->LockFor<<" in lockAll (will be ver "<<(curr->LockFor->getSnapshot().version()+2)<<")");
+                    DEBUG2 aout("thread "<<Self->UniqID<<" releasing lock "<<*curr->LockFor<<" in lockAll (will be ver "<<((curr->LockFor->getSnapshot()>>1)+2)<<")");
                 }
                 return false;
             }
@@ -996,7 +995,7 @@ __INLINE__ bool tryAcquireWriteSet(Thread* Self) {
     DEBUG3 aout("releaseAll "<<*lockAVPairs);
     AVPair* const stop = lockAVPairs->put;
     for (AVPair* curr = lockAVPairs->head; curr != stop; curr = curr->Next) {
-        DEBUG2 aout("thread "<<Self->UniqID<<" releasing lock "<<*curr->LockFor<<" in releaseAll (will be ver "<<(curr->LockFor->getSnapshot().version()+2)<<")");
+        DEBUG2 aout("thread "<<Self->UniqID<<" releasing lock "<<*curr->LockFor<<" in releaseAll (will be ver "<<((curr->LockFor->getSnapshot()>>1)+2)<<")");
         // note: any necessary membars here are implied by the lock release
         curr->LockFor->release(Self);
     }
@@ -1022,9 +1021,9 @@ __INLINE__ bool validateLockVersions(Thread* Self, List* lockAVPairs/*, bool hol
     AVPair* const stop = lockAVPairs->put;
     for (AVPair* curr = lockAVPairs->head; curr != stop; curr = curr->Next) {
         vLock* lock = curr->LockFor;
-        vLockSnapshot locksnap = lock->getSnapshot();
+        uint64_t locksnap = lock->getSnapshot();
         LWSYNC; // prevent any following reads from being reordered before getSnapshot()
-        if (locksnap.isLocked()) {
+        if (locksnap & 1) {
             if (lock->isOwnedBy(Self)) {
                 continue; // we own it
             } else {
@@ -1035,10 +1034,10 @@ __INLINE__ bool validateLockVersions(Thread* Self, List* lockAVPairs/*, bool hol
             // curr->rdv contains when we first encountered it in a txLOAD,
             // so we also need to compare it with any rdv stored in the WRITE-set.
             AVPair* writeLogEntry = Self->wrSet->find(curr->addr);
-            vLockSnapshot *encounterTime = getMinLockSnap(curr, writeLogEntry);
+            uint64_t encounterTime = getMinLockSnap(curr, writeLogEntry);
             assert(encounterTime);
             
-            if (locksnap.version() != encounterTime->version()) {
+            if ((locksnap >> 1) != (encounterTime>>1)) {
                 // the address is locked, it its version number has changed
                 // (and we didn't change it, since we don't hold the lock)
                 return false; // abort if we are not holding any locks
@@ -1199,8 +1198,8 @@ success:
 void TxAbort(void* _Self) {
     Thread* Self = (Thread*) _Self;
     
-    // software path
-    if (Self->isFallback) {
+//    // software path
+//    if (Self->isFallback) {
         SOFTWARE_BARRIER; // prevent compiler reordering of speculative execution before isFallback check in htm (for power)
 
         ++Self->Retries;
@@ -1231,10 +1230,10 @@ void TxAbort(void* _Self) {
         SIGLONGJMP(*Self->envPtr, 1);
         ASSERT(0);
         
-    // hardware path
-    } else {
-        XABORT(0);
-    }
+//    // hardware path
+//    } else {
+//        XABORT(0);
+//    }
 }
 
 intptr_t TxLoad_stm(void* _Self, volatile intptr_t* addr) {
@@ -1246,8 +1245,8 @@ intptr_t TxLoad_stm(void* _Self, volatile intptr_t* addr) {
 
     // addr is NOT in the write-set; abort if it is locked
     vLock* lock = PSLOCK(addr);
-    vLockSnapshot locksnap = lock->getSnapshot();
-    if (locksnap.isLocked()) {// && !lock->isOwnedBy(Self)) { // impossible for us to hold a lock on it.
+    uint64_t locksnap = lock->getSnapshot();
+    if (locksnap & 1) {// && !lock->isOwnedBy(Self)) { // impossible for us to hold a lock on it.
         DEBUG2 aout("thread "<<Self->UniqID<<" TxRead saw lock "<<renamePointer(lock)<<" was held (not by us) -> aborting (retries="<<Self->Retries<<")");
         TxAbort(Self);
     }
@@ -1267,11 +1266,30 @@ intptr_t TxLoad_stm(void* _Self, volatile intptr_t* addr) {
 }
 
 intptr_t TxLoad_htm(void* _Self, volatile intptr_t* addr) {
+#ifdef USE_SUSPEND_RESUME
+    XSUSPEND();
     // abort if addr is locked
     vLock* lock = PSLOCK(addr);
-    vLockSnapshot locksnap = lock->getSnapshot();
-    if (locksnap.isLocked()) TxAbort((Thread*) _Self); // we cannot hold the lock (since we hold none)
-
+    uint64_t locksnap = lock->getSnapshot();
+    if (locksnap & 1) {
+        XRESUME();
+        XABORT(1); // jumps to abort handler
+    }
+    XRESUME();
+#else
+    // abort if addr is locked
+    vLock* lock = PSLOCK(addr);
+    /**
+     * accessing the lock below causes huge aborts, even with ONE thread!
+     * it's not a segfault, since those are apparently not sandboxed on power
+     * (unless we're erroneously executing htm code on the stm path). 
+     * it also doesn't seem to be a pathology with lock placement or
+     * cache associativity, since the problem persists even when i replace
+     * the simple PSLOCK with murmurhash3 to shuffle the addr -> lock mapping.
+     */
+    uint64_t locksnap = lock->getSnapshot();
+    if (locksnap & 1) XABORT(1); // jumps to abort handler
+#endif
     return *addr;
 }
 
@@ -1280,8 +1298,8 @@ void TxStore_stm(void* _Self, volatile intptr_t* addr, intptr_t value) {
     
     // abort if addr is locked (since we do not hold any locks)
     vLock* lock = PSLOCK(addr);
-    vLockSnapshot locksnap = lock->getSnapshot();
-    if (locksnap.isLocked()) { // note: impossible for lock to be owned by us, since we hold no locks.
+    uint64_t locksnap = lock->getSnapshot();
+    if (locksnap & 1) { // note: impossible for lock to be owned by us, since we hold no locks.
         DEBUG2 aout("thread "<<Self->UniqID<<" TxStore saw lock "<<renamePointer(lock)<<" was held (not by us) -> aborting (retries="<<Self->Retries<<")");
         TxAbort(Self);
     }
@@ -1294,8 +1312,8 @@ void TxStore_stm(void* _Self, volatile intptr_t* addr, intptr_t value) {
 void TxStore_htm(void* _Self, volatile intptr_t* addr, intptr_t value) {
     // abort if addr is locked
     vLock* lock = PSLOCK(addr);
-    vLockSnapshot locksnap = lock->getSnapshot();
-    if (locksnap.isLocked()) TxAbort((Thread*) _Self); // we cannot hold the lock (since we hold none)
+    uint64_t locksnap = lock->getSnapshot();
+    if (locksnap & 1) XABORT(2);//TxAbort((Thread*) _Self); // we cannot hold the lock (since we hold none)
 
     // increment version number (to notify s/w txns of the change)
     // and write value to addr (order unimportant because of h/w)
@@ -1333,6 +1351,13 @@ void TxOnce() {
     LockTab = (vLockSpace*) malloc(_TABSZ*sizeof(vLockSpace));
     memset(LockTab, 0, _TABSZ*sizeof(vLockSpace));
 #endif
+}
+
+void TxClearCounters() {
+    printf("Printing counters for %s and then clearing them in preparation for the real trial.\n", TM_NAME);
+    countersPrint(c_counters);
+    countersClear(c_counters);
+    printf("Counters cleared.\n");
 }
 
 void TxShutdown() {

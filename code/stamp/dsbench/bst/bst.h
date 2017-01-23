@@ -28,6 +28,7 @@
 #include "../tle.h"
 #endif
 #include "node.h"
+#include "../dsbench_tm.h"
 
 using namespace std;
 
@@ -154,6 +155,7 @@ public:
     void clearCounters() {
         counters->clear();
         shmem->clearCounters();
+        STM_CLEAR_COUNTERS();
     }
     debugCounters * const debugGetCounters() {
         return counters;

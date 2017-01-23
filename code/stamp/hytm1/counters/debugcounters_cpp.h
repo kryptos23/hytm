@@ -19,11 +19,14 @@ using namespace std;
 
 string cpp_getAutomaticAbortNames(const int compressedStatus) {
     stringstream ss;
-    if (compressedStatus & (1<<BIT_USER)) ss<<" explicit";
+//    if (compressedStatus & (1<<BIT_USER)) ss<<" explicit";
     if (compressedStatus & (1<<BIT_CAPACITY)) ss<<" capacity";
     if (compressedStatus & (1<<BIT_CONFLICT)) ss<<" conflict";
     if (compressedStatus & (1<<BIT_RETRY)) ss<<" retry";
     if (compressedStatus & (1<<BIT_ILLEGAL)) ss<<" illegal";
+    if (compressedStatus & (1<<BIT_OTHER)) ss<<" other(nest,impl,supended)";
+    if (compressedStatus & (1<<BIT_RESERVED)) ss<<" reserved";
+    if (compressedStatus & (1<<BIT_PRIVILEGED)) ss<<" privileged";
     return ss.str();
 //    return "";
 }
@@ -33,7 +36,12 @@ string cpp_getExplicitAbortName(const int compressedStatus) {
 //    if (explicitCode == ABORT_PROCESS_ON_FALLBACK) return "process_on_fallback";
 //    if (explicitCode >= 42) return "ASSERTION_FAILED";
 //    return "";
-    return "";
+    int explicitCode = (compressedStatus>>BIT_USER_NAME_START);
+    stringstream ss;
+    if (compressedStatus & (1<<BIT_USER)) {
+        ss<<"explicit("<<explicitCode<<")";
+    }
+    return ss.str();
 }
 
 string cpp_getAllAbortNames(const int compressedStatus) {

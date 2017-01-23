@@ -62,7 +62,7 @@
 #define XBEGIN_ARG_T TM_buff_type
 #define XBEGIN(arg) ((__TM_begin((arg))) == _HTM_TBEGIN_STARTED)
 #define XEND() (__TM_end())
-#define XABORT(arg) (__TM_named_abort((arg)))
+#define XABORT(arg) (__TM_named_abort((unsigned char const) (arg)))
 #define XSUSPEND() (__TM_suspend())
 #define XRESUME() (__TM_resume())
 //#define X_ABORT_GET_STATUS(arg) (__TM_failure_code((arg)))
@@ -76,6 +76,7 @@
 //#define X_ABORT_STATUS_IS_RETRY(status) (!(((status)>>7)&0x1))
 
 #define X_ABORT_STATUS_IS_USER(arg) (__TM_is_user_abort((void*) (arg)))
+#define X_ABORT_STATUS_IS_USER_NAMED(arg, outputptr) (__TM_is_named_user_abort((void*) (arg), (unsigned char *) (outputptr)))
 #define X_ABORT_STATUS_IS_CAPACITY(arg) (__TM_is_footprint_exceeded((void*) (arg)))
 #define X_ABORT_STATUS_IS_NESTING(arg) (__TM_is_nested_too_deep((void*) (arg)))
 #define X_ABORT_STATUS_IS_CONFLICT(arg) (__TM_is_conflict((void*) (arg)))

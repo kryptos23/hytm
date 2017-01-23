@@ -43,6 +43,7 @@
 //#define X_ABORT_DECOMPRESS_STATUS(cstatus) (((cstatus)&0x3f) | (((cstatus)&(~0x3f))<<24))
 //#define X_ABORT_STATUS_USERCODE(status) (((status)>>24)&0xff)
 #define X_ABORT_STATUS_IS_USER(arg) ((arg)&0x1)
+#define X_ABORT_STATUS_IS_USER_NAMED(arg, outputptr) ((arg)&0x1) /* writing user code to outputptr not yet implemented */
 #define X_ABORT_STATUS_IS_CAPACITY(arg) (((arg)>>3)&0x1)
 #define X_ABORT_STATUS_IS_NESTING(arg) (((arg)>>5)&0x1)
 #define X_ABORT_STATUS_IS_CONFLICT(arg) (((arg)>>2)&0x1)

@@ -59,9 +59,9 @@ typedef struct Thread_void {
 #  define STM_JMPBUF_T                  sigjmp_buf
 #  define STM_JMPBUF                    buf
 
-
+#define STM_CLEAR_COUNTERS()            TxClearCounters()
 #define STM_VALID()                     (1)
-#define STM_RESTART()                   TxAbort(STM_SELF)
+#define STM_RESTART()                   { Thread_void *___self = (Thread_void *) STM_SELF; if (___self->isFallback) TxAbort(STM_SELF); else XABORT(3); }
 
 #define STM_STARTUP()                   TxOnce()
 #define STM_SHUTDOWN()                  TxShutdown()
