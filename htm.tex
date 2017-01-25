@@ -237,6 +237,11 @@
     otherkeywords={then,word,process_local,type,xbegin,xabort,xend}
 }
 
+\usepackage{xcolor}
+\definecolor{pdfbgcolor}{RGB}{180,180,180}
+%% conditionally set the pdf background color only on trevor's computer
+\IfFileExists{trbotpc.txt}{\pagecolor{pdfbgcolor}}{}
+
 \begin{document}
 
 \title{Cost of Concurrency in Hybrid Transactional Memory}

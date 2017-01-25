@@ -6,14 +6,14 @@
 The \emph{Transactional Memory (TM)} abstraction is a synchronization mechanism 
 that allows the programmer to \emph{speculatively} execute sequences of shared-memory
 operations as \emph{atomic transactions}.
-Several software TM designs~\cite{norec, ST95,HLM+03, astm, fraser} have been introduced subsequent to the original proposal TM proposal based in
+Several software TM designs~\cite{norec, ST95,HLM+03, astm, fraser} have been introduced subsequent to the original TM proposal based in
 hardware~\cite{HM93}. 
 The original dynamic STM implementation DSTM~\cite{HLM+03} ensures \emph{progressiveness}: 
 a transaction aborts only if there is a read-write \emph{data conflict} with a concurrent
 transaction. However, read operations in DSTM must \emph{incrementally} validate
 the responses of all previous read operations to avoid inconsistent executions. 
-This results in a quadratic  (in the size of the transaction's read
-set) step-complexity bound. Subsequent STM 
+This results in quadratic  (in the size of the transaction's read
+set) step-complexity for transactions. Subsequent STM 
 implementations like NOrec~\cite{norec} and TL2~\cite{DSS06}
 minimize the impact on performance due to incremental validation.
 NOrec uses a global sequence lock that is read at the start of a transaction and performs \emph{value-based}
@@ -27,7 +27,7 @@ from the value that was read from the sequence lock at the start of the transact
 
 In fact, STMs like TL2 and NOrec ensure progress in the absence of data conflicts with 
 $O$(1) step complexity read operations and \emph{invisible reads} (read operations 
-do not apply any nontrivial primitives on the shared memory).
+do not apply any nontrivial \trevor{instead of nontrivial primitives, maybe we should say they don't write/modify shared memory?} primitives on the shared memory).
 Nonetheless, TM designs that are implemented entirely in software still incur significant performance overhead.
 Thus, current CPUs have included instructions to mark a block of memory accesses as transactional~\cite{Rei12, asf, bluegene}, allowing them to be executed \emph{atomically} in hardware.
 Hardware transactions promise better performance than STMs, but they offer no progress guarantees 
@@ -38,7 +38,7 @@ complemented with \emph{slower} software transactions that do not have spurious 
 To allow hardware transactions in a HyTM to detect conflicts with software transactions, they must be \emph{instrumented} to perform additional metadata accesses, which introduces overhead.
 Hardware transactions typically provide automatic conflict detection at cacheline granularity,
 thus ensuring that the transaction itself would be aborted if it experiences memory contention on the cacheline.
-This is at least the case with the Intel's Transactional Synchronization Extensions~\cite{haswell}.
+This is at least the case with Intel's Transactional Synchronization Extensions~\cite{haswell}.
 The IBM Power8 ISA additionally allows hardware transactions to access metadata \emph{non-speculatively}, 
 thus bypassing automatic conflict detection. While this has the advantage of potentially reducing contention aborts
 in hardware, this makes the design of HyTM implementations potentially harder to prove correct.
@@ -47,12 +47,11 @@ In \cite{htmdisc15}, it was shown that hardware transactions in progressive HyTM
 at least one metadata access per transactional read and write.
 In this paper, we show that in progressive HyTMs with invisible reads, 
 software transactions \textit{cannot} avoid incremental validation.
-Specifically, we prove that each read operation of a software transaction in a progressive HyTM
+Specifically, we prove that \textit{each read operation} of a software transaction in a progressive HyTM
 must necessarily incur a validation cost that is \emph{linear} 
 in the size of the transaction's read set. 
 This is in contrast to TL2 which is progressive and has constant complexity read operations.
-Thus, in addition to the linear instrumentation cost on the hardware transactions, there is the quadratic
-step complexity cost on the software transactions.
+Thus, in addition to the linear instrumentation cost in hardware transactions, there is a quadratic step complexity cost in software transactions.
 
 We then present \emph{opaque} HyTM algorithms providing \emph{progressiveness for a subset of transactions} that are  %both hardware and software transactions \trevor{maybe just ``transactions''?}
 optimal in terms of hardware instrumentation.
