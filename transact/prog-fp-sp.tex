@@ -11,16 +11,16 @@
 
 //\textbf{Code for fast-path transactions}
 read$_k(X_j)$
-    ov$_j$ := v$_j$ //\medcom cached read \label{line:lin1}
-    or$_j$ := r$_j$ //\medcom uncached read \label{line:hread}
+    ov$_j$ := v$_j$  //\label{line:lin1}
+    or$_j$ := r$_j$ //\medcom direct read \label{line:hread}
     if or$_j$ & 1 then return $A_k$ 
     return ov$_j$ //\vspace{-2mm}
 
 write$_k(X_j,v)$
-    or$_j$ := r$_j$ //\medcom uncached read \label{line:m1}
+    or$_j$ := r$_j$  //\label{line:m1}
     if or$_j$ & 1 then return $A_k$
-    r$_j$ := or$_j$+2 //\medcom uncached write \label{line:m2}
-    v$_j$ := v //\medcom cached write \label{line:lin2} 
+    r$_j$ := or$_j$+2  //\label{line:m2}
+    v$_j$ := v  //\label{line:lin2} 
     return OK //\vspace{-2mm}
 
 tryC$_k$()
