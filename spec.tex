@@ -29,7 +29,7 @@ Formally, we say that a HyTM implementation $\mathcal{M}$ is progressive
 for a set $\mathcal{T}$ of transactions
 if in any execution $E$ of $\mathcal{M}$; $\mathcal{T} \subseteq \ms{txns}(E)$, 
 if any transaction $T_k \in \mathcal{T}$ returns $A_k$ in $E$, there exists 
-another concurrent transaction $T_m$ that \emph{conflicts} (both access the same t-object and at least one writes) with $T_k$ in $E$.
+another concurrent transaction $T_m$ that \emph{conflicts} (both access the same t-object and at least one writes) with $T_k$ in $E$~\cite{tm-book}.
 %
 \begin{theorem}
 \label{th:impossibility}
@@ -42,18 +42,6 @@ For the proof, we construct an execution of a read-only slow-path transaction $T
 distinct t-reads of t-objects $X_1,\ldots , X_m$. We show inductively that for each 
 $i\in \{1,\ldots , m\}$; $m \in \mathbb{N}$, the $i^{\ms{th}}$ t-read must access $i-1$ distinct base objects
 during its execution. The (partial) steps in our execution are depicted in Figure~\ref{fig:indis}.
-
-\vspace{1mm}\noindent\textbf{How STM implementations avoid the lower bound.}
-NOrec~\cite{norec} is a progressive opaque STM that minimizes the average step-complexity resulting from incremental 
-validation of t-reads. Transactions read a global versioned lock at the start, and perform value-based validation
-during t-read operations \emph{iff} the global version has changed.
-TL2~\cite{DSS06} improves over NOrec by circumventing the lower bound
-of Theorem~\ref{th:impossibility}. Concretely, TL2 associates a global version with each t-object updated during
-a transaction and performs validation with $O$(1) complexity during t-reads by simply verifying if the version
-of the t-object is greater than the global version read at the start of the transaction. Technically,
-NOrec and algorithms in this paper provide a stronger definition of progressiveness: a transaction may abort
-only if there is a prefix in which it conflicts with another transaction and both are t-incomplete. TL2 on the other hand allows
-a transaction to abort due to a concurrent conflicting transaction.
 
 The proof of the lemma below is a simple extension of the analogous lemmas from \cite{hytm14disc}
 allowing direct trivial accesses inside fast-path transactions. This intuively follows from the fact that
@@ -113,9 +101,7 @@ Then, $T_1$ and $T_2$ do not contend on any base object in $E_1 \cdot E_2$.
 % to the assumption that $\mathcal{M}$ is progressive.   
 % \end{enumerate}
 % \end{proof}
-
-The formal proof of the theorem follows.
-
+%
 \begin{proof}
 We construct an execution of a progressive opaque HyTM in which every t-read performed by a read-only slow-path transaction
 must access linear (in the size of the read set) number of distinct base objects.
@@ -144,20 +130,20 @@ $\Read_{\phi}(X_i) \rightarrow nv_i$.
 %
 \end{claim}
 %
-% \begin{proof}
-% %
-% $\mathcal{M}$ has an execution of the form $\rho^i\cdot \pi^{i-1}$.
-% Since $\Dset(T_k) \cap \Dset(T_{i}) =\emptyset$ in $\rho^i\cdot \pi^{i-1}$,
-% by Lemma~\ref{lm:hytm}, transactions $T_{\phi}$ and $T_i$ do not contend
-% on any base object in execution $\rho^i\cdot \pi^{i-1}$.
-% Thus, $\rho^i\cdot \pi^{i-1}$ is also an execution of $\mathcal{M}$.
-% 
-% By opacity, $\rho^i\cdot \pi^{i-1} \cdot \alpha^i$ (Figure~\ref{sfig:inv-1}) is an execution
-% of $\mathcal{M}$ in which the t-read of $X_i$ performed by $T_{\phi}$ must return $nv_i$.
-% But $\rho^i \cdot \pi^{i-1} \cdot \alpha^i$ is indistinguishable to $T_{\phi}$ from
-% $\pi^{i-1}\cdot \rho^i \cdot \alpha^i$.
-% Thus, $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \rho^i \cdot \alpha^i$ (Figure~\ref{sfig:inv-2}).
-% \end{proof}
+\begin{proof}
+%
+$\mathcal{M}$ has an execution of the form $\rho^i\cdot \pi^{i-1}$.
+Since $\Dset(T_k) \cap \Dset(T_{i}) =\emptyset$ in $\rho^i\cdot \pi^{i-1}$,
+by Lemma~\ref{lm:hytm}, transactions $T_{\phi}$ and $T_i$ do not contend
+on any base object in execution $\rho^i\cdot \pi^{i-1}$.
+Thus, $\rho^i\cdot \pi^{i-1}$ is also an execution of $\mathcal{M}$.
+
+By opacity, $\rho^i\cdot \pi^{i-1} \cdot \alpha^i$ (Figure~\ref{sfig:inv-1}) is an execution
+of $\mathcal{M}$ in which the t-read of $X_i$ performed by $T_{\phi}$ must return $nv_i$.
+But $\rho^i \cdot \pi^{i-1} \cdot \alpha^i$ is indistinguishable to $T_{\phi}$ from
+$\pi^{i-1}\cdot \rho^i \cdot \alpha^i$.
+Thus, $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \rho^i \cdot \alpha^i$ (Figure~\ref{sfig:inv-2}).
+\end{proof}
 %
 For each $i\in \{2,\ldots, m\}$, $j\in \{1,2\}$ and $\ell \leq (i-1)$, 
 we now define an execution of the form  $\mathbb{E}_{j\ell}^{i}=\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$
@@ -179,34 +165,34 @@ For all $i\in \{2,\ldots, m\}$ and $\ell \leq (i-1)$, $\mathcal{M}$ has an execu
 $\mathbb{E}_{2\ell}^{i}$.
 \end{claim}
 %
-The proof of the above claim is immediate.
-% \begin{proof}
-% %
-% For all $i \in \{2,\ldots, m\}$, $\pi^{i-1}$
-% is an execution of $\mathcal{M}$.
-% By assumption of invisible reads, $T_{{\ell}}$ must be committed in $\pi^{i-1}\cdot \rho^{\ell}$
-% and $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \beta^{\ell}$.
-% By the same reasoning, since $T_i$ and $T_{\ell}$ do not have conflicting data sets,
-% $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$.
-% 
-% Since the configuration after $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ is quiescent,
-% $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ extended with $\Read_{\phi}(X_i)$
-% must return a matching response.
-% If $\Read_{\phi}(X_i) \rightarrow v_i$, then clearly $\mathbb{E}_{1}^{i}$
-% is an execution of $M$ with $T_{\phi}, T_{i-1}, T_i$ being a valid serialization
-% of transactions.
-% If $\Read_{\phi}(X_i) \rightarrow A_{\phi}$, the same serialization
-% justifies an opaque execution.
-% 
-% Suppose by contradiction that there exists an execution of $\mathcal{M}$ such that
-% $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ is extended with the complete execution
-% of $\Read_{\phi}(X_i) \rightarrow r$; $r \not\in \{A_{\phi},v\}$. 
-% The only plausible case to analyse is when $r=nv$.
-% Since $\Read_{\phi}(X_i)$ returns the value of $X_i$ updated by $T_i$, 
-% the only possible serialization for transactions is $T_{\ell}$, $T_i$, $T_{\phi}$; but $\Read_{\phi}(X_{\ell})$
-% performed by $T_k$ that returns the initial value $v$
-% is not legal in this serialization---contradiction.
-% \end{proof}
+%The proof of the above claim is immediate.
+\begin{proof}
+%
+For all $i \in \{2,\ldots, m\}$, $\pi^{i-1}$
+is an execution of $\mathcal{M}$.
+By assumption of invisible reads, $T_{{\ell}}$ must be committed in $\pi^{i-1}\cdot \rho^{\ell}$
+and $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \beta^{\ell}$.
+By the same reasoning, since $T_i$ and $T_{\ell}$ do not have conflicting data sets,
+$\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$.
+
+Since the configuration after $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ is quiescent,
+$\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ extended with $\Read_{\phi}(X_i)$
+must return a matching response.
+If $\Read_{\phi}(X_i) \rightarrow v_i$, then clearly $\mathbb{E}_{1}^{i}$
+is an execution of $M$ with $T_{\phi}, T_{i-1}, T_i$ being a valid serialization
+of transactions.
+If $\Read_{\phi}(X_i) \rightarrow A_{\phi}$, the same serialization
+justifies an opaque execution.
+
+Suppose by contradiction that there exists an execution of $\mathcal{M}$ such that
+$\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ is extended with the complete execution
+of $\Read_{\phi}(X_i) \rightarrow r$; $r \not\in \{A_{\phi},v\}$. 
+The only plausible case to analyse is when $r=nv$.
+Since $\Read_{\phi}(X_i)$ returns the value of $X_i$ updated by $T_i$, 
+the only possible serialization for transactions is $T_{\ell}$, $T_i$, $T_{\phi}$; but $\Read_{\phi}(X_{\ell})$
+performed by $T_k$ that returns the initial value $v$
+is not legal in this serialization---contradiction.
+\end{proof}
 %
 %
 We now show that for all $i\in \{2,\ldots, m\}$, $j\in \{1,2\}$ and $\ell \leq (i-1)$, slow-path transaction $T_{\phi}$ must access
@@ -237,3 +223,14 @@ while executing the $i^{th}$ t-read in $\pi_{j}^i$.
 \end{proof}
 %
 %
+\vspace{1mm}\noindent\textbf{How STM implementations avoid the lower bound.}
+NOrec~\cite{norec} is a progressive opaque STM that minimizes the average step-complexity resulting from incremental 
+validation of t-reads. Transactions read a global versioned lock at the start, and perform value-based validation
+during t-read operations \emph{iff} the global version has changed.
+TL2~\cite{DSS06} improves over NOrec by circumventing the lower bound
+of Theorem~\ref{th:impossibility}. Concretely, TL2 associates a global version with each t-object updated during
+a transaction and performs validation with $O$(1) complexity during t-reads by simply verifying if the version
+of the t-object is greater than the global version read at the start of the transaction. Technically,
+NOrec and algorithms in this paper provide a stronger definition of progressiveness: a transaction may abort
+only if there is a prefix in which it conflicts with another transaction and both are t-incomplete. TL2 on the other hand allows
+a transaction to abort due to a concurrent conflicting transaction.

@@ -49,7 +49,7 @@ $E|k$ denotes the subsequence of $E$ restricted to events of
 transaction $T_k$.
 % If $E|k$ is non-empty,
 % we say that $T_k$ \emph{participates} in $E$,
-% and let $\txns(E)$ denote the set of transactions that participate in $E$.
+Let $\txns(E)$ denote the set of transactions that participate in $E$.
 Two executions $E$ and $E'$
 are \emph{indistinguishable} to a set $\mathcal{T}$ of transactions, if
 for each transaction $T_k \in \mathcal{T}$, $E|k=E'|k$.
@@ -121,9 +121,10 @@ sets $\tau_i$ to $\emptyset$ and returns $\bot$. We refer to this event as a \em
 
 Any transaction $T_k \in \ms{txns}(E)$ that performs at least one cached access necessarily performs a \emph{cache-commit} primitive as the last event of $E|k$. 
 \trevor{why can't it be a user-requested abort? what if, e.g., you are implementing TLE, so you read a lock state and see that it is locked, and want to abort?}
+\sri{ofcourse they are covered in the model, but I dont understand why you rbing this up here?}
 A \emph{cache-commit} primitive issued by process $i$ with
 a valid $\tau_i$ does the following: for each base object $b$ such that $(b,v,\exclusive) \in \tau_i$, the value of $b$ in $C$ is updated to $v$. 
-\trevor{what is $C$? the configuration just before the \textit{cache-commit} primitive?}
+%\trevor{what is $C$? the configuration just before the \textit{cache-commit} primitive?}
 Finally, $\tau_i$ is set to $\emptyset$ and the primitive 
 returns $\textit{commit}$. 
 

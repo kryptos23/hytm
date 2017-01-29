@@ -10,21 +10,21 @@
 
 //\textbf{Code for fast-path transactions}
 start$_k$()
-    l := L //\medcom cached read
+    l := L 
     if l & 1 $\neq$ 0 then return $A_k$ //\vspace{-2mm}
 
 read$_k$(X$_j$)
-    ov$_j$ := v$_j$ //\medcom cached read
+    ov$_j$ := v$_j$ 
     return ov$_j$ //\vspace{-2mm}
 
 write$_k$(X$_j$, v)
-    or$_j$ := r$_j$ //\medcom uncached read
-    r$_j$ := or$_j$ + 2 //\medcom uncached write
-    v$_j$ := v //\medcom cached write
+    or$_j$ := r$_j$ 
+    r$_j$ := or$_j$ + 2 
+    v$_j$ := v 
     return OK //\vspace{-2mm}
 
 try$C_k$()
-    return commitCache$_i$() //\medcom returns $C_k$ or $A_k$
+    return commitCache$_i$() 
 \end{lstlisting}
 \end{minipage}
 \begin{minipage}{0.49\textwidth}
