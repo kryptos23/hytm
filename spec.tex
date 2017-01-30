@@ -61,46 +61,46 @@ at least one of $T_1$ or $T_2$ is a fast-path transaction.
 Then, $T_1$ and $T_2$ do not contend on any base object in $E_1 \cdot E_2$.
 \end{lemma}
 %
-% \begin{proof}
-% %
-% Suppose, by contradiction that $T_1$ and $T_2$ 
-% contend on the same base object in $E_1\cdot E_2$.
-% Let $p_1$ (and resp. $p_2$) be the process executing transaction $T_1$ (and resp. $T_2$).
-% 
-% If in $E_1$, $T_1$ performs a nontrivial event on a base object on which they contend, let $e_1$ be the last
-% event in $E_1$ in which $T_1$ performs such an event to some base object $b$ and $e_2$, the first event
-% in $E_2$ that accesses $b$ (note that by assumption, $e_1$ is a cached access).
-% Otherwise, $T_i$ only performs trivial events in $E_1$ to base objects (some of which may be uncached) on which it contends with $T_{2}$ in $E_1\cdot E_2$:
-% let $e_2$ be the first event in $E_2$ in which $E_2$ performs a nontrivial event to some base object $b$
-% on which they contend and $e_1$, the last event of $E_1$ in $T_1$ that accesses $b$ (possibly uncached).
-% 
-% Let $E_1'$ (and resp. $E_2'$) be the longest prefix of $E_1$ (and resp. $E_2$) that does not include
-% $e_1$ (and resp. $e_2$).
-% Since before accessing $b$, the execution is step contention-free for $T_1$, $E \cdot
-% E_1'\cdot E_2'$ is an execution of $\mathcal{M}$.
-% By assumption of lemma, $T_1$ and $T_2$ do not conflict in $E_1'\cdot E_2'$.
-% By construction, $E_1 \cdot E_2'$ is indistinguishable to $T_2$ from $E_1' \cdot E_2'$.
-% Hence, $T_1$ and $T_{2}$ are poised to apply contending events $e_1$ and $e_2$ on $b$ in the execution
-% $\tilde E=E_1' \cdot E_2'$.
-% 
-% We now consider two cases:
-% \begin{enumerate}
-% \item 
-% ($e_1$ is a nontrivial event)
-% After $\tilde E\cdot e_1$, $b$ is contained in the tracking set of process
-% $p_1$ in exclusive mode and in the extension $\tilde E\cdot e_1 \cdot e_2$, we have that
-% $\tau_1$ is invalidated. Thus, by Observation~\ref{ob:traborts}, transaction $T_1$ must return $A_1$ 
-% in any extension of $E\cdot e_1\cdot e_2$---a contradiction
-% to the assumption that $\mathcal{M}$ is progressive.   
-% \item
-% ($e_1$ is a trivial event)
-% Recall that $e_1$ may be potentially uncached.
-% Consider the execution $\tilde E\cdot e_2$ following which $b$ is contained in the tracking set of process
-% $p_{2}$ in exclusive mode. Clearly, we have an extension $\tilde E\cdot e_2 \cdot e_1$ in which
-% $\tau_{2}$ is invalidated. Thus transaction $T_{2}$ must return $A_{2}$ in any extension of $E\cdot e_2\cdot e_1$---a contradiction
-% to the assumption that $\mathcal{M}$ is progressive.   
-% \end{enumerate}
-% \end{proof}
+\begin{proof}
+%
+Suppose, by contradiction that $T_1$ and $T_2$ 
+contend on the same base object in $E_1\cdot E_2$.
+Let $p_1$ (and resp. $p_2$) be the process executing transaction $T_1$ (and resp. $T_2$).
+
+If in $E_1$, $T_1$ performs a nontrivial event on a base object on which they contend, let $e_1$ be the last
+event in $E_1$ in which $T_1$ performs such an event to some base object $b$ and $e_2$, the first event
+in $E_2$ that accesses $b$ (note that by assumption, $e_1$ is a cached access).
+Otherwise, $T_i$ only performs trivial events in $E_1$ to base objects (some of which may be uncached) on which it contends with $T_{2}$ in $E_1\cdot E_2$:
+let $e_2$ be the first event in $E_2$ in which $E_2$ performs a nontrivial event to some base object $b$
+on which they contend and $e_1$, the last event of $E_1$ in $T_1$ that accesses $b$ (possibly uncached).
+
+Let $E_1'$ (and resp. $E_2'$) be the longest prefix of $E_1$ (and resp. $E_2$) that does not include
+$e_1$ (and resp. $e_2$).
+Since before accessing $b$, the execution is step contention-free for $T_1$, $E \cdot
+E_1'\cdot E_2'$ is an execution of $\mathcal{M}$.
+By assumption of lemma, $T_1$ and $T_2$ do not conflict in $E_1'\cdot E_2'$.
+By construction, $E_1 \cdot E_2'$ is indistinguishable to $T_2$ from $E_1' \cdot E_2'$.
+Hence, $T_1$ and $T_{2}$ are poised to apply contending events $e_1$ and $e_2$ on $b$ in the execution
+$\tilde E=E_1' \cdot E_2'$.
+
+We now consider two cases:
+\begin{enumerate}
+\item 
+($e_1$ is a nontrivial event)
+After $\tilde E\cdot e_1$, $b$ is contained in the tracking set of process
+$p_1$ in exclusive mode and in the extension $\tilde E\cdot e_1 \cdot e_2$, we have that
+$\tau_1$ is invalidated. Thus, by Observation~\ref{ob:traborts}, transaction $T_1$ must return $A_1$ 
+in any extension of $E\cdot e_1\cdot e_2$---a contradiction
+to the assumption that $\mathcal{M}$ is progressive.   
+\item
+($e_1$ is a trivial event)
+Recall that $e_1$ may be potentially uncached.
+Consider the execution $\tilde E\cdot e_2$ following which $b$ is contained in the tracking set of process
+$p_{2}$ in exclusive mode. Clearly, we have an extension $\tilde E\cdot e_2 \cdot e_1$ in which
+$\tau_{2}$ is invalidated. Thus transaction $T_{2}$ must return $A_{2}$ in any extension of $E\cdot e_2\cdot e_1$---a contradiction
+to the assumption that $\mathcal{M}$ is progressive.   
+\end{enumerate}
+\end{proof}
 %
 \begin{proof}
 We construct an execution of a progressive opaque HyTM in which every t-read performed by a read-only slow-path transaction
@@ -222,6 +222,12 @@ Thus, for all $i \in \{2,\ldots, m\}$, slow-path transaction $T_{\phi}$ must per
 while executing the $i^{th}$ t-read in $\pi_{j}^i$.
 \end{proof}
 %
+\begin{corollary}
+\label{cr:dap}
+%
+
+\end{corollary}
+
 %
 \vspace{1mm}\noindent\textbf{How STM implementations avoid the lower bound.}
 NOrec~\cite{norec} is a progressive opaque STM that minimizes the average step-complexity resulting from incremental 

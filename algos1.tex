@@ -1,7 +1,4 @@
 %!TEX root = htm.tex
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\input{prog-fp-sp}
-%
 \subsection{Instrumentation-optimal progressive HyTMs }
 \label{sec:hytm1}
 %
@@ -45,9 +42,9 @@ in IBM Power 8) and the resulting implementation would still be opaque.
 Algorithm~\ref{alg:inswrite2} does not incur the linear instrumentation cost
 on the fast-path reading transactions (as in Algorithm~\ref{alg:inswrite}, but provides progressiveness only
 for slow-path reading transactions. The instrumentation cost on fast-path t-reads is avoided by using a global single-bit lock $L$ that serializes all updating slow-path transactions.%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\input{prog-fp}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{prog-fp-sp}
+%
 %
 \subsection{Minimizing the cost for incremental validation in opaque HyTMs}
 \label{sec:middlepath}
@@ -89,6 +86,7 @@ The code for the fast-path and the slow-path is identical to $\mathcal{M}$.
 Assuming the hardware transactions do not perform any direct accesses, opacity is immediate.
 %
 %
-%\input{middle}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{prog-fp}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
