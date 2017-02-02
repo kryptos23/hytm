@@ -120,8 +120,8 @@ sets $\tau_i$ to $\emptyset$ and returns $\bot$. We refer to this event as a \em
 % Since modelling these aborts will not affect our results, except make for a more cumbersome presentation, we only consider capacity aborts in this paper. 
 
 Any transaction $T_k \in \ms{txns}(E)$ that performs at least one cached access necessarily performs a \emph{cache-commit} primitive as the last event of $E|k$. 
-\trevor{why can't it be a user-requested abort? what if, e.g., you are implementing TLE, so you read a lock state and see that it is locked, and want to abort?}
-\sri{ofcourse they are covered in the model, but I dont understand why you rbing this up here?}
+% \trevor{why can't it be a user-requested abort? what if, e.g., you are implementing TLE, so you read a lock state and see that it is locked, and want to abort?}
+% \sri{ofcourse they are covered in the model, but I dont understand why you rbing this up here?}
 A \emph{cache-commit} primitive issued by process $i$ with
 a valid $\tau_i$ does the following: for each base object $b$ such that $(b,v,\exclusive) \in \tau_i$, the value of $b$ in $C$ is updated to $v$. 
 %\trevor{what is $C$? the configuration just before the \textit{cache-commit} primitive?}
@@ -140,12 +140,14 @@ followed by a \emph{cache-commit} primitive.
 
 We assume that a fast-path transaction $T_k$ returns $A_k$
 as soon an underlying cached primitive or \emph{cache-commit} returns $\bot$.
-This implies the following observation:
+This immediately implies the following:
 %
 \begin{observation}
 \label{ob:traborts}
 %
-Let $T_k \in \ms{txns}(E)$ be any t-incomplete transaction executed by process $i$, where $(b,v,\exclusive)\in\tau_i$ (resp., $(b,v,\shared)\in\tau_i$) after execution $E$, and $e$ be any event (resp., nontrivial event) that some process $j\neq i$ is poised to apply after $E$.
+Let $T_k \in \ms{txns}(E)$ be any t-incomplete transaction executed by process $i$, 
+where $(b,v,\exclusive)\in\tau_i$ (resp., $(b,v,\shared)\in\tau_i$) after execution $E$, and $e$ be any event (resp., nontrivial event) 
+that some process $j\neq i$ is poised to apply after $E$.
 The next event of $T_k$ in any extension of $E\cdot e$ is $A_k$.
 %
 %For any t-incomplete transaction $T_k \in \ms{txns}(E)$ executed by process $i$ and $(b,v,\exclusive)\in\tau_i$ (and resp. $(b,v,\shared)\in\tau_i$) after execution $E$
