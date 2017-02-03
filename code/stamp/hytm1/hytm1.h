@@ -85,6 +85,7 @@ intptr_t TxLoad_stm(void* Self, volatile intptr_t* addr);
 void TxStore_htm(void* Self, volatile intptr_t* addr, intptr_t value);
 void TxStore_stm(void* Self, volatile intptr_t* addr, intptr_t value);
 
+void     TxClearCounters();
 void     TxOnce        ();
 void     TxShutdown    ();
 

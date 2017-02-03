@@ -107,7 +107,7 @@ template <class MemMgmt>
 void thread_prefill(void *unused) {
     int tid = thread_getId();
     TRACE COUTATOMICTID("prefill thread started"<<endl);
-    bindThread(tid, PHYSICAL_PROCESSORS);
+    binding_bindThread(tid, PHYSICAL_PROCESSORS);
     TM_THREAD_ENTER();
     PRCU_REGISTER(tid);
     Random *rng = &rngs[tid*PREFETCH_SIZE_WORDS];
@@ -221,7 +221,7 @@ void prefill(DS_DECLARATION * tree) {
 template <class MemMgmt>
 void thread_timed(void *unused) {
     int tid = thread_getId();
-    bindThread(tid, PHYSICAL_PROCESSORS);
+    binding_bindThread(tid, PHYSICAL_PROCESSORS);
     __sync_synchronize();
     TM_THREAD_ENTER();
     PRCU_REGISTER(tid);
@@ -586,7 +586,6 @@ void performExperiment() {
 }
 
 int main(int argc, char** argv) {
-    configureBindingPolicy(PHYSICAL_PROCESSORS);
     PREFILL = false;
     MILLIS_TO_RUN = -1;
     MAX_FAST_HTM_RETRIES = 10;
@@ -623,10 +622,8 @@ int main(int argc, char** argv) {
             MILLIS_TO_RUN = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-p") == 0) {
             PREFILL = true;
-//        } else if (strcmp(argv[i], "-htmfast") == 0) {
-//            MAX_FAST_HTM_RETRIES = atoi(argv[++i]);
-//        } else if (strcmp(argv[i], "-htmslow") == 0) {
-//            MAX_SLOW_HTM_RETRIES = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "-bind") == 0) { // e.g., "-bind 1,2,3,8-11,4-7,0"
+            binding_parseCustom(argv[++i]); // e.g., "1,2,3,8-11,4-7,0"
         } else if (strcmp(argv[i], "-print") == 0) {
             PRINT_TREE = true;
         } else if (strcmp(argv[i], "-trace") == 0) {
@@ -640,6 +637,8 @@ int main(int argc, char** argv) {
             exit(1);
         }
     }
+    binding_configurePolicy(PHYSICAL_PROCESSORS);
+
     TOTAL_THREADS = WORK_THREADS + RQ_THREADS;
 //    PRINTS(P1NAME);
 //    PRINTS(P2NAME);
@@ -667,11 +666,24 @@ int main(int argc, char** argv) {
     PRINTS(POOL_TYPE);
     PRINTI(PRINT_TREE);
     PRINTI(THREAD_BINDING);
+    
 #ifdef RECORD_ABORT_ADDRESSES
     cout<<"RECORD_ABORT_ADDRESSES=1"<<endl;
 #else
     cout<<"RECORD_ABORT_ADDRESSES=0"<<endl;
 #endif
+    
+    // print actual thread bindings
+    cout<<"ACTUAL_THREAD_BINDINGS=";
+    for (int i=0;i<TOTAL_THREADS;++i) {
+        cout<<(i?",":"")<<binding_getActualBinding(i, PHYSICAL_PROCESSORS);
+    }
+    cout<<endl;
+    
+    if (!binding_isInjectiveMapping(TOTAL_THREADS, PHYSICAL_PROCESSORS)) {
+        cout<<"ERROR: thread binding maps more than one thread to a single logical processor"<<endl;
+        exit(-1);
+    }
     
     prefillSize = new debugCounter(TOTAL_THREADS);
     keysum = new debugCounter(TOTAL_THREADS);

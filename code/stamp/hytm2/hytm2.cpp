@@ -291,7 +291,7 @@ std::ostream& operator<<(std::ostream& out, const vLock& obj) {
  * Consider 4M alignment for LockTab so we can use large-page support.
  * Alternately, we could mmap() the region with anonymous DZF pages.
  */
-#define _TABSZ  (1<<3)
+#define _TABSZ  (1<<20) /*(1<<3)*/
 #define STACK_SPACE_LOCKTAB
 #ifdef STACK_SPACE_LOCKTAB
 static vLock LockTab[_TABSZ];

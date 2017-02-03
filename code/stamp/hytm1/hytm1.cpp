@@ -916,6 +916,13 @@ void TxOnce() {
     printf("%s %s\n", TM_NAME, "system ready\n");
 }
 
+void TxClearCounters() {
+    printf("Printing counters for %s and then clearing them in preparation for the real trial.\n", TM_NAME);
+    countersPrint(c_counters);
+    countersClear(c_counters);
+    printf("Counters cleared.\n");
+}
+
 void TxShutdown() {
     printf("%s system shutdown:\n", //  Starts=%li CommitsHW=%li AbortsHW=%li CommitsSW=%li AbortsSW=%li\n",
                 TM_NAME //,
