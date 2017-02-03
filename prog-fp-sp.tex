@@ -34,8 +34,9 @@ Function: acquire(Q)
     for each X$_j$ $\in Q$	
 	if r$_j.\lit{isSet}()$  // \medcom CAS/LLSC \label{line:acq1}
 	    Lset(T$_k$) := Lset(T$_k$) $\cup$ {X$_j$}
-	release(Lset(T$_k$))
-	return false
+	else
+	    release(Lset(T$_k$))
+	    return false
     return true
 \end{lstlisting}
 \end{minipage}
@@ -77,9 +78,7 @@ Function: validate()
 \end{minipage}
 \vspace{-2mm}
 \end{algorithm*}
-
-
-
+%
 % \begin{algorithm*}[!ht]
 % \caption{Progressive fast-path and slow-path opaque HyTM implementation; code for transaction $T_k$}
 % \label{alg:inswrite}

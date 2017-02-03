@@ -247,4 +247,6 @@ concurrently contend on the same base object
 only if their data 
 sets are connected in the \emph{conflict graph}, capturing 
 data-set overlaps among all concurrent transactions~\cite{AHM09}. It is well known that weak DAP STMs with invisible reads must perform incremental validation even if the required TM-progress condition requires
-transactions to commit only in the absence of any concurrent transaction~\cite{tm-book,prog15-pact}. For example, DSTM~\cite{HLM+03} ensures progressiveness
+transactions to commit only in the absence of any concurrent transaction~\cite{tm-book,prog15-pact}. For example, DSTM~\cite{HLM+03} is a weak DAP STM that is progressive and consequently incurs the validation
+complexity. On the other hand, TL2 and NOrec are not weak DAP since they employ a global versioned lock that mitigates the cost of incremental validation, but this creates allows two transactions accessing
+disjoint data sets to concurrently contend on the same memory location. Indeed, this inspires the proof of Theorem~\ref{th:impossibility}. 
