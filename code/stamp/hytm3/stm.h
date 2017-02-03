@@ -59,7 +59,7 @@ typedef struct Thread_void {
 #  define STM_JMPBUF_T                  sigjmp_buf
 #  define STM_JMPBUF                    buf
 
-
+#define STM_CLEAR_COUNTERS()            TxClearCounters()
 #define STM_VALID()                     (1)
 #define STM_RESTART()                   TxAbort(STM_SELF)
 

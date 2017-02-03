@@ -893,11 +893,21 @@ int TxCommit(void* _Self) {
     // hardware path
     } else {
         if (!Self->IsRO) {
+#ifdef USE_SUSPEND_RESUME
+            XSUSPEND();
+            int seq = __sync_fetch_and_add(&gsl, 2);
+            if (seq & 1) {
+                XRESUME();
+                XABORT(0); /* abort because gsl was held */
+            }
+            XRESUME();
+#else
             int seq = gsl;
             if (seq & 1) {
-                TxAbort(Self);
+                XABORT(0); /* abort because gsl was held */ // TxAbort(Self);
             }
             gsl = seq + 2;
+#endif
         }
         XEND();
         ++Self->CommitsHW;

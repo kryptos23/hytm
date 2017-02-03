@@ -88,6 +88,7 @@ void initSighandler() {
     sigaction(SIGUSR1, &sa, NULL);
 }
 
+/** used only for debugging **/
 void acquireLock(volatile int *lock) {
     while (1) {
         if (*lock) {
@@ -102,6 +103,7 @@ void acquireLock(volatile int *lock) {
     }
 }
 
+/** used only for debugging **/
 void releaseLock(volatile int *lock) {
     LWSYNC; // prevent unlock from being moved before instructions in the critical section (on power)
     *lock = 0;
@@ -128,24 +130,24 @@ void releaseLock(volatile int *lock) {
 class Thread;
 
 #define LOCKBIT 1
-class vLockSnapshot {
-public:
-//private:
-    uint64_t lockstate;
-public:
-    __INLINE__ vLockSnapshot() {}
-    __INLINE__ vLockSnapshot(uint64_t _lockstate) {
-        lockstate = _lockstate;
-    }
-    __INLINE__ bool isLocked() const {
-        return lockstate & LOCKBIT;
-    }
-    __INLINE__ uint64_t version() const {
-//        cout<<"LOCKSTATE="<<lockstate<<" ~LOCKBIT="<<(~LOCKBIT)<<" VERSION="<<(lockstate & (~LOCKBIT))<<endl;
-        return lockstate & (~LOCKBIT);
-    }
-    friend std::ostream& operator<<(std::ostream &out, const vLockSnapshot &obj);
-};
+//class vLockSnapshot {
+//public:
+////private:
+//    uint64_t lockstate;
+//public:
+//    __INLINE__ vLockSnapshot() {}
+//    __INLINE__ vLockSnapshot(uint64_t _lockstate) {
+//        lockstate = _lockstate;
+//    }
+//    __INLINE__ bool isLocked() const {
+//        return lockstate & LOCKBIT;
+//    }
+//    __INLINE__ uint64_t version() const {
+////        cout<<"LOCKSTATE="<<lockstate<<" ~LOCKBIT="<<(~LOCKBIT)<<" VERSION="<<(lockstate & (~LOCKBIT))<<endl;
+//        return lockstate & (~LOCKBIT);
+//    }
+//    friend std::ostream& operator<<(std::ostream &out, const vLockSnapshot &obj);
+//};
 
 class vLock {
     volatile uint64_t lock; // (Version,LOCKBIT)
@@ -275,11 +277,11 @@ string renamePointer(const void* p) {
     }
 }
 
-std::ostream& operator<<(std::ostream& out, const vLockSnapshot& obj) {
-    return out<<"ver="<<obj.version()
-                <<",locked="<<obj.isLocked()
-                ;//<<"> (raw="<<obj.lockstate<<")";
-}
+//std::ostream& operator<<(std::ostream& out, const vLockSnapshot& obj) {
+//    return out<<"ver="<<obj.version()
+//                <<",locked="<<obj.isLocked()
+//                ;//<<"> (raw="<<obj.lockstate<<")";
+//}
 
 std::ostream& operator<<(std::ostream& out, const vLock& obj) {
     return out<<"<"<<obj.getSnapshot()<<",owner="<<(obj.owner?((Thread_void*) obj.owner)->UniqID:-1)<<">@"<<renamePointer(&obj);
@@ -289,7 +291,7 @@ std::ostream& operator<<(std::ostream& out, const vLock& obj) {
  * Consider 4M alignment for LockTab so we can use large-page support.
  * Alternately, we could mmap() the region with anonymous DZF pages.
  */
-#define _TABSZ  (1<<20)
+#define _TABSZ  (1<<3)
 #define STACK_SPACE_LOCKTAB
 #ifdef STACK_SPACE_LOCKTAB
 static vLock LockTab[_TABSZ];
@@ -325,7 +327,7 @@ static vLockSpace *LockTab;
  */
 #define PSSHIFT ((sizeof(void*) == 4) ? 2 : 3)
 #define PSLOCK(a) ((vLock*) (LockTab + (((UNS(a)+COLOR) >> PSSHIFT) & TABMSK))) /* PS1M */
-//#define PSLOCK(a) ({ uintptr_t ___p = (UNS((a)) >> PSSHIFT); ___p ^= ___p >> 16; ___p *= 0x85ebca6b; ___p ^= ___p >> 13; ___p *= 0xc2b2ae35; ___p ^= ___p >> 16; ((vLock*) (LockTab + (___p & TABMSK))); })
+//#define PSLOCK(a) ({ uintptr_t ___p = (UNS((a)) >> PSSHIFT); ___p ^= ___p >> 16; ___p *= 0x85ebca6b; ___p ^= ___p >> 13; ___p *= 0xc2b2ae35; ___p ^= ___p >> 16; ((vLock*) (LockTab + (___p & TABMSK))); }) /* scatter addr->lock mapping with murmurhash3 */
 
 
 
@@ -434,44 +436,6 @@ std::ostream& operator<<(std::ostream& out, const AVPair& obj) {
             //<<" rdv="<<obj.rdv<<"@"<<(uintptr_t)(long*)&obj
             <<"]@"<<renamePointer(&obj);
 }
-
-//template <typename T>
-//inline void assignValue(AVPair* e, T value);
-//template <>
-//inline void assignValue<long>(AVPair* e, long value) {
-//    e->value.l = value;
-//}
-//template <>
-//inline void assignValue<float>(AVPair* e, float value) {
-//    e->value.f[0] = value;
-//}
-//
-//template <typename T>
-//inline void replayStore(AVPair* e);
-//template <>
-//inline void replayStore<long>(AVPair* e) {
-//    *((long*)e->addr) = e->value.l;
-//}
-//template <>
-//inline void replayStore<float>(AVPair* e) {
-//    *((float*)e->addr) = e->value.f[0];
-//}
-//
-//template <typename T>
-//inline T unpackValue(AVPair* e);
-//template <>
-//inline long unpackValue<long>(AVPair* e) {
-//    return e->value.l;
-//}
-//template <>
-//inline float unpackValue<float>(AVPair* e) {
-//    return e->value.f[0];
-//}
-//
-//class Log;
-//
-//template <typename T>
-//inline Log * getTypedLog(TypeLogs * typelogs);
 
 enum hytm_config {
     INIT_WRSET_NUM_ENTRY = 1024,
@@ -847,7 +811,6 @@ private:
         e->value = value;
         e->LockFor = _LockFor;
         e->rdv = _rdv;
-//        e->hashTableEntry = NULL;
         VALIDATE ++currsz;
         return e;
     }
@@ -956,13 +919,7 @@ bool lockAll(Thread* Self, List* lockAVPairs) {
             uint64_t encounterTime = getMinLockSnap(curr, readLogEntry);
             assert(encounterTime != 0x7fffffffffffffff);
             //assert(encounterTime);
-            DEBUG2 aout("thread "<<Self->UniqID<<" trying to acquire lock "
-                        <<*curr->LockFor
-                        <<" with old-ver "<<(encounterTime>>1)
-                        //<<" (and curr-ver "<<currsnap.version()<<" raw="<<currsnap.lockstate<<" raw&(~1)="<<(currsnap.lockstate&(~1))<<")"
-                        //<<" to protect val "<<(*((T*) curr->addr))
-                        //<<" (and write new-val "<<unpackValue<T>(curr)
-                        <<")");
+            DEBUG2 aout("thread "<<Self->UniqID<<" trying to acquire lock "<<*curr->LockFor<<" with old-ver "<<(encounterTime>>1)<<")");
 
             // try to acquire locks
             // (and fail if their versions have changed since encounterTime)
@@ -1181,7 +1138,6 @@ int TxCommit(void* _Self) {
     // hardware path
     } else {
         XEND();
-//        printf("COMMITTED IN HARDWARE\n");
         ++Self->CommitsHW;
         counterInc(c_counters->htmCommit[PATH_FAST_HTM], Self->UniqID);
     }
@@ -1198,8 +1154,8 @@ success:
 void TxAbort(void* _Self) {
     Thread* Self = (Thread*) _Self;
     
-//    // software path
-//    if (Self->isFallback) {
+    // software path
+    if (Self->isFallback) {
         SOFTWARE_BARRIER; // prevent compiler reordering of speculative execution before isFallback check in htm (for power)
 
         ++Self->Retries;
@@ -1230,10 +1186,10 @@ void TxAbort(void* _Self) {
         SIGLONGJMP(*Self->envPtr, 1);
         ASSERT(0);
         
-//    // hardware path
-//    } else {
-//        XABORT(0);
-//    }
+    // hardware path
+    } else {
+        XABORT(0);
+    }
 }
 
 intptr_t TxLoad_stm(void* _Self, volatile intptr_t* addr) {

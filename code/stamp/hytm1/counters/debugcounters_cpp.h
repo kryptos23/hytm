@@ -19,28 +19,34 @@ using namespace std;
 
 string cpp_getAutomaticAbortNames(const int compressedStatus) {
     stringstream ss;
-//    if (compressedStatus & (1<<BIT_USER)) ss<<" explicit";
+#if defined(__powerpc64__) || defined(__ppc64__) || defined(__PPC64__)
+    if (compressedStatus & (1<<BIT_CAPACITY)) ss<<" capacity";
+    if (compressedStatus & (1<<BIT_CONFLICT)) ss<<" conflict";
+    if (compressedStatus & (1<<BIT_PERSISTENT)) ss<<" persistent";
+    if (compressedStatus & (1<<BIT_ILLEGAL)) ss<<" illegal";
+    if (compressedStatus & (1<<BIT_OTHER)) ss<<" other";
+    if (compressedStatus & (1<<BIT_RESERVED)) ss<<" reserved";
+    if (compressedStatus & (1<<BIT_PRIVILEGED)) ss<<" privileged";
+#else
+    if (compressedStatus & (1<<BIT_USER)) ss<<" explicit";
     if (compressedStatus & (1<<BIT_CAPACITY)) ss<<" capacity";
     if (compressedStatus & (1<<BIT_CONFLICT)) ss<<" conflict";
     if (compressedStatus & (1<<BIT_RETRY)) ss<<" retry";
-    if (compressedStatus & (1<<BIT_ILLEGAL)) ss<<" illegal";
-    if (compressedStatus & (1<<BIT_OTHER)) ss<<" other(nest,impl,supended)";
-    if (compressedStatus & (1<<BIT_RESERVED)) ss<<" reserved";
-    if (compressedStatus & (1<<BIT_PRIVILEGED)) ss<<" privileged";
+#endif
     return ss.str();
 //    return "";
 }
 
 string cpp_getExplicitAbortName(const int compressedStatus) {
-//    int explicitCode = cpp_getCompressedStatusExplicitAbortCode(compressedStatus);
-//    if (explicitCode == ABORT_PROCESS_ON_FALLBACK) return "process_on_fallback";
-//    if (explicitCode >= 42) return "ASSERTION_FAILED";
-//    return "";
-    int explicitCode = (compressedStatus>>BIT_USER_NAME_START);
     stringstream ss;
+#if defined(__powerpc64__) || defined(__ppc64__) || defined(__PPC64__)
+    int explicitCode = (compressedStatus>>BIT_USER_NAME_START);
     if (compressedStatus & (1<<BIT_USER)) {
         ss<<"explicit("<<explicitCode<<")";
     }
+#else
+    
+#endif
     return ss.str();
 }
 

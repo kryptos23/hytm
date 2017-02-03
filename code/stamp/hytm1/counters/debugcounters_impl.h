@@ -18,6 +18,7 @@ extern "C" {
 #ifdef RECORD_ABORT_ADDRESSES
 #define MAX_ABORT_ADDR (1<<24)
 int numAbortAddr = 0; // for thread 0
+int numAbortAddrExact = 0; // for thread 0
 long abortAddr[MAX_ABORT_ADDR];
 #endif
 
@@ -63,11 +64,12 @@ void registerHTMAbort(struct c_debugCounters *cs, const int tid, const XBEGIN_AR
 
 #       define getbit(bit) ((texasr>>(bit))&1)
         unsigned long texasr = __builtin_get_texasr();
+        unsigned long tfiah = __builtin_get_tfiar();
         
 #       define BIT_USER 1
 #       define BIT_CAPACITY 2
 #       define BIT_CONFLICT 3
-#       define BIT_RETRY 4
+#       define BIT_PERSISTENT 4
 #       define BIT_ILLEGAL 5
 #       define BIT_OTHER 6
 #       define BIT_RESERVED 7
@@ -78,7 +80,7 @@ void registerHTMAbort(struct c_debugCounters *cs, const int tid, const XBEGIN_AR
         s = (getbit(P8_BIT_EXPLICIT) << BIT_USER)
           | (getbit(P8_BIT_FOOTPRINT) << BIT_CAPACITY)
           | ((getbit(P8_BIT_CONFLICT_SELF) | getbit(P8_BIT_CONFLICT_NONTX) | getbit(P8_BIT_CONFLICT_TX) | getbit(P8_BIT_CONFLICT_TLBINVAL) | getbit(P8_BIT_CONFLICT_INSTRFETCH)) << BIT_CONFLICT)
-          | ((getbit(P8_BIT_PERSISTENT) == 0) << BIT_RETRY)
+          | (getbit(P8_BIT_PERSISTENT) << BIT_PERSISTENT)
           | (getbit(P8_BIT_DISALLOWED) << BIT_ILLEGAL)
           | ((getbit(P8_BIT_NESTING) | getbit(P8_BIT_IMPL_SPECIFIC) | getbit(P8_BIT_SUSPENDED)) << BIT_OTHER)
           | (((texasr & P8_MASK_RESERVED) > 0) << BIT_RESERVED)
@@ -87,10 +89,12 @@ void registerHTMAbort(struct c_debugCounters *cs, const int tid, const XBEGIN_AR
             s |= (((texasr&P8_MASK_ABORT_CODE) & /* further limit abort code size: */ ((1<<NUM_USER_NAME_BITS)-1)) << (BIT_USER_NAME_START));
         }
 #       ifdef RECORD_ABORT_ADDRESSES
-        if (tid == 0) {
-            long a = X_ABORT_FAILURE_ADDRESS(arg);
-            if (a && numAbortAddr < MAX_ABORT_ADDR) {
-                abortAddr[numAbortAddr++] = a;
+        if (tid == 0 && (texasr & P8_MASK_RESERVED)) {
+            //long a = X_ABORT_FAILURE_ADDRESS(arg);
+            if (/*a &&*/ numAbortAddr < MAX_ABORT_ADDR) {
+                //abortAddr[numAbortAddr++] = a;
+                abortAddr[numAbortAddr++] = tfiah;
+                if (getbit(P8_BIT_ABORTADDR_EXACT)) ++numAbortAddrExact;
             }
         }
 #       endif
@@ -187,6 +191,7 @@ void countersDestroy(struct c_debugCounters *cs) {
     }
     fclose(pFile);
     cout<<"NUM_ABORT_ADDRESSES="<<numAbortAddr<<endl;
+    cout<<"NUM_ABORT_ADDRESSES_EXACT="<<numAbortAddrExact<<endl;
 #endif
 }
 
