@@ -194,11 +194,13 @@ performed by $T_k$ that returns the initial value $v$
 is not legal in this serialization---contradiction.
 \end{proof}
 %
+\begin{claim}
 %
-We now show that for all $i\in \{2,\ldots, m\}$, $j\in \{1,2\}$ and $\ell \leq (i-1)$, slow-path transaction $T_{\phi}$ must access
+For all $i\in \{2,\ldots, m\}$, $j\in \{1,2\}$ and $\ell \leq (i-1)$, slow-path transaction $T_{\phi}$ must access
 $(i-1)$ different base objects during the execution of $\Read_{\phi}(X_i)$ in the execution
 $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$.
-
+\end{claim}
+\begin{proof}
 Consider the $(i-1)$ different executions: 
 $\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot \rho^i$ (cf. Figure~\ref{sfig:inv-3}).
 For all $\ell, \ell' \leq (i-1)$;$\ell' \neq \ell$, 
@@ -222,21 +224,27 @@ Thus, for all $i \in \{2,\ldots, m\}$, slow-path transaction $T_{\phi}$ must per
 while executing the $i^{th}$ t-read in $\pi_{j}^i$.
 \end{proof}
 %
-\begin{corollary}
-\label{cr:dap}
+\end{proof}
+%
 %
 
-\end{corollary}
-
-%
-\vspace{1mm}\noindent\textbf{How STM implementations avoid the lower bound.}
+\vspace{1mm}\noindent\textbf{How STM implementations mitigate the lower bound cost.}
 NOrec~\cite{norec} is a progressive opaque STM that minimizes the average step-complexity resulting from incremental 
 validation of t-reads. Transactions read a global versioned lock at the start, and perform value-based validation
 during t-read operations \emph{iff} the global version has changed.
 TL2~\cite{DSS06} improves over NOrec by circumventing the lower bound
 of Theorem~\ref{th:impossibility}. Concretely, TL2 associates a global version with each t-object updated during
-a transaction and performs validation with $O$(1) complexity during t-reads by simply verifying if the version
+a transaction and performs validation with O(1) complexity during t-reads by simply verifying if the version
 of the t-object is greater than the global version read at the start of the transaction. Technically,
 NOrec and algorithms in this paper provide a stronger definition of progressiveness: a transaction may abort
 only if there is a prefix in which it conflicts with another transaction and both are t-incomplete. TL2 on the other hand allows
 a transaction to abort due to a concurrent conflicting transaction.
+
+\vspace{1mm}\noindent\textbf{Implications for disjoint-access parallelism in HyTM.}
+The property of disjoint-access parallelism (DAP), in its \emph{weakest} form, ensures that two transactions %$T_1$ and $T_2$
+concurrently contend on the same base object 
+%(both access the base object and at least one updates it) 
+only if their data 
+sets are connected in the \emph{conflict graph}, capturing 
+data-set overlaps among all concurrent transactions~\cite{AHM09}. It is well known that weak DAP STMs with invisible reads must perform incremental validation even if the required TM-progress condition requires
+transactions to commit only in the absence of any concurrent transaction~\cite{tm-book,prog15-pact}. For example, DSTM~\cite{HLM+03} ensures progressiveness

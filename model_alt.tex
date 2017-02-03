@@ -53,7 +53,6 @@ Let $\txns(E)$ denote the set of transactions that participate in $E$.
 Two executions $E$ and $E'$
 are \emph{indistinguishable} to a set $\mathcal{T}$ of transactions, if
 for each transaction $T_k \in \mathcal{T}$, $E|k=E'|k$.
-%\trevor{where is $\txns(E)$ defined?}
 A transaction $T_k\in \txns(E)$ is \emph{complete in $E$} if
 $E|k$ ends with a response event.
 The execution $E$ is \emph{complete} if all transactions in $\txns(E)$
@@ -62,11 +61,6 @@ A transaction $T_k\in \txns(E)$ is \emph{t-complete} if $E|k$
 ends with $A_k$ or $C_k$; otherwise, $T_k$ is \emph{t-incomplete}.
 
 We assume that base objects are accessed with \emph{read-modify-write} (rmw) primitives. 
-% A rmw primitive $\langle g,h \rangle$ applied to a base object 
-% atomically updates the value of the object with a new value, which is
-% a function $g(v)$ of the old value $v$, and returns a response $h(v)$.
-%A rmw primitive is \emph{trivial} if it never affects the value of a
-%base object, otherwise it is \emph{nontrivial}.
 A rmw primitive event on a base object is \emph{trivial} if, in any configuration, its application
 does not change the state of the object. 
 Otherwise, it is called \emph{nontrivial}.
@@ -124,7 +118,6 @@ Any transaction $T_k \in \ms{txns}(E)$ that performs at least one cached access 
 % \sri{ofcourse they are covered in the model, but I dont understand why you rbing this up here?}
 A \emph{cache-commit} primitive issued by process $i$ with
 a valid $\tau_i$ does the following: for each base object $b$ such that $(b,v,\exclusive) \in \tau_i$, the value of $b$ in $C$ is updated to $v$. 
-%\trevor{what is $C$? the configuration just before the \textit{cache-commit} primitive?}
 Finally, $\tau_i$ is set to $\emptyset$ and the primitive 
 returns $\textit{commit}$. 
 
@@ -155,20 +148,20 @@ The next event of $T_k$ in any extension of $E\cdot e$ is $A_k$.
 %is $A_k$.
 \end{observation}
 %
-\vspace{1mm}\noindent\textbf{Non-cached reads inside fast-path.}
+\vspace{1mm}\noindent\textbf{Direct reads inside fast-path.}
 Note that we specifically allow hardware transactions to perform reads without adding the corresponding base object to
-the process's tracking set, thus modelling the non-speculative accesses inside hardware allowed by 
+the process's tracking set, thus modelling the \emph{suspend/resume} instructions supported by 
 IBM Power8 architectures. We remark that Intel's HTM does not support this feature: an event of a hardware transaction
-does not include any direct access.
+does not include any direct access to base objects.
 
 %
 \vspace{1mm}\noindent\textbf{HyTM properties.}
-\trevor{reading here}
+%\trevor{reading here}
 Throughout this paper, we consider the TM-correctness property of \emph{opacity}~\cite{tm-book}: an execution
 $E$ is opaque if there exists a \emph{legal} sequential execution $S$ equivalent to some t-completion of $E$
 that respects the \emph{real-time ordering} of transactions in $E$.
 
-We also assume a weak TM-liveness property for t-operations in this paper: every t-operation returns a matching
+We also assume a weak \emph{TM-liveness} property for t-operations in this paper: every t-operation returns a matching
 response within a finite number of its own steps if running step-contention free from a \emph{quiescent} configuration,
 \emph{i.e.}, a configuration in which every transaction is t-complete.
 
