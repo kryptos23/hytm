@@ -50,6 +50,8 @@ long abortAddr[MAX_ABORT_ADDR];
 #define TM_TIMER_END(tid) countersProbEndTime(__tm_counters, (tid) /*, __tm_counters[(tid)]->timingOnFallback*/)
 #define TM_CLEAR_COUNTERS() __tm_counters.clear()
 #define TM_PRINT_COUNTERS() countersPrint(__tm_counters)
+#define TM_CREATE_COUNTERS()
+#define TM_DESTROY_COUNTERS()
 
 class tm_threadCounters {
 public:
@@ -57,7 +59,7 @@ public:
 #ifdef RECORD_ABORTS
     tm_counter_t htmAbort[NUMBER_OF_PATHS*MAX_ABORT_STATUS];
 #else
-    tm_counter_t * htmAbort;
+    tm_counter_t htmAbort[NUMBER_OF_PATHS];
 #endif
     tm_counter_t htmCommit[NUMBER_OF_PATHS];
     tm_counter_t timingTemp;            // per process timestamps: 0 if not currently timing, o/w > 0
@@ -228,6 +230,8 @@ void registerHTMAbort(tm_debugCounters<NUM_PROCESSES>& counters, const int tid, 
         exit(-1);
     }
     __TM_COUNTER_ADD(htmAbort[path*MAX_ABORT_STATUS+s], 1);
+#else
+    __TM_COUNTER_ADD(htmAbort[path], 1);
 #endif
 }
 

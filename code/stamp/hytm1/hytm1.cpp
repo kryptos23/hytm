@@ -908,6 +908,7 @@ void TxStore_stm(void* _Self, volatile intptr_t* addr, intptr_t value) {
 
 void TxOnce() {
 //    initSighandler(); /**** DEBUG CODE ****/
+    TM_CREATE_COUNTERS();
     printf("%s %s\n", TM_NAME, "system ready\n");
 }
 
@@ -927,6 +928,7 @@ void TxShutdown() {
                 );
 
     TM_PRINT_COUNTERS();
+    TM_DESTROY_COUNTERS();
 }
 
 void* TxNewThread() {

@@ -16,10 +16,10 @@ extern "C" {
 #include "../platform.h"
 #include <time.h>
 
-//#define NUMBER_OF_PATHS 3
-//#define PATH_FAST_HTM 0
-//#define PATH_SLOW_HTM 1
-//#define PATH_FALLBACK 2
+#define NUMBER_OF_PATHS 3
+#define PATH_FAST_HTM 0
+#define PATH_SLOW_HTM 1
+#define PATH_FALLBACK 2
 
 // note: max abort code is 31
 #define ABORT_PROCESS_ON_FALLBACK 3
@@ -32,9 +32,7 @@ int getCompressedStatusAutomaticAbortCode(const int compressedStatus);
 
 int getCompressedStatusExplicitAbortCode(const int compressedStatus);
 
-//int getStatusExplicitAbortCode(const int status);
-
-//#define MAX_ABORT_STATUS 4096
+#define MAX_ABORT_STATUS 4096
 
 struct c_debugCounters {
     int NUM_PROCESSES;

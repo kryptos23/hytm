@@ -22,7 +22,7 @@
 #define DEBUG2 DEBUG1 if(0)
 #define DEBUG3 DEBUG2 if(0)
 
-#include "counters/threadcounters.h"
+#include "counters/counters.h"
 //extern tm_debugCounters<MAX_TID_POW2> __tm_counters;
 
 #ifdef DEBUG_PRINT

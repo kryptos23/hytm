@@ -1294,7 +1294,7 @@ void TxOnce() {
     CTASSERT((_TABSZ & (_TABSZ - 1)) == 0); /* must be power of 2 */
     
 //    initSighandler(); /**** DEBUG CODE ****/
-    
+    TM_CREATE_COUNTERS();
     printf("%s %s\n", TM_NAME, "system ready\n");
 #ifdef STACK_SPACE_LOCKTAB
 //    memset(LockTab, 0, _TABSZ*sizeof(vLock));
@@ -1320,6 +1320,7 @@ void TxShutdown() {
                 );
 
     TM_PRINT_COUNTERS();
+    TM_DESTROY_COUNTERS();
 #ifdef STACK_SPACE_LOCKTAB
 #else
     free(LockTab);

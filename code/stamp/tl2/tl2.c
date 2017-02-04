@@ -1033,6 +1033,8 @@ TxOnce ()
     GVInit();
     printf("TL2 system ready: GV=%s\n", _GVFLAVOR);
 
+//    TM_CREATE_COUNTERS();
+    
     pthread_key_create(&global_key_self, NULL); /* CCM: do before we register handler */
     registerUseAfterFreeHandler();
     SYNC_RMW; // just to be safe
@@ -1065,6 +1067,9 @@ TxShutdown ()
     pthread_key_delete(global_key_self);
 
     restoreUseAfterFreeHandler();
+    
+//    TM_PRINT_COUNTERS();
+//    TM_DESTROY_COUNTERS();
 
     MEMBARSTLD();
 }

@@ -14,7 +14,7 @@
 
 #define MAX_RETRIES 100000
     
-#include "../hytm1/counters/threadcounters.h"
+#include "../hytm1/counters/counters.h"
 
 //#define DEBUG_PRINT
 #define DEBUG_PRINT_LOCK
