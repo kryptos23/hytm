@@ -54,12 +54,12 @@ long elapsedMillis;
 bool start = false;
 bool done = false;
 atomic_int running; // number of threads that are running
-debugCounter * keysum; // key sum hashes for all threads (including for prefilling)
+// note: tree->debugGetCounters()[tid].keysum contains the key sum hash for thread tid (including for prefilling)
 
 const int OPS_BETWEEN_TIME_CHECKS = 500;
 const int OPS_BETWEEN_TIME_CHECKS_RQ = 10;
 
-debugCounter * prefillSize;
+// note: tree->debugGetCounters()[tid].prefillSize contains the number of keys added to the prefilled tree by thread tid
 const long long PREFILL_INTERVAL_MILLIS = 200;
 
 // create a binary search tree with an allocator that uses a new form of epoch based memory reclamation
@@ -101,6 +101,9 @@ const test_type POS_INFTY = 2000000000;
     #define PRCU_REGISTER(tid)
     #define PRCU_UNREGISTER
     #define CLEAR_COUNTERS tree->clearCounters();
+    #define INCREMENT(name) (++tree->debugGetCounters()[tid]->name)
+    #define ADD(name, val) (tree->debugGetCounters()[tid]->name += (val))
+    #define GET_TOTAL(name) ({ long long ___totalsum=0; for (int ___totali=0;___totali<TOTAL_THREADS;++___totali) { ___totalsum += tree->debugGetCounters()[___totali]->name; } ___totalsum; })
 #endif
 
 template <class MemMgmt>
@@ -132,19 +135,19 @@ void thread_prefill(void *unused) {
                 break;
             }
         }
-        
+
         VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<endl);
         int key = rng->nextNatural(MAXKEY);
         double op = rng->nextNatural(100000000) / 1000000.;
         if (op < insProbability) {
             if (INSERT_AND_CHECK_SUCCESS) {
-                keysum->add(tid, key);
-                prefillSize->add(tid, 1);
+                ADD(keysum, key);
+                ADD(prefillSize, 1);
             }
         } else {
             if (DELETE_AND_CHECK_SUCCESS) {
-                keysum->add(tid, -key);
-                prefillSize->add(tid, -1);
+                ADD(keysum, -key);
+                ADD(prefillSize, -1);
             }
         }
     }
@@ -187,13 +190,13 @@ void prefill(DS_DECLARATION * tree) {
         done = false;
         SYNC_RMW;
 
-        sz = prefillSize->getTotal();
+        sz = GET_TOTAL(prefillSize);
         //sz = tree->getSize();
         int absdiff = (sz < expectedSize ? expectedSize - sz : sz - expectedSize);
         if (absdiff < expectedSize*PREFILL_THRESHOLD) {
             break;
         }
-        TRACE COUTATOMIC("main thread: prefilling iteration "<<attempts<<" sz="<<sz<<" expectedSize="<<expectedSize<<" keysum="<<keysum->getTotal()<<" treekeysum="<<tree->debugKeySum()<<" treesize="<<tree->size()<<endl);
+        TRACE COUTATOMIC("main thread: prefilling iteration "<<attempts<<" sz="<<sz<<" expectedSize="<<expectedSize<<" keysum="<<GET_TOTAL(keysum)<<" treekeysum="<<tree->debugKeySum()<<" treesize="<<tree->size()<<endl);
     }
     TRACE COUTATOMIC("main thread: shutting down tm"<<endl);
 //    TM_SHUTDOWN();
@@ -203,16 +206,26 @@ void prefill(DS_DECLARATION * tree) {
         exit(-1);
     }
     
+    /**
+     * clear counters, but preserve the keysum,
+     * so we can compare the keysum in the final tree
+     * (which may include keys only touched during prefilling)
+     * with the keysum for all threads
+     */
+    long long keysum = GET_TOTAL(keysum);
     CLEAR_COUNTERS;
+    int tid = 0;
+    ADD(keysum, keysum);
+    
     chrono::time_point<chrono::high_resolution_clock> prefillEndTime = chrono::high_resolution_clock::now();
     auto elapsed = chrono::duration_cast<chrono::milliseconds>(prefillEndTime-prefillStartTime).count();
     COUTATOMIC(endl);
     COUTATOMIC("###############################"<<endl);
-    COUTATOMIC("##### FINISHED PREFILLING ##### (running="<<running.load()<<" size "<<sz<<" for expected size "<<expectedSize<<" keysum="<<keysum->getTotal()<<" treekeysum="<<tree->debugKeySum()<<" treesize="<<tree->size()<<" in "<<(elapsed/1000.)<<"s)"<<endl);
+    COUTATOMIC("##### FINISHED PREFILLING ##### (running="<<running.load()<<" size "<<sz<<" for expected size "<<expectedSize<<" keysum="<<GET_TOTAL(keysum)<<" treekeysum="<<tree->debugKeySum()<<" treesize="<<tree->size()<<" in "<<(elapsed/1000.)<<"s)"<<endl);
     COUTATOMIC("###############################"<<endl);
     COUTATOMIC(endl);
     __sync_synchronize();
-    if (keysum->getTotal() != tree->debugKeySum()) {
+    if (GET_TOTAL(keysum) != tree->debugKeySum()) {
         COUTATOMIC("ERROR: validation FAILED"<<endl);
         exit(-1);
     }
@@ -264,21 +277,21 @@ void thread_timed(void *unused) {
 //            double op = rng->nextNatural(100000000) / 1000000.;
 //            if (op < INS) {
 //                if (INSERT_AND_CHECK_SUCCESS) {
-//                    keysum->add(tid, key);
+//                    ADD(keysum, key);
 //                }
-//                tree->debugGetCounters()->insertSuccess->inc(tid);
+//                INCREMENT(insertSuccess);
 //            } else if (op < INS+DEL) {
 //                if (DELETE_AND_CHECK_SUCCESS) {
-//                    keysum->add(tid, -key);
+//                    ADD(keysum, -key);
 //                }
-//                tree->debugGetCounters()->eraseSuccess->inc(tid);
+//                INCREMENT(eraseSuccess);
 //            } else if (op < INS+DEL+RQ) {
                 int rqcnt;
                 RQ_AND_CHECK_SUCCESS(rqcnt);
-                tree->debugGetCounters()->rqSuccess->inc(tid);
+                INCREMENT(rqSuccess);
 //            } else {
 //                FIND_AND_CHECK_SUCCESS;
-//                tree->debugGetCounters()->findSuccess->inc(tid);
+//                INCREMENT(findSuccess);
 //            }
         }
     } else {
@@ -304,21 +317,21 @@ void thread_timed(void *unused) {
             double op = rng->nextNatural(100000000) / 1000000.;
             if (op < INS) {
                 if (INSERT_AND_CHECK_SUCCESS) {
-                    keysum->add(tid, key);
+                    ADD(keysum, key);
                 }
-                tree->debugGetCounters()->insertSuccess->inc(tid);
+                INCREMENT(insertSuccess);
             } else if (op < INS+DEL) {
                 if (DELETE_AND_CHECK_SUCCESS) {
-                    keysum->add(tid, -key);
+                    ADD(keysum, -key);
                 }
-                tree->debugGetCounters()->eraseSuccess->inc(tid);
+                INCREMENT(eraseSuccess);
             } else if (op < INS+DEL+RQ) {
                 int rqcnt;
                 RQ_AND_CHECK_SUCCESS(rqcnt);
-                tree->debugGetCounters()->rqSuccess->inc(tid);
+                INCREMENT(rqSuccess);
             } else {
                 FIND_AND_CHECK_SUCCESS;
-                tree->debugGetCounters()->findSuccess->inc(tid);
+                INCREMENT(findSuccess);
             }
         }
     }
@@ -427,9 +440,10 @@ string percent(int numer, int denom) {
 template <class MemMgmt>
 void printOutput() {
     DS_DECLARATION * tree = (DS_DECLARATION *) __tree;
+    //debugCounters& counters = tree->debugGetCounters();
 
-    long long threadsKeySum = keysum->getTotal();
     long long treeKeySum = tree->debugKeySum();
+    long long threadsKeySum = GET_TOTAL(keysum);
     if (threadsKeySum == treeKeySum) {
         cout<<"Validation OK: threadsKeySum="<<threadsKeySum<<" treeKeySum="<<treeKeySum<<endl;
     } else {
@@ -440,75 +454,31 @@ void printOutput() {
         exit(-1);
     }
 
-    debugCounters * const counters = tree->debugGetCounters();
-    int totalOps = 0, totalSuccessful = 0, totalChanges = 0;
-    int totalHTMAbort[NUMBER_OF_PATHS];
-    int totalPathOps[NUMBER_OF_PATHS];
-    for (int path=0;path<NUMBER_OF_PATHS;++path) {
-        totalHTMAbort[path] = 0;
-#ifdef RECORD_ABORTS
-        for (int i=0;i<MAX_ABORT_STATUS;++i) {
-            int _total = counters->htmAbort[path*MAX_ABORT_STATUS+i]->getTotal();
-            totalHTMAbort[path] += _total;
-        }
-#endif
-        totalSuccessful += counters->pathSuccess[path]->getTotal();
-        totalChanges += counters->updateChange[path]->getTotal();
-        totalPathOps[path] = counters->pathSuccess[path]->getTotal() + counters->pathFail[path]->getTotal();
-        totalOps += totalPathOps[path];
-    }
-    
-    for (int path=0;path<NUMBER_OF_PATHS;++path) {
-//        switch (path) {
-//            case PATH_FAST_HTM: if (MAX_FAST_HTM_RETRIES >= 0) COUTATOMIC("[" << PATH_NAMES[path] << " = " << P1NAME << "]" << endl); break;
-//            case PATH_SLOW_HTM: if (MAX_SLOW_HTM_RETRIES >= 0) COUTATOMIC("[" << PATH_NAMES[path] << " = " << P2NAME << "]" << endl); break;
-//            case PATH_FALLBACK: COUTATOMIC("[" << PATH_NAMES[path] << " = " << P3NAME << "]" << endl); break;
-//        }
-        if (totalPathOps[path] > 0) {
-            COUTATOMIC("total path "<<PATH_NAMES[path]<<"           : "<<totalPathOps[path]<<" ("<<percent(totalPathOps[path], totalOps)<<" of ops)"<<endl);
-        }
-        if (counters->htmCommit[path]->getTotal() + totalHTMAbort[path] > 0) {
-            COUTATOMIC("total "<<PATH_NAMES[path]<<" commit         : "<<counters->htmCommit[path]->getTotal()<<" ("<<percent(counters->htmCommit[path]->getTotal(), totalPathOps[path])<<" of "<<PATH_NAMES[path]<<" ops)"<<endl);
-            COUTATOMIC("total "<<PATH_NAMES[path]<<" abort          : "<<totalHTMAbort[path]<<" ("<<percent(totalHTMAbort[path], totalPathOps[path])<<" of "<<PATH_NAMES[path]<<" ops)"<<endl);
-#ifdef RECORD_ABORTS
-            for (int i=0;i<MAX_ABORT_STATUS;++i) {
-                int _total = counters->htmAbort[path*MAX_ABORT_STATUS+i]->getTotal();
-                if (_total) {
-                    COUTATOMIC("    "<<PATH_NAMES[path]<<" abort            : "<<(i==0?"unexplained":getAllAbortNames(i))<<" "<<_total<<" ("<<percent(_total, totalHTMAbort[path])<<" of "<<PATH_NAMES[path]<<" aborts, "<<percent(_total, totalPathOps[path])<<" of "<<PATH_NAMES[path]<<" ops)"<<endl);
-                }
-            }
-#endif
-        }
-        if (totalPathOps[path] > 0) {
-            if (counters->pathSuccess[path]->getTotal()) COUTATOMIC(PATH_NAMES[path]<<" success              : "<<counters->pathSuccess[path]->getTotal()<<" ("<<percent(counters->pathSuccess[path]->getTotal(), totalSuccessful)<<" of successful)"<<endl);
-            if (counters->updateChange[path]->getTotal()) COUTATOMIC(PATH_NAMES[path]<<" changes              : "<<counters->updateChange[path]->getTotal()<<" ("<<percent(counters->updateChange[path]->getTotal(), totalChanges)<<" of changes)"<<endl);
-            if (counters->pathFail[path]->getTotal()) COUTATOMIC(PATH_NAMES[path]<<" fail                 : "<<counters->pathFail[path]->getTotal()<<endl);
-            if (counters->htmCapacityAbortThenCommit[path]->getTotal()) COUTATOMIC(PATH_NAMES[path]<<" capacity -> commit   : "<<counters->htmCapacityAbortThenCommit[path]->getTotal()<<endl);
-            if (counters->htmRetryAbortRetried[path]->getTotal()) COUTATOMIC(PATH_NAMES[path]<<" retry -> try again   : "<<counters->htmRetryAbortRetried[path]->getTotal()<<endl);
-        }
-    }
+//    int totalSuccessful = GET_TOTAL(pathSuccess);
+//    int totalChanges = GET_TOTAL(updateChange);
+//    int totalOps = totalSuccessful + totalChanges;
+
     COUTATOMIC(endl);
     
-
-    long long rqSuccessTotal = counters->rqSuccess->getTotal();
-    long long rqFailTotal = counters->rqFail->getTotal();
-    long long findSuccessTotal = counters->findSuccess->getTotal();
-    long long findFailTotal = counters->findFail->getTotal();
+    long long rqSuccessTotal = GET_TOTAL(rqSuccess);
+    long long rqFailTotal = GET_TOTAL(rqFail);
+    long long findSuccessTotal = GET_TOTAL(findSuccess);
+    long long findFailTotal = GET_TOTAL(findFail);
 //    for (int path=0;path<NUMBER_OF_PATHS;++path) {
-//        rqSuccessTotal += counters->rqSuccess[path]->getTotal();
-//        rqFailTotal += counters->rqFail[path]->getTotal();
-//        findSuccessTotal += counters->findSuccess[path]->getTotal();
-//        findFailTotal += counters->findFail[path]->getTotal();
+//        rqSuccessTotal += GET_TOTAL(rqSuccess);
+//        rqFailTotal += GET_TOTAL(rqFail);
+//        findSuccessTotal += GET_TOTAL(findSuccess);
+//        findFailTotal += GET_TOTAL(findFail);
 //    }
-    if (counters->insertSuccess->getTotal()) COUTATOMIC("total insert succ             : "<<counters->insertSuccess->getTotal()<<endl);
-    if (counters->insertFail->getTotal()) COUTATOMIC("total insert retry            : "<<counters->insertFail->getTotal()<<endl);
-    if (counters->eraseSuccess->getTotal()) COUTATOMIC("total erase succ              : "<<counters->eraseSuccess->getTotal()<<endl);
-    if (counters->eraseFail->getTotal()) COUTATOMIC("total erase retry             : "<<counters->eraseFail->getTotal()<<endl);
+    if (GET_TOTAL(insertSuccess)) COUTATOMIC("total insert succ             : "<<GET_TOTAL(insertSuccess)<<endl);
+    if (GET_TOTAL(insertFail)) COUTATOMIC("total insert retry            : "<<GET_TOTAL(insertFail)<<endl);
+    if (GET_TOTAL(eraseSuccess)) COUTATOMIC("total erase succ              : "<<GET_TOTAL(eraseSuccess)<<endl);
+    if (GET_TOTAL(eraseFail)) COUTATOMIC("total erase retry             : "<<GET_TOTAL(eraseFail)<<endl);
     if (findSuccessTotal) COUTATOMIC("total find succ               : "<<findSuccessTotal<<endl);
     if (findFailTotal) COUTATOMIC("total find retry              : "<<findFailTotal<<endl);
     if (rqSuccessTotal) COUTATOMIC("total rq succ                 : "<<rqSuccessTotal<<endl);
     if (rqFailTotal) COUTATOMIC("total rq fail                 : "<<rqFailTotal<<endl);
-    const long totalSuccUpdates = counters->insertSuccess->getTotal()+counters->eraseSuccess->getTotal();
+    const long totalSuccUpdates = GET_TOTAL(insertSuccess)+GET_TOTAL(eraseSuccess);
     const long totalSuccAll = totalSuccUpdates + rqSuccessTotal + findSuccessTotal;
     const long throughput = (long) (totalSuccUpdates / (MILLIS_TO_RUN/1000.));
     const long throughputAll = (long) (totalSuccAll / (MILLIS_TO_RUN/1000.));
@@ -685,12 +655,8 @@ int main(int argc, char** argv) {
         cout<<"ERROR: thread binding maps more than one thread to a single logical processor"<<endl;
         exit(-1);
     }
-    
-    prefillSize = new debugCounter(PHYSICAL_PROCESSORS /*TOTAL_THREADS*/);
-    keysum = new debugCounter(PHYSICAL_PROCESSORS /*TOTAL_THREADS*/);
-    
+        
     performExperiment();
     
-    delete keysum;
     return 0;
 }

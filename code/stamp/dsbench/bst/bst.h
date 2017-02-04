@@ -47,7 +47,7 @@ private:
     #define REPLACE_ALLOCATED_NODE(tid, i) { GET_ALLOCATED_NODE_PTR(tid, i) = allocateNode(tid); /*GET_ALLOCATED_NODE_PTR(tid, i)->left.store((uintptr_t) NULL, memory_order_relaxed);*/ }
     
     // debug info
-    debugCounters * const counters;
+    debugCounters<PHYSICAL_PROCESSORS> counters __attribute__((aligned(PREFETCH_SIZE_BYTES)));
     
     #define IS_SENTINEL(node, parent) ((node)->key == NO_KEY || (parent)->key == NO_KEY)
     inline Node<K,V>* allocateNode(const int tid);
@@ -68,8 +68,7 @@ public:
             : NO_KEY(_NO_KEY)
             , NO_VALUE(_NO_VALUE)
             , RETRY(_RETRY)
-            , shmem(new RecManager(numProcesses, SIGQUIT))
-            , counters(new debugCounters(numProcesses)) {
+            , shmem(new RecManager(numProcesses, SIGQUIT)) {
         VERBOSE DS_DEBUG COUTATOMIC("constructor bst"<<endl);
         const int tid = 0;
         shmem->enterQuiescentState(tid); // enter an initial quiescent state.
@@ -118,7 +117,6 @@ public:
             }
         }
         delete shmem;
-        delete counters;
     }
 
     Node<K,V> *getRoot(void) { return root; }
@@ -153,11 +151,11 @@ public:
         fs.close();
     }
     void clearCounters() {
-        counters->clear();
+        counters.clear();
         shmem->clearCounters();
         STM_CLEAR_COUNTERS();
     }
-    debugCounters * const debugGetCounters() {
+    debugCounters<PHYSICAL_PROCESSORS>& debugGetCounters() {
         return counters;
     }
     RecManager * const debugGetShmem() {
