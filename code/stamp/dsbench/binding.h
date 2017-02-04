@@ -45,7 +45,9 @@ const int SOSCIP_SCATTER = 102;
 // cpu sets for binding threads to cores
 static cpu_set_t *cpusets[PHYSICAL_PROCESSORS];
 
-static vector<int> customBinding;
+static int customBinding[PHYSICAL_PROCESSORS];
+static int numCustomBindings = 0;
+//static vector<int> customBinding;
 
 static unsigned digits(unsigned x) {
     int d = 1;
@@ -79,7 +81,8 @@ static unsigned parseToken(string argv, int ix) {
         
         // add single binding
         //cout<<"a="<<a<<endl;
-        customBinding.push_back(a);
+        //customBinding.push_back(a);
+        customBinding[numCustomBindings++] = a;
     
     // token is of the second form: INT-INT
     } else {
@@ -93,7 +96,8 @@ static unsigned parseToken(string argv, int ix) {
         
         // add range of bindings
         for (int i=a;i<=b;++i) {
-            customBinding.push_back(i);
+            //customBinding.push_back(i);
+            customBinding[numCustomBindings++] = i;
         }
         
         ix = ix+digits(b);          // first character AFTER second INT
@@ -106,7 +110,9 @@ static unsigned parseToken(string argv, int ix) {
 // argv contains a custom thread binding pattern, e.g., "1,2,3,8-11,4-7,0"
 // threads will be bound according to this binding
 void binding_parseCustom(string argv) {
-    customBinding.clear();
+    //customBinding.clear();
+    numCustomBindings = 0;
+    
     unsigned ix = 0;
     while (ix < argv.size()) {
         ix = parseToken(argv, ix);
@@ -161,7 +167,8 @@ bool binding_isInjectiveMapping(const int nthreads, const int nprocessors) {
 }
 
 void binding_bindThread(const int tid, const int nprocessors) {
-    if (customBinding.empty()) {
+    //if (customBinding.empty()) {
+    if (numCustomBindings == 0) {
 #ifdef THREAD_BINDING
         if (THREAD_BINDING != NONE) {
             doBindThread(tid, nprocessors);
@@ -173,7 +180,8 @@ void binding_bindThread(const int tid, const int nprocessors) {
 }
 
 void binding_configurePolicy(const int nprocessors) {
-    if (customBinding.empty()) {
+    //if (customBinding.empty()) {
+    if (numCustomBindings == 0) {
 #ifdef THREAD_BINDING
         // create cpu sets for binding threads to cores
         int size = CPU_ALLOC_SIZE(nprocessors);
@@ -254,7 +262,8 @@ void binding_configurePolicy(const int nprocessors) {
         for (int i=0;i<nprocessors;++i) {
             cpusets[i] = CPU_ALLOC(nprocessors);
             CPU_ZERO_S(size, cpusets[i]);
-            CPU_SET_S(customBinding[i%customBinding.size()], size, cpusets[i]);
+            //CPU_SET_S(customBinding[i%customBinding.size()], size, cpusets[i]);
+            CPU_SET_S(customBinding[i%numCustomBindings], size, cpusets[i]);
 
 //            if (i < customBinding.size()) {
 //                //cout<<"setting up thread binding for thread "<<i<<" to processor "<<customBinding[i]<<endl;

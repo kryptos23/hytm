@@ -229,7 +229,8 @@ void thread_timed(void *unused) {
     DS_DECLARATION * tree = (DS_DECLARATION *) __tree;
 
 #if defined(BST)
-    Node<test_type, test_type> const ** rqResults = new Node<test_type, test_type> const *[RQSIZE];
+    //Node<test_type, test_type> const ** rqResults = new Node<test_type, test_type> const *[RQSIZE];
+    Node<test_type, test_type> const rqResults[RQSIZE];
 #endif
     
     VERBOSE COUTATOMICTID("timed thread initializing"<<endl);
@@ -334,7 +335,7 @@ void thread_timed(void *unused) {
 template <class MemMgmt>
 void trial() {
 #if defined(BST)
-    __tree = (void*) new DS_DECLARATION(NO_KEY, NO_VALUE, RETRY, TOTAL_THREADS);
+    __tree = (void*) new DS_DECLARATION(NO_KEY, NO_VALUE, RETRY, PHYSICAL_PROCESSORS /*TOTAL_THREADS*/);
 #else
 #error "Failed to define a data structure"
 #endif
@@ -342,7 +343,7 @@ void trial() {
     // get random number generator seeded with time
     // we use this rng to seed per-thread rng's that use a different algorithm
     srand(time(NULL));
-    for (int i=0;i<TOTAL_THREADS;++i) {
+    for (int i=0;i<PHYSICAL_PROCESSORS /*TOTAL_THREADS*/;++i) {
         rngs[i*PREFETCH_SIZE_WORDS].setSeed(rand());
     }
     
@@ -685,8 +686,8 @@ int main(int argc, char** argv) {
         exit(-1);
     }
     
-    prefillSize = new debugCounter(TOTAL_THREADS);
-    keysum = new debugCounter(TOTAL_THREADS);
+    prefillSize = new debugCounter(PHYSICAL_PROCESSORS /*TOTAL_THREADS*/);
+    keysum = new debugCounter(PHYSICAL_PROCESSORS /*TOTAL_THREADS*/);
     
     performExperiment();
     
