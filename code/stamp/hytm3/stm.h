@@ -97,7 +97,7 @@ __thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t
                                                     break; \
                                                 } else { /* if we aborted */ \
                                                     ++___Self->AbortsHW; \
-                                                    registerHTMAbort(c_counters, ___Self->UniqID, ___xarg, PATH_FAST_HTM); \
+                                                    TM_REGISTER_ABORT(PATH_FAST_HTM, ___xarg, ___Self->UniqID); \
                                                     while (lockflag) { \
                                                         PAUSE(); \
                                                     } \

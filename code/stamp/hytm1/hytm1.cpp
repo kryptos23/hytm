@@ -30,9 +30,6 @@
 #include <stdint.h>
 using namespace std;
 
-#include "counters/debugcounters_cpp.h"
-struct c_debugCounters *c_counters;
-
 #ifndef PREFETCH_SIZE_BYTES
 #define PREFETCH_SIZE_BYTES 192
 #endif
@@ -807,14 +804,14 @@ int TxCommit(void* _Self) {
     // software path
     if (Self->isFallback) {
         // release global lock
-        countersProbEndTime(c_counters, Self->UniqID, c_counters->timingOnFallback);
+        TM_TIMER_END(Self->UniqID);
         releaseLock(&tleLock);
 
 #ifdef TXNL_MEM_RECLAMATION
         tmalloc_clear(Self->allocPtr);
         tmalloc_releaseAllForward(Self->freePtr, NULL);
 #endif
-        counterInc(c_counters->htmCommit[PATH_FALLBACK], Self->UniqID);
+        TM_COUNTER_INC(htmCommit[PATH_FALLBACK], Self->UniqID);
         
     // hardware path
     } else {
@@ -823,7 +820,7 @@ int TxCommit(void* _Self) {
         tmalloc_releaseAllForward(Self->freePtr, NULL);
 #endif
         XEND();
-        counterInc(c_counters->htmCommit[PATH_FAST_HTM], Self->UniqID);
+        TM_COUNTER_INC(htmCommit[PATH_FAST_HTM], Self->UniqID);
     }
     return true;
 }
@@ -838,7 +835,7 @@ void TxAbort(void* _Self) {
         Self->wrSet->writeBackward();
         
         // release global lock
-        countersProbEndTime(c_counters, Self->UniqID, c_counters->timingOnFallback);
+        TM_TIMER_END(Self->UniqID);
         releaseLock(&tleLock);
 
         ++Self->Retries;
@@ -855,7 +852,7 @@ void TxAbort(void* _Self) {
             aout("END DEBUG ADDRESS MAPPING.");
             exit(-1);
         }
-        registerHTMAbort(c_counters, Self->UniqID, 0, PATH_FALLBACK);
+        TM_REGISTER_ABORT(PATH_FALLBACK, 0, Self->UniqID);
         
 #ifdef TXNL_MEM_RECLAMATION
         // "abort" speculative allocations and speculative frees
@@ -911,15 +908,13 @@ void TxStore_stm(void* _Self, volatile intptr_t* addr, intptr_t value) {
 
 void TxOnce() {
 //    initSighandler(); /**** DEBUG CODE ****/
-    c_counters = (c_debugCounters *) malloc(sizeof(c_debugCounters));
-    countersInit(c_counters, MAX_TID_POW2);
     printf("%s %s\n", TM_NAME, "system ready\n");
 }
 
 void TxClearCounters() {
-    printf("Printing counters for %s and then clearing them in preparation for the real trial.\n", TM_NAME);
-    countersPrint(c_counters);
-    countersClear(c_counters);
+    printf("Printing __tm_counters for %s and then clearing them in preparation for the real trial.\n", TM_NAME);
+    TM_PRINT_COUNTERS();
+    TM_CLEAR_COUNTERS();
     printf("Counters cleared.\n");
 }
 
@@ -931,9 +926,7 @@ void TxShutdown() {
                 //CommitTallySW, AbortTallySW
                 );
 
-    countersPrint(c_counters);
-    countersDestroy(c_counters);
-    free(c_counters);
+    TM_PRINT_COUNTERS();
 }
 
 void* TxNewThread() {

@@ -1,9 +1,9 @@
 #ifndef HYTM1_H
 #define HYTM1_H 1
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #define TM_NAME "HyTM1"
 //#define HTM_ATTEMPT_THRESH 0
@@ -22,9 +22,9 @@ extern "C" {
 #define DEBUG2 DEBUG1 if(0)
 #define DEBUG3 DEBUG2 if(0)
 
-#include "counters/debugcounters.h"
-extern struct c_debugCounters *c_counters;
-    
+#include "counters/threadcounters.h"
+//extern tm_debugCounters<MAX_TID_POW2> __tm_counters;
+
 #ifdef DEBUG_PRINT
     #define aout(x) { \
         cout<<x<<endl; \
@@ -92,8 +92,8 @@ void     TxShutdown    ();
 void*    TxAlloc       (void*, size_t);
 void     TxFree        (void*, void*);
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif

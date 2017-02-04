@@ -103,7 +103,7 @@ const test_type POS_INFTY = 2000000000;
     #define CLEAR_COUNTERS tree->clearCounters();
     #define INCREMENT(name) (++tree->debugGetCounters()[tid]->name)
     #define ADD(name, val) (tree->debugGetCounters()[tid]->name += (val))
-    #define GET_TOTAL(name) ({ long long ___totalsum=0; for (int ___totali=0;___totali<TOTAL_THREADS;++___totali) { ___totalsum += tree->debugGetCounters()[___totali]->name; } ___totalsum; })
+    #define GET_TOTAL(name) ({ long long ___totalsum=0; for (int ___tid=0;___tid<TOTAL_THREADS;++___tid) { ___totalsum += tree->debugGetCounters()[___tid]->name; } ___totalsum; })
 #endif
 
 template <class MemMgmt>

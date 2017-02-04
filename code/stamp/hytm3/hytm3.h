@@ -1,9 +1,9 @@
 #ifndef HYTM2_H
 #define HYTM2_H 1
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
 #define TM_NAME "HyTM3"
 //#define HTM_ATTEMPT_THRESH 0
@@ -14,8 +14,7 @@ extern "C" {
 
 #define MAX_RETRIES 100000
     
-#include "../hytm1/counters/debugcounters.h"
-extern struct c_debugCounters *c_counters;
+#include "../hytm1/counters/threadcounters.h"
 
 //#define DEBUG_PRINT
 #define DEBUG_PRINT_LOCK
@@ -95,8 +94,8 @@ void     TxShutdown    ();
 void*    TxAlloc       (void*, size_t);
 void     TxFree        (void*, void*);
 
-#ifdef __cplusplus
-}
-#endif
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif
