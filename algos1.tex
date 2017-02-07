@@ -1,13 +1,15 @@
 %!TEX root = htm.tex
+In this section, we present opaque HyTM algorithms that are progressive for a subset of transactions.
+
 \vspace{1mm}\noindent\textbf{Instrumentation-optimal progressive HyTM.}
 We describe a HyTM algorithm that is a tight bound for Theorem~\ref{th:impossibility} and the instrumentation cost on the fast-path transactions established in \cite{hytm14disc}.
-For every t-object $X_j$, our implementation maintains a base object $v_j\in \mathbb{D}$ that stores the value of $X_j$
+For every t-object $X_j$, our implementation maintains a base object $v_j$ that stores the value of $X_j$
 and a \emph{sequence lock} $r_{j}$. The sequence lock is an unsigned integer whose LSB bit stores the \emph{locked} state.
 Specifically, we say that process $p_i$ \emph{holds a lock on $X_j$ after an execution $E$} if
 $\textit{or}_j$ $\mathrel{\&} 1=1$ after $E$, where $\textit{or}_j$ is the value of $r_j$ after $E$.
 
 \vspace{1mm}\noindent\textit{Fast-path transactions:}
-For a fast-path transaction $T_k$ executed by process $p_i$, the $\Read_k(X_j)$ implementation first reads $r_j$ (uncached)
+For a fast-path transaction $T_k$ executed by process $p_i$, the $\Read_k(X_j)$ implementation first reads $r_j$ (direct)
 and returns $A_k$ if some other process $p_j$ holds a lock on $X_j$.
 Otherwise, it returns the value of $X_j$.
 As with $\Read_k(X_j)$, the $\Write (X_j,v)$ implementation returns $A_k$ if some other process $p_j$ holds a lock on $X_j$.
@@ -33,7 +35,7 @@ entire write set by performing \emph{compare-and-set} (\emph{cas})
 primitive that checks if the value of $r_j$, for each $X_j\in \Wset(T_k)$, is unchanged since last reading it during $\Write_k(X.v)$
 If all the locks on the write set were acquired successfully, $T_k$ performs validation of the read set and returns $C_k$ if successful, else $p_i$ aborts the transaction.
 
-\vspace{1mm}\noindent\textit{Non-cached accesses inside fast-path:}
+\vspace{1mm}\noindent\textit{Direct accesses inside fast-path:}
 As indicated in the pseudocode of Algorithm~\ref{alg:inswrite}, some accesses may be performed uncached (as allowed
 in IBM Power 8) and the resulting implementation would still be opaque. 
 
@@ -41,10 +43,7 @@ in IBM Power 8) and the resulting implementation would still be opaque.
 Algorithm~\ref{alg:inswrite2} does not incur the linear instrumentation cost
 on the fast-path reading transactions (as in Algorithm~\ref{alg:inswrite}, but provides progressiveness only
 for slow-path reading transactions. The instrumentation cost on fast-path t-reads is avoided by using a global single-bit lock $L$ that serializes all updating slow-path transactions.%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\input{prog-fp-sp}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
+
 \vspace{1mm}\noindent\textbf{Sacrificing progressiveness and minimizing contention window.}
 Observe that the lower bound in Theorem~\ref{th:impossibility} assumes progressiveness for both slow-path and fast-path transactions
 along with opacity and invisible reads.
@@ -68,7 +67,4 @@ Then, at the end of the fast path transaction's commit procedure,
 it increments gsl twice (quickly locking and releasing it and immediately commits in hardware), thus, the 
 window for fast path transactions to contend on gsl is very small.
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\input{prog-fp}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
