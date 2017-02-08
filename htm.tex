@@ -95,6 +95,12 @@
 %\newenvironment{proof}[1][Proof]{\noindent\textbf{#1.} }{\hfill $\Box$\\[2mm]}
 \newenvironment{proofsketch}[1][Proof sketch]{\noindent\textbf{#1.} }{\hfill $\Box$\\[2mm]}
 
+\usepackage{xcolor}
+\definecolor{pdfbgcolor}{RGB}{180,180,180}
+\definecolor{trevcolor}{RGB}{0,80,200}
+
+%% conditionally set the pdf background color only on trevor's computer
+\IfFileExists{trbotpc.txt}{\pagecolor{pdfbgcolor}}{}
 
 \newenvironment{reptheorem}[1][Theorem]{\noindent\textbf{#1}}{}
 \def\lf{\tiny}
