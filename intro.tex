@@ -8,9 +8,8 @@ that allows the programmer to \emph{optimistically} execute sequences of shared-
 operations as \emph{atomic transactions}.
 Several software TM designs~\cite{norec, ST95,HLM+03, astm, fraser} have been introduced subsequent to the original TM proposal based in
 hardware~\cite{HM93}. 
-The original dynamic STM implementation DSTM~\cite{HLM+03} ensures \emph{progressiveness}: 
-a transaction aborts only if there is a read-write \emph{data conflict} with a concurrent
-transaction. However, read operations in DSTM must \emph{incrementally} validate
+The original dynamic STM implementation DSTM~\cite{HLM+03} ensures that a transaction aborts only if there is a read-write \emph{data conflict} with a concurrent
+transaction (\`a la \emph{progressiveness}~\cite{tm-book}). However, read operations in DSTM must \emph{incrementally} validate
 the responses of all previous read operations to avoid inconsistent executions. 
 This results in quadratic  (in the size of the transaction's read
 set) step-complexity for transactions. Subsequent STM 
@@ -72,11 +71,11 @@ without using global contending bottlenecks and (iii) there is no easy to way to
 %Preliminary experiments on Intel Haswell (resp. IBM Power 8) not supporting (resp. supporting) non-speculative accesses inside hardware,
 %seem to suggest that the inherent \emph{cost to concurrency} in HyTMs also exists in practice and discuss algorithmic techniques to overcome them.
 
-\paragraph{Roadmap.}
+\vspace{1mm}\noindent\textbf{Roadmap.}
 \cref{sec:hytm} presents details of the HyTM model that extends the model introduced in \cite{htmdisc15} 
 to access memory locations non-speculatively.
 \cref{sec:lb} presents our main lower bound result on the step-complexity of progressive HyTMs
 while \cref{sec:hytmalgos} presents several opaque HyTM algorithms.
-\cref{sec:eval} summarizes resuls from our preliminary experiments on Intel Haswell and IBM Power 8 architectures.
+\cref{sec:eval} summarizes resuls from our experiments on Intel Haswell and IBM Power 8 architectures.
 \cref{sec:rel} presents the related work along with concluding remarks.
 %
