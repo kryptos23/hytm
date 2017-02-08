@@ -90,18 +90,20 @@ If every transaction $T_k \in \ms{txns}(E)$ is fast-path, then $S$ is legal.
 %
 \begin{proof}
 %
+Recall that Algorithm~\ref{alg:inswrite} performs direct accesses only during the t-read operation in Line~\ref{line:hread} which involves reading the sequence lock $r_j$ corresponding to t-object $X_j$.
+However, any two fast-path transactions accessing conflicting data sets must necessarily incur a tracking abort (cf. Remark~\ref{re:traborts}) in $E$. It follows immediately that $S$ must be legal.
 \end{proof}
 %
-\begin{claim}
-\label{cl:alg1claim}
-%
-If process $p_i$ executing transaction $T_k\in \ms{txns}(E)$ holds the lock on $X_j\in \ms{Wset}(T_k)$ after $E$, then the value $r_j$ is an odd integer value.
-\end{claim}
-%
-\begin{proof}
-%
-\end{proof}
-%
+% \begin{claim}
+% \label{cl:alg1claim}
+% %
+% If process $p_i$ executing transaction $T_k\in \ms{txns}(E)$ holds the lock on $X_j\in \ms{Wset}(T_k)$ after $E$, then the value $r_j$ is an odd integer value.
+% \end{claim}
+% %
+% \begin{proof}
+% %
+% \end{proof}
+% %
 %
 \begin{claim}
 \label{cl:readfrom}
@@ -160,7 +162,7 @@ then performs read-validation (Line~\ref{line:abort0}) before returning a matchi
 Indeed, $\Read_j(X_m)$ must return $A_j$ in any such execution.
 
 If $T_j$ is a fast-path transaction, it follows that $\Read_j(X_m)$ must return $A_j$
-immediately from Lemma~\ref{lm:traborts}.
+immediately from Remark~\ref{re:traborts}.
 
 Thus, $\ell_{\TryC_i} <_E \ell_{\Read_j(X)} <_{E} \ell_{\TryC_k}$.
 

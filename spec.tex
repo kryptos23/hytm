@@ -31,7 +31,7 @@ if in any execution $E$ of $\mathcal{M}$; $\mathcal{T} \subseteq \ms{txns}(E)$,
 if any transaction $T_k \in \mathcal{T}$ returns $A_k$ in $E$, there exists 
 another concurrent transaction $T_m$ that \emph{conflicts} (both access the same t-object and at least one writes) with $T_k$ in $E$~\cite{tm-book}.
 
-The proof of the lemma below is a simple extension of the analogous lemmas from \cite{hytm14disc}
+The proof of the lemma below is a simple extension of the analogous lemma from \cite{hytm14disc}
 allowing direct trivial accesses inside fast-path transactions which in turn is inspired by an analogous result concerning \emph{disjoint-access parallel} STMs~\cite{AHM09}. 
 Intuitively, the proof follows follows from the fact that
 the tracking set of a process executing a fast-path transaction is invalidated due to contention on a base

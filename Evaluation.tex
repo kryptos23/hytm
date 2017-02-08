@@ -10,7 +10,7 @@ We are currently in the process of investigating (G3).
 %We implemented Algorithms~\ref{alg:inswrite}, \ref{alg:inswrite2} and HybridNOrec in Intel Haswell and compared them against
 %Transactional Lock Elision (TLE) as well as the popular STM TL2.
 
-\vspace{1mm}\noindent\textbf{Experimental system.}
+\vspace{1mm}\noindent\textbf{Experimental system (Intel).}
 The experimental system is a large-scale 2-socket Intel E7-4830 v3 with 12 cores per socket and 2 hyperthreads (HTs) per core, for a total of 48 threads.
 Each core has a private 32KB L1 cache and 256KB L2 cache (which is shared between HTs on a core).
 All cores on a socket share a 30MB L3 cache.
@@ -25,6 +25,8 @@ The machine has 128GB of RAM, and runs Ubuntu 14.04 LTS.
 All code was compiled with the GNU C++ compiler (G++) 4.8.4 with build target x86\_64-linux-gnu and compilation options \texttt{-std=c++0x -O3 -mx32}.
 %Thread support was provided by the POSIX Threads library.
 %We used the default glibc allocator.
+
+\vspace{1mm}\noindent\textbf{Experimental system (IBM Power8).}
 
 \vspace{1mm}\noindent\textbf{Hybrid TM implementations.}
 For TL2, we used the implementation published by its authors.
@@ -84,13 +86,13 @@ Figure~\ref{fig-exp-bst} shows the results for both types of workloads.
     \vspace{-2mm}
 	\includegraphics[width=\linewidth]{figures/graphs/dsbench_legend.png}
     \vspace{-5mm}
-\caption{Results for a \textbf{BST microbenchmark}.
+\caption{Results for a \textbf{BST microbenchmark} on Intel.
 The x-axis represents the number of concurrent threads.
 The y-axis represents operations per microsecond.}
 \label{fig-exp-bst}
 \end{figure}
 
-\vspace{1mm}\noindent\textbf{Results.}
+\vspace{1mm}\noindent\textbf{Results (Intel).}
 We first discuss the 0\% updates graph for workload type W1.
 In this graph, essentially all operations committed in hardware.
 In fact, in each trial, a small fraction of 1\% of operations ran on the slow-path.
@@ -132,3 +134,34 @@ This causes the transaction to run for a longer time, which lengthens its window
 (Note that, in the 0\% updates graph in the W2 workload, we still see this effect, because there is a thread performing \textit{RangeIncrement} operations.)
 %% IF THIS DISCREPANCY IS DUE TO NUMA EFFECTS HURTING UPDATES, WHY DOES THE GAP BETWEEN ALGORITHMS DECREASE AS THE NUMBER OF UPDATES INCREASES?
 % here's a subtle hypothesis. there are two different numa effects competing to be the dominating performance factor. one is the effect i just described above. the other is the negative performance impact of tree updates on traversals. this is something we saw in the oracle spaa paper when looking at tree updates in htm. i expect that the strength of the negative numa effects on tree traversals with increased updates is greater than the strength of the negative numa effects of esl and gsl updates. since the negative effects on tree traversals impact both algorithms, it makes the difference in performance less significant, masking the other numa effect.
+
+\vspace{1mm}\noindent\textbf{Results (IBM Power8).}
+\begin{figure}
+    \centering
+    \setlength\tabcolsep{0pt}
+    \begin{tabular}{m{0.05\linewidth}m{0.47\linewidth}m{0.47\linewidth}}
+        &
+        \fcolorbox{black!50}{black!20}{\parbox{\dimexpr \linewidth-2\fboxsep-2\fboxrule}{\centering {\footnotesize No threads perform \textit{RangeIncrement} (W1)}}} &
+        \fcolorbox{black!50}{black!20}{\parbox{\dimexpr \linewidth-2\fboxsep-2\fboxrule}{\centering {\footnotesize One thread performs \textit{RangeIncrement} (W2)}}}
+        \\
+        \rotatebox{90}{\small 0\% updates} &
+        \includegraphics[width=\linewidth]{figures/graphs/power8/0i0d10000k-nrq0.png} &
+        \includegraphics[width=\linewidth]{figures/graphs/power8/0i0d10000k-nrq1.png}
+        \\
+        \vspace{-5mm}\rotatebox{90}{\small 10\% updates} &
+        \vspace{-5mm}\includegraphics[width=\linewidth]{figures/graphs/power8/5i5d10000k-nrq0.png} &
+        \vspace{-5mm}\includegraphics[width=\linewidth]{figures/graphs/power8/5i5d10000k-nrq1.png}
+        \\
+        \vspace{-5mm}\rotatebox{90}{\small 40\% updates} &
+        \vspace{-5mm}\includegraphics[width=\linewidth]{figures/graphs/power8/1i1d10000k-nrq0.png} &
+        \vspace{-5mm}\includegraphics[width=\linewidth]{figures/graphs/power8/1i1d10000k-nrq1.png}
+        \\
+    \end{tabular}
+    \vspace{-2mm}
+	\includegraphics[width=\linewidth]{figures/graphs/dsbench_legend.png}
+    \vspace{-5mm}
+\caption{Results for a \textbf{BST microbenchmark} on IBM Power8.
+The x-axis represents the number of concurrent threads.
+The y-axis represents operations per microsecond.}
+\label{fig-exp-bst}
+\end{figure}
