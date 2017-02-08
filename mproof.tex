@@ -6,10 +6,10 @@ Let $p_1$ (and resp. $p_2$) be the process executing transaction $T_1$ (and resp
 
 If in $E_1$, $T_1$ performs a nontrivial event on a base object on which they contend, let $e_1$ be the last
 event in $E_1$ in which $T_1$ performs such an event to some base object $b$ and $e_2$, the first event
-in $E_2$ that accesses $b$ (note that by assumption, $e_1$ is a cached access).
-Otherwise, $T_i$ only performs trivial events in $E_1$ to base objects (some of which may be uncached) on which it contends with $T_{2}$ in $E_1\cdot E_2$:
+in $E_2$ that accesses $b$ (note that by assumption, $e_1$ is a direct access).
+Otherwise, $T_i$ only performs trivial events in $E_1$ to base objects (some of which may be direct) on which it contends with $T_{2}$ in $E_1\cdot E_2$:
 let $e_2$ be the first event in $E_2$ in which $E_2$ performs a nontrivial event to some base object $b$
-on which they contend and $e_1$, the last event of $E_1$ in $T_1$ that accesses $b$ (possibly uncached).
+on which they contend and $e_1$, the last event of $E_1$ in $T_1$ that accesses $b$.
 
 Let $E_1'$ (and resp. $E_2'$) be the longest prefix of $E_1$ (and resp. $E_2$) that does not include
 $e_1$ (and resp. $e_2$).
@@ -31,7 +31,7 @@ in any extension of $E\cdot e_1\cdot e_2$---a contradiction
 to the assumption that $\mathcal{M}$ is progressive.   
 \item
 ($e_1$ is a trivial event)
-Recall that $e_1$ may be potentially uncached.
+Recall that $e_1$ may be potentially an event involving a direct access.
 Consider the execution $\tilde E\cdot e_2$ following which $b$ is contained in the tracking set of process
 $p_{2}$ in exclusive mode. Clearly, we have an extension $\tilde E\cdot e_2 \cdot e_1$ in which
 $\tau_{2}$ is invalidated. Thus transaction $T_{2}$ must return $A_{2}$ in any extension of $E\cdot e_2\cdot e_1$---a contradiction
