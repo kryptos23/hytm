@@ -83,11 +83,16 @@ and $m \in \{\shared, \exclusive\}$ is an access \emph{mode}.
 The triple $(b, v, m)$ is added to the tracking set when $i$ performs a cached
 rmw access of $b$, where $m$ is set to $\exclusive$ if the access is
 nontrivial, and to $\shared$ otherwise.  
-%we assume that there exists some constant $\TS$ (representing the size of the L1 cache)
-% such that the condition $|\tau_i| \leq \TS$ must always hold; this
-% condition will be enforced by our model.
+We assume that there exists some constant $\TS$
+such that the condition $|\tau_i| \leq \TS$ must always hold; this
+condition will be enforced by our model.
 A base object $b$ is \emph{present} in $\tau_i$ with mode $m$ if $\exists v, (b,v,m) \in \tau_i$.
 
+Any transaction $T_k \in \ms{txns}(E)$ that performs at least one cached access necessarily performs a \emph{cache-commit} primitive as the last event of $E|k$ if it has already not terminated before. 
+A \emph{cache-commit} primitive issued by process $i$ with
+a valid $\tau_i$ does the following: for each base object $b$ such that $(b,v,\exclusive) \in \tau_i$, the value of $b$ in $C$ is updated to $v$. 
+Finally, $\tau_i$ is set to $\emptyset$ and the primitive 
+returns $\textit{commit}$. 
 % A trivial (resp.\ nontrivial) 
 % cached primitive $\langle g,h \rangle$ applied to $b$ 
 % by process $i$ 
@@ -110,16 +115,15 @@ if, in a configuration $C$ where  $(b,v,\exclusive)\in\tau_i$
 (resp., any \emph{nontrivial} primitive) to $b$, then $\tau_i$ becomes
 \emph{invalid} and any subsequent event invoked by $i$
 sets $\tau_i$ to $\emptyset$ and returns $\bot$. We refer to this event as a \emph{tracking set abort}.
-% Note that hardware transactions may also abort spuriously, or because of unsupported operations~\cite{Rei12}, or due to \emph{capacity} aborts. 
-% Since modelling these aborts will not affect our results, except make for a more cumbersome presentation, we only consider capacity aborts in this paper. 
 
-Any transaction $T_k \in \ms{txns}(E)$ that performs at least one cached access necessarily performs a \emph{cache-commit} primitive as the last event of $E|k$. 
-% \trevor{why can't it be a user-requested abort? what if, e.g., you are implementing TLE, so you read a lock state and see that it is locked, and want to abort?}
-% \sri{ofcourse they are covered in the model, but I dont understand why you rbing this up here?}
-A \emph{cache-commit} primitive issued by process $i$ with
+Any transaction that performs at least one cached access must necessarily perform a \emph{cache-commit} primitive 
+that determines the terminal response of the transaction.
+A cache-commit primitive
+issued by process $i$ with
 a valid $\tau_i$ does the following: for each base object $b$ such that $(b,v,\exclusive) \in \tau_i$, the value of $b$ in $C$ is updated to $v$. 
-Finally, $\tau_i$ is set to $\emptyset$ and the primitive 
-returns $\textit{commit}$. 
+Finally, $\tau_i$ is set to $\emptyset$ and the operation returns $\textit{commit}$. 
+We assume that a fast-path transaction $T_k$ returns $A_k$
+as soon an underlying cached primitive or \emph{cache-commit} returns $\bot$.
 
 \vspace{1mm}\noindent\textbf{Slow-path and fast-path transactions.}
 We partition HyTM transactions into \emph{fast-path transactions} and \emph{slow-path transactions}.
@@ -129,14 +133,12 @@ a direct rmw primitive on a base object.
 A fast-path transaction essentially encapsulates a hardware transaction. Specifically, in any execution $E$,
 we say that a transaction $T_k\in \ms{txns}(E)$ is a fast-path transaction if $E|k$ contains at least one cached event.
 An event of a \emph{hardware transaction} includes series of direct trivial accesses and at least one cached access
-followed by a \emph{cache-commit} primitive.
+followed by a cache-commit primitive.
 
-We assume that a fast-path transaction $T_k$ returns $A_k$
-as soon an underlying cached primitive or \emph{cache-commit} returns $\bot$.
-This immediately implies the following:
+Concretely, the HyTM model provides automatic detection of contending accesses for fast-path transactions:
 %
-\begin{observation}
-\label{ob:traborts}
+\begin{remark}[Tracking set aborts]
+\label{re:traborts}
 %
 Let $T_k \in \ms{txns}(E)$ be any t-incomplete transaction executed by process $i$, 
 where $(b,v,\exclusive)\in\tau_i$ (resp., $(b,v,\shared)\in\tau_i$) after execution $E$, and $e$ be any event (resp., nontrivial event) 
@@ -146,12 +148,20 @@ The next event of $T_k$ in any extension of $E\cdot e$ is $A_k$.
 %For any t-incomplete transaction $T_k \in \ms{txns}(E)$ executed by process $i$ and $(b,v,\exclusive)\in\tau_i$ (and resp. $(b,v,\shared)\in\tau_i$) after execution $E$
 %and let $e$ be any event (and resp. nontrivial event) that some process $j\neq i$ is poised to apply after $E$, then the next event of $T_k$ in any extension of $E\cdot e$
 %is $A_k$.
-\end{observation}
+\end{remark}
 %
-\vspace{1mm}\noindent\textbf{Direct reads inside fast-path.}
+We also assume that there is a constant $\TS$ such that the condition $|\tau_i| \leq \TS$ must always hold.
+%
+\begin{remark}[Capacity aborts]
+\label{re:capacity}
+Any cached access performed by a process $i$ first checks the condition $|\tau_i|=\TS$, where $\TS$ is a pre-defined constant, and if so, it
+sets $\tau_i=\emptyset$ and immediately returns $\bot$. 
+\end{remark}
+
+\vspace{1mm}\noindent\textbf{Direct reads within fast-path.}
 Note that we specifically allow hardware transactions to perform reads without adding the corresponding base object to
 the process's tracking set, thus modelling the \emph{suspend/resume} instructions supported by 
-IBM Power8 architectures. We remark that Intel's HTM does not support this feature: an event of a hardware transaction
+IBM Power8 architectures. Note that Intel's HTM does not support this feature: an event of a fast-path transaction
 does not include any direct access to base objects.
 
 %
