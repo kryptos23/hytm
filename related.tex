@@ -4,9 +4,10 @@
 %
 \vspace{1mm}\noindent\textbf{HyTM implementations.}
 Early HyTMs like the ones described in \cite{damronhytm, kumarhytm} provided progressiveness, but
-subsequent HyTM proposals sacrificed progressiveness for lesser instrumentation overheads.
-
-To our knowledge, ours is the first work to consider the theoretical foundations of the cost of concurrency in HyTMs.
+subsequent HyTM proposals like \emph{PhTM}~\cite{phasedtm} and \emph{HybridNOrec}~\cite{hybridnorec} sacrificed progressiveness for lesser instrumentation overheads.
+This instrumentation cost on the fast-path was precisely characterized in \cite{htmdisc15}.
+In this paper, we proved the inherent cost of concurrency on the slow-path thus establishing an interesting, but intuitive complexity separation between progressive STMs and HyTMs.
+Moreover, to the best of our knowledge, this is the first work to consider the theoretical foundations of the cost of concurrency in HyTMs in theory and practice (on currently available HTM architectures).
 
 \vspace{1mm}\noindent\textbf{HyTM complexity.}
 The proof of Theorem~\ref{th:impossibility} is based on the analogous proof for step complexity of STMs that are \emph{disjoint-access parallel}~\cite{prog15-pact}.
@@ -28,6 +29,7 @@ and if not, aborts the transaction; otherwise the transaction is continued as an
 The code for the fast-path and the slow-path is identical to $\mathcal{M}$.
 Assuming the hardware transactions do not perform any direct accesses, opacity is immediate.
 
+\vspace{1mm}\noindent\textit{Other approaches.}
 Recent work has investigated fallback to \emph{reduced} hardware transactions~\cite{MS13}
 in which an all-software slow-path is replaced by a mix of hardware and software transactions. 
 Afek \emph{et al}. proposed amalgamated lock elision (ALE)~\cite{ale15} which improves over TLE

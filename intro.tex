@@ -27,7 +27,7 @@ from the value that was read from the sequence lock at the start of the transact
 
 In fact, STMs like TL2 and NOrec ensure progress in the absence of data conflicts with 
 O(1) step complexity read operations and \emph{invisible reads} (read operations 
-do not apply any nontrivial \trevor{instead of nontrivial primitives, maybe we should say they don't write/modify shared memory?} primitives on the shared memory).
+do not modify shared memory) 
 Nonetheless, TM designs that are implemented entirely in software still incur significant performance overhead.
 Thus, current CPUs have included instructions to mark a block of memory accesses as transactional~\cite{Rei12, asf, bluegene}, allowing them to be executed \emph{atomically} in hardware.
 Hardware transactions promise better performance than STMs, but they offer no progress guarantees 
@@ -64,15 +64,19 @@ In these experiments, we studied two types of workloads: workloads in which esse
 These experiments demonstrate that hardware instrumentation is a dominating factor in the performance of HyTMs, and that simplistic algorithms like TLE perform very well unless transactions periodically run on the slow-path.
 
 Viewed collectively, our results demonstrate that there is an inherent cost to concurrency in HyTMs.
+Our experiments with Intel and IBM Power8 HTMs   
+seem to suggest that (i) the \emph{cost of concurrency} also exists in practice, (ii) it is important to build HyTMs that provide progressiveness for a maximal set of transactions with minimal fast-path instrumentation
+without using global contending bottlenecks and (iii) there is no easy to way to derive more efficient HyTMs by taking advantage of non-speculative accesses within the fast-path.
+
 %We explore the concurrency vs. hardware instrumentation vs. software validation tradeoffs for these algorithms.
 %Preliminary experiments on Intel Haswell (resp. IBM Power 8) not supporting (resp. supporting) non-speculative accesses inside hardware,
 %seem to suggest that the inherent \emph{cost to concurrency} in HyTMs also exists in practice and discuss algorithmic techniques to overcome them.
 
-% \paragraph{Roadmap.}
-% \cref{sec:hytm} presents details of the HyTM model that extends the model introduced in \cite{htmdisc15} 
-% to access memory locations non-speculatively.
-% \cref{sec:lb} presents our main lower bound result on the step-complexity of progressive HyTMs
-% while \cref{sec:hytmalgos} presents several opaque HyTM algorithms.
-% \cref{sec:eval} summarizes resuls from our preliminary experiments on Intel Haswell and IBM Power 8 architectures.
-% \cref{sec:rel} presents the related work along with concluding remarks.
+\paragraph{Roadmap.}
+\cref{sec:hytm} presents details of the HyTM model that extends the model introduced in \cite{htmdisc15} 
+to access memory locations non-speculatively.
+\cref{sec:lb} presents our main lower bound result on the step-complexity of progressive HyTMs
+while \cref{sec:hytmalgos} presents several opaque HyTM algorithms.
+\cref{sec:eval} summarizes resuls from our preliminary experiments on Intel Haswell and IBM Power 8 architectures.
+\cref{sec:rel} presents the related work along with concluding remarks.
 %
