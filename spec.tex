@@ -30,23 +30,12 @@ for a set $\mathcal{T}$ of transactions
 if in any execution $E$ of $\mathcal{M}$; $\mathcal{T} \subseteq \ms{txns}(E)$, 
 if any transaction $T_k \in \mathcal{T}$ returns $A_k$ in $E$, there exists 
 another concurrent transaction $T_m$ that \emph{conflicts} (both access the same t-object and at least one writes) with $T_k$ in $E$~\cite{tm-book}.
-%
-\begin{theorem}
-\label{th:impossibility}
-Let $\mathcal{M}$ be any progressive opaque HyTM implementation providing invisible reads.
-There exists an execution $E$ of $\mathcal{M}$ and some slow-path read-only transaction $T_k \in \ms{txns}(E)$
-that incurs a time complexity of $\Omega (m^2)$; $m=|\Rset(T_k)|$.
-\end{theorem}
-%
-For the proof, we construct an execution of a read-only slow-path transaction $T_{\phi}$ that performs $m \in \mathbb{N}$
-distinct t-reads of t-objects $X_1,\ldots , X_m$. We show inductively that for each 
-$i\in \{1,\ldots , m\}$; $m \in \mathbb{N}$, the $i^{\ms{th}}$ t-read must access $i-1$ distinct base objects
-during its execution. The (partial) steps in our execution are depicted in Figure~\ref{fig:indis}.
 
 The proof of the lemma below is a simple extension of the analogous lemmas from \cite{hytm14disc}
-allowing direct trivial accesses inside fast-path transactions. This intuively follows from the fact that
+allowing direct trivial accesses inside fast-path transactions which in turn is inspired by an analogous result concerning \emph{disjoint-access parallel} STMs~\cite{AHM09}. 
+Intuitively, the proof follows follows from the fact that
 the tracking set of a process executing a fast-path transaction is invalidated due to contention on a base
-object with another transaction (cf. Observation~\ref{ob:traborts}).
+object with another transaction (cf. Remark~\ref{re:traborts}).
 %
 \begin{lemma}
 \label{lm:hytm}
@@ -61,51 +50,22 @@ at least one of $T_1$ or $T_2$ is a fast-path transaction.
 Then, $T_1$ and $T_2$ do not contend on any base object in $E_1 \cdot E_2$.
 \end{lemma}
 %
-\begin{proof}
-%
-Suppose, by contradiction that $T_1$ and $T_2$ 
-contend on the same base object in $E_1\cdot E_2$.
-Let $p_1$ (and resp. $p_2$) be the process executing transaction $T_1$ (and resp. $T_2$).
-
-If in $E_1$, $T_1$ performs a nontrivial event on a base object on which they contend, let $e_1$ be the last
-event in $E_1$ in which $T_1$ performs such an event to some base object $b$ and $e_2$, the first event
-in $E_2$ that accesses $b$ (note that by assumption, $e_1$ is a cached access).
-Otherwise, $T_i$ only performs trivial events in $E_1$ to base objects (some of which may be uncached) on which it contends with $T_{2}$ in $E_1\cdot E_2$:
-let $e_2$ be the first event in $E_2$ in which $E_2$ performs a nontrivial event to some base object $b$
-on which they contend and $e_1$, the last event of $E_1$ in $T_1$ that accesses $b$ (possibly uncached).
-
-Let $E_1'$ (and resp. $E_2'$) be the longest prefix of $E_1$ (and resp. $E_2$) that does not include
-$e_1$ (and resp. $e_2$).
-Since before accessing $b$, the execution is step contention-free for $T_1$, $E \cdot
-E_1'\cdot E_2'$ is an execution of $\mathcal{M}$.
-By assumption of lemma, $T_1$ and $T_2$ do not conflict in $E_1'\cdot E_2'$.
-By construction, $E_1 \cdot E_2'$ is indistinguishable to $T_2$ from $E_1' \cdot E_2'$.
-Hence, $T_1$ and $T_{2}$ are poised to apply contending events $e_1$ and $e_2$ on $b$ in the execution
-$\tilde E=E_1' \cdot E_2'$.
-
-We now consider two cases:
-\begin{enumerate}
-\item 
-($e_1$ is a nontrivial event)
-After $\tilde E\cdot e_1$, $b$ is contained in the tracking set of process
-$p_1$ in exclusive mode and in the extension $\tilde E\cdot e_1 \cdot e_2$, we have that
-$\tau_1$ is invalidated. Thus, by Observation~\ref{ob:traborts}, transaction $T_1$ must return $A_1$ 
-in any extension of $E\cdot e_1\cdot e_2$---a contradiction
-to the assumption that $\mathcal{M}$ is progressive.   
-\item
-($e_1$ is a trivial event)
-Recall that $e_1$ may be potentially uncached.
-Consider the execution $\tilde E\cdot e_2$ following which $b$ is contained in the tracking set of process
-$p_{2}$ in exclusive mode. Clearly, we have an extension $\tilde E\cdot e_2 \cdot e_1$ in which
-$\tau_{2}$ is invalidated. Thus transaction $T_{2}$ must return $A_{2}$ in any extension of $E\cdot e_2\cdot e_1$---a contradiction
-to the assumption that $\mathcal{M}$ is progressive.   
-\end{enumerate}
-\end{proof}
-%
-\begin{proof}
 We construct an execution of a progressive opaque HyTM in which every t-read performed by a read-only slow-path transaction
 must access linear (in the size of the read set) number of distinct base objects.
+%
+\begin{theorem}
+\label{th:impossibility}
+Let $\mathcal{M}$ be any progressive opaque HyTM implementation providing invisible reads.
+There exists an execution $E$ of $\mathcal{M}$ and some slow-path read-only transaction $T_k \in \ms{txns}(E)$
+that incurs a time complexity of $\Omega (m^2)$; $m=|\Rset(T_k)|$.
+\end{theorem}
+%
+For the proof, we construct an execution of a read-only slow-path transaction $T_{\phi}$ that performs $m \in \mathbb{N}$
+distinct t-reads of t-objects $X_1,\ldots , X_m$. We show inductively that for each 
+$i\in \{1,\ldots , m\}$; $m \in \mathbb{N}$, the $i^{\ms{th}}$ t-read must access $i-1$ distinct base objects
+during its execution. The (partial) steps in our execution are depicted in Figure~\ref{fig:indis}.
 
+\begin{proof}
 For all $i\in \{1,\ldots , m\}$; $m \in \mathbb{N}$, let 
 $v$ be the initial value of t-object $X_i$.
 Let $\pi^{m}$ denote the complete step contention-free execution of a slow-path transaction
@@ -136,6 +96,7 @@ $\mathcal{M}$ has an execution of the form $\rho^i\cdot \pi^{i-1}$.
 Since $\Dset(T_k) \cap \Dset(T_{i}) =\emptyset$ in $\rho^i\cdot \pi^{i-1}$,
 by Lemma~\ref{lm:hytm}, transactions $T_{\phi}$ and $T_i$ do not contend
 on any base object in execution $\rho^i\cdot \pi^{i-1}$.
+Moreover, since they each access a single t-object, fast-path transaction $T_i$ cannot incur a capacity abort.
 Thus, $\rho^i\cdot \pi^{i-1}$ is also an execution of $\mathcal{M}$.
 
 By opacity, $\rho^i\cdot \pi^{i-1} \cdot \alpha^i$ (Figure~\ref{sfig:inv-1}) is an execution
@@ -168,6 +129,8 @@ $\mathbb{E}_{2\ell}^{i}$.
 %The proof of the above claim is immediate.
 \begin{proof}
 %
+Note that by our assumption on capacity aborts, fast-path transactions $T_i$ and $T_{\ell}$ cannot incur capacity aborts in the defined execution.
+
 For all $i \in \{2,\ldots, m\}$, $\pi^{i-1}$
 is an execution of $\mathcal{M}$.
 By assumption of invisible reads, $T_{{\ell}}$ must be committed in $\pi^{i-1}\cdot \rho^{\ell}$
@@ -219,15 +182,13 @@ in the execution fragment $\pi_j^i$
 to distinguish configuration $C^i$ from the configurations
 that result after the $(i-1)$ different executions 
 $\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot \rho^i$ respectively.
-
+\end{proof}
+%
 Thus, for all $i \in \{2,\ldots, m\}$, slow-path transaction $T_{\phi}$ must perform at least $i-1$ steps 
-while executing the $i^{th}$ t-read in $\pi_{j}^i$.
+while executing the $i^{th}$ t-read in the execution fragment $\pi_{j}^i$.
 \end{proof}
 %
-\end{proof}
 %
-%
-
 \vspace{1mm}\noindent\textbf{How STM implementations mitigate the lower bound cost.}
 NOrec~\cite{norec} is a progressive opaque STM that minimizes the average step-complexity resulting from incremental 
 validation of t-reads. Transactions read a global versioned lock at the start, and perform value-based validation
