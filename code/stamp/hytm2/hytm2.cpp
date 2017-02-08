@@ -989,7 +989,7 @@ __INLINE__ bool validateLockVersions(Thread* Self, List* lockAVPairs/*, bool hol
             // so we also need to compare it with any rdv stored in the WRITE-set.
             AVPair* writeLogEntry = Self->wrSet->find(curr->addr);
             uint64_t encounterTime = getMinLockSnap(curr, writeLogEntry);
-            assert(encounterTime);
+            //assert(encounterTime);
             
             if ((locksnap >> 1) != (encounterTime>>1)) {
                 // the address is locked, it its version number has changed

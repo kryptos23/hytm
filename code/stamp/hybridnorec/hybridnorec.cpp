@@ -856,7 +856,9 @@ int TxCommit(void* _Self) {
             SYNC_RMW; // prevent instructions in the critical section from being moved before the lock (on power)
             assert((Self->sequenceLock & 1) == 0);
             assert((gsl & 1) == 1);
+#ifndef USE_SUSPEND_RESUME
             assert(gsl == Self->sequenceLock + 1);
+#endif
             TM_TIMER_START(Self->UniqID);
 
             // acquire extra sequence lock

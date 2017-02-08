@@ -5,15 +5,26 @@ source plaf.bash
 expname=dsbench
 
 seqwidth=48
+
 algs_reclaimers_pools="dsbench_tl2~debra~none dsbench_hytm1~debra~none dsbench_hytm2~debra~none dsbench_hytm3~debra~none dsbench_hybridnorec~debra~none"
-keyranges="100000"
-insdel_pcnts="0 5 20 50"
+algs_reclaimers_pools="$algs_reclaimers_pools dsbench_tl2~none~none dsbench_hytm1~none~none dsbench_hytm2~none~none dsbench_hytm3~none~none dsbench_hybridnorec~none~none"
+
+if [ "$machine" == "cheshire-r07u03" ]; then
+    algs_reclaimers_pools="$algs_reclaimers_pools dsbench_hytm2_nonspec~debra~none dsbench_hybridnorec_nonspec~debra~none"
+    algs_reclaimers_pools="$algs_reclaimers_pools dsbench_hytm2_nonspec~none~none dsbench_hybridnorec_nonspec~none~none"
+fi
+
+keyranges="10000"
+insdel_pcnts="0 1 5"
 
 ntrials=6
 t=1000
+timeoutsec=`expr $t / 1000`
+timeoutsec=`expr $timeoutsec + 3`
 p=-p
 ma=new
-pinnings="${pin_cluster}"
+pinnings="${pin_scatter}"
+#bindingarg="-bind 0,8,16,24,32,40,48,56,64,72,80,88,96,104,112,120,128,136,144,152,160,168,176,184,1,9,17,25,33,41,49,57,65,73,81,89,97,105,113,121,129,137,145,153,161,169,177,185,2,10,18,26,34,42,50,58,66,74,82,90,98,106,114,122,130,138,146,154,162,170,178,186,3,11,19,27,35,43,51,59,67,75,83,91,99,107,115,123,131,139,147,155,163,171,179,187"
 
 if [ "$#" -ne "0" ]; then
 	echo "RUNNING IN TEST MODE"
@@ -56,28 +67,34 @@ echo "--------------------- END VARIABLES ---------------------" >> $logfile
 
 cat $logfile
 
+### COMPILE ALL ALGORITHMS
+make -f Makefile.stm -j machine=`hostname` EXTRAFLAGS3=-DHTM_ATTEMPT_THRESH=20 pinning=$pinnings
+
+problems=""
+
 cnt1=0
 cnt2=0
 for counting in 1 0; do
+for pinning in $pinnings; do
+    #makecmd="make -f Makefile.stm -j machine=$machine EXTRAFLAGS1=$xargs1 EXTRAFLAGS3=-DHTM_ATTEMPT_THRESH=20 pinning=$pinning"
     for k in $keyranges; do
-    for pinning in $pinnings; do
     for alg_reclaimer_pool in $algs_reclaimers_pools; do
         alg=`echo $alg_reclaimer_pool | cut -d"~" -f1`
         mr=`echo $alg_reclaimer_pool | cut -d"~" -f2`
         mp=`echo $alg_reclaimer_pool | cut -d"~" -f3`
-            if [ $counting -eq 0 ]; then
-                target=`echo $alg | cut -d"_" -f2`
-                makecmd="make -f Makefile.stm -j TARGET=$target machine=$machine EXTRAFLAGS1=$xargs1 EXTRAFLAGS3=-DHTM_ATTEMPT_THRESH=20 pinning=$pinning"
-                echo $makecmd
-                $makecmd >> $compilinglogfile
-                if [ "$?" -ne 0 ]; then
-                    cat $compilinglogfile
-                    echo "ERROR COMPILING"
-                    exit 1
-                fi
-            else
+#            if [ $counting -eq 0 ]; then
+#                target=`echo $alg | cut -d"_" -f2`
+#                makecmd="make -f Makefile.stm -j TARGET=$target machine=$machine EXTRAFLAGS1=$xargs1 EXTRAFLAGS3=-DHTM_ATTEMPT_THRESH=20 pinning=$pinning"
+#                echo $makecmd
+#                $makecmd >> $compilinglogfile
+#                if [ "$?" -ne 0 ]; then
+#                    cat $compilinglogfile
+#                    echo "ERROR COMPILING"
+#                    exit 1
+#                fi
+#            else
                 echo "counting trials for alg $alg, mr $mr, mp $mp and k $k"
-            fi
+#            fi
 
             for insdel_pcnt in $insdel_pcnts; do
             for nthreads in $threadcounts; do
@@ -104,13 +121,16 @@ for counting in 1 0; do
                         fname=`echo $cmd | tr " " "."`
                         fname="step$cnt2.${fname}.-seqwidth.$seqwidth.-trial.$trial"
                         fname="$outdir/$fname.data"
-                        echo "$envcmd ${malloc_conf} $cmdprefix ./$cmd > $fname"
-                        echo "$envcmd ${malloc_conf} $cmdprefix ./$cmd" > $fname
-                        $envcmd ${malloc_conf} $cmdprefix ./$cmd >> $fname 2>>$stderrfile
+                        ############# ADD BINDING ARGUMENT TO COMMAND AFTER CREATING THE FILENAME
+                        #cmd="$cmd $bindingarg"
+                        echo "timeout $timeoutsec $envcmd ${malloc_conf} $cmdprefix ./$cmd > $fname"
+                        echo "timeout $timeoutsec $envcmd ${malloc_conf} $cmdprefix ./$cmd" > $fname
+                        timeout $timeoutsec $envcmd ${malloc_conf} $cmdprefix ./$cmd >> $fname 2>>$stderrfile
                         if [ "$?" -ne "0" ]; then
+                            problems="${problems}ERROR: nonzero status after executing cmd ``timeout $timeoutsec $envcmd ${malloc_conf} $cmdprefix ./$cmd >> $fname\n''"
                             echo "ERROR: nonzero status after executing cmd"
-                            cat $stderrfile
-                            exit
+                            #cat $stderrfile
+                            #exit
                         fi
                     done
                 done
@@ -118,7 +138,7 @@ for counting in 1 0; do
         done
     done
     done
-    done
+done
 done
 
 cat $logfile > $f
@@ -128,5 +148,9 @@ cat $f >> $logfile
 rm -f $f
 rm -f $compilinglogfile
 
-cd $scriptsdir
-./${expname}.format ${machine}
+#cd $scriptsdir
+#./${expname}.format ${machine}
+#cd ..
+
+echo -e $problems
+cat $stderrfile

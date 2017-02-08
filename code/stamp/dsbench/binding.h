@@ -245,7 +245,8 @@ void binding_configurePolicy(const int nprocessors) {
                     break;
                 case SOSCIP_SCATTER:
                     // output = MOD(A1,J$5*J$4)*J$6+INT(A1/J$5/J$4) where a1=i, j4=sockets, j5=cores/socket, j6=threads/core
-                    j = (i%(2*SOSCIP_CLUSTER_coresPerSocket))*SOSCIP_CLUSTER_threadsPerCore + (i/SOSCIP_CLUSTER48_coresPerSocket/SOSCIP_CLUSTER_threadsPerCore);
+                    j = (i%24)*8 + i/24;
+                    //j = (i%(2*SOSCIP_CLUSTER_coresPerSocket))*SOSCIP_CLUSTER_threadsPerCore + (i/SOSCIP_CLUSTER_coresPerSocket/2);
                     break;
                 case NONE:
                     break;

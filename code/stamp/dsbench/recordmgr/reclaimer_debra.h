@@ -16,14 +16,16 @@
 #include "reclaimer_interface.h"
 using namespace std;
 
+#ifndef LWSYNC
 #if defined(__powerpc64__) || defined(__ppc64__) || defined(__PPC64__)
 #   define LWSYNC asm volatile("lwsync" ::: "memory")
 #   define SYNC asm volatile("sync" ::: "memory")
 #elif defined(__x86_64__) || defined(_M_X64)
 #   define LWSYNC /* nothing */
-#   define SYNC /* nothing */
+#   define SYNC __sync_synchronize()
 #else
 #   error UNKNOWN platform
+#endif
 #endif
 
 template <typename T = void, class Pool = pool_interface<T> >

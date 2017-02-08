@@ -22,10 +22,30 @@ pinning=IDENTITY
 
 GPP = g++
 
-all: microbench
+all: tl2 hytm1 hytm2 hytm3 hybridnorec hytm2_nonspec hybridnorec_nonspec
+
+.PHONY : all clean tl2 hytm1 hytm2 hytm3 hybridnorec hytm2_nonspec hybridnorec_nonspec
 
 clean:
+	rm -f $(machine).$(PROG)_*
 
-microbench:
-	$(GPP) $(FLAGS) -o $(machine).$(PROG)_$(TARGET) -O3 -DBST -D$(TARGET) -DP1ALG1 -DP2ALG1 -DP3ALG12 -DTHREAD_BINDING=$(pinning) main.cpp ../lib/thread.c $(LDFLAGS)
-	
+tl2:
+	$(GPP) $(FLAGS) -o $(machine).$(PROG)_$@ -O3 -DBST -D$@ -DP1ALG1 -DP2ALG1 -DP3ALG12 -DTHREAD_BINDING=$(pinning) main.cpp ../lib/thread.c $(LDFLAGS)
+
+hytm1:
+	$(GPP) $(FLAGS) -o $(machine).$(PROG)_$@ -O3 -DBST -D$@ -DP1ALG1 -DP2ALG1 -DP3ALG12 -DTHREAD_BINDING=$(pinning) main.cpp ../lib/thread.c $(LDFLAGS)
+
+hytm2:
+	$(GPP) $(FLAGS) -o $(machine).$(PROG)_$@ -O3 -DBST -D$@ -DP1ALG1 -DP2ALG1 -DP3ALG12 -DTHREAD_BINDING=$(pinning) main.cpp ../lib/thread.c $(LDFLAGS)
+
+hytm3:
+	$(GPP) $(FLAGS) -o $(machine).$(PROG)_$@ -O3 -DBST -D$@ -DP1ALG1 -DP2ALG1 -DP3ALG12 -DTHREAD_BINDING=$(pinning) main.cpp ../lib/thread.c $(LDFLAGS)
+
+hybridnorec:
+	$(GPP) $(FLAGS) -o $(machine).$(PROG)_$@ -O3 -DBST -D$@ -DP1ALG1 -DP2ALG1 -DP3ALG12 -DTHREAD_BINDING=$(pinning) main.cpp ../lib/thread.c $(LDFLAGS)
+
+hytm2_nonspec:
+	$(GPP) $(FLAGS) -o $(machine).$(PROG)_$@ -O3 -DBST -Dhytm2 -DUSE_SUSPEND_RESUME -DP1ALG1 -DP2ALG1 -DP3ALG12 -DTHREAD_BINDING=$(pinning) main.cpp ../lib/thread.c $(LDFLAGS)
+
+hybridnorec_nonspec:
+	$(GPP) $(FLAGS) -o $(machine).$(PROG)_$@ -O3 -DBST -Dhybridnorec -DUSE_SUSPEND_RESUME -DP1ALG1 -DP2ALG1 -DP3ALG12 -DTHREAD_BINDING=$(pinning) main.cpp ../lib/thread.c $(LDFLAGS)
