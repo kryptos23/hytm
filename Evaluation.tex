@@ -169,11 +169,11 @@ This causes the transaction to run for a longer time, which lengthens its window
 
 \vspace{1mm}\noindent\textbf{Results (IBM Power8).}
 %
-Algorithm~\ref{alg:inswrite} performs terribly on Power8: Power8 transactions can only load 64 cache lines before they will abort~\cite{nguyen-thesis}. 
+Algorithm~\ref{alg:inswrite} performs poorly on Power8: Power8 transactions can only load 64 cache lines before they will abort~\cite{nguyen-thesis}. 
 Transactions read locks and tree nodes, which are in different cache lines: together, they often exceed 64 cache lines loaded in a tree operation, 
 so most transactions cannot succeed in hardware. Consequently, on Power8, 
-it is incredibly important either to have little or no instrumentation in transactions, or for metadata to be located in the 
-same cache lines as program data. Of course, the latter is not possible for hybrid tms, which do not have control over the layout of program data.
+it is incredibly important either to have minimal instrumentation in transactions, or for metadata to be located in the 
+same cache lines as program data. Of course, the latter is not possible for HyTMs, which do not have control over the layout of program data.
 Consequently, Algorithm~\ref{alg:inswrite2} outperforms Algorithm~\ref{alg:inswrite} in Power8 quite easily by avoiding the per-read instrumentation. 
 
 Algorithm~\ref{alg:inswrite} is improved by suspend/resume on sequence locks, but suspend/resume instructions are expensive on Power8, 
@@ -185,10 +185,10 @@ Typically one would accomplish this by logging all writes so that a process can 
 however, logging the writes inside the transaction would be at least as costly as just performing them.
 
 Observe that Hybrid NOrec does far worse with updates in Power8 than on the Intel machine.
-This is due to the fact that fetch-increment on a single location experiences severe negative scaling on the Power8 processes: for e.g., in one second, a single
-thread can perform 37 fetch-increment operations while 6 threads perform a total of 9 million and 24 threads perform only 4 million fetch-increment operations.
+This is due to the fact that fetch-increment on a single location experiences severe negative scaling on the Power8 processes: e.g., in one second, a single
+thread can perform 37 fetch-add operations while 6 threads perform a total of 9 million and 24 threads perform only 4 million fetch-add operations.
 In contrast, the Intel machine performs 32 million operations with 6 threads and 45 million with 24 threads. This is likely because this Intel processor provides 
-fetch-increment instructions while it must be emulated on the Ppower8 processor (using load-linked/store-conditional).
+fetch-add instructions while it must be emulated on the Power8 processor (using load-linked/store-conditional).
 
 In Hybrid NOrec\textsuperscript{$\ast$}, the non-speculative increment of gsl actually makes performance worse. Recall that in Hybrid NOrec, 
 if a fast path transaction $T_1$ increments gsl, and then a software transaction $T_2$ reads gsl (as part of validation) before $T_1$ commits, then $T_1$ will abort, 
