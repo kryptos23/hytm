@@ -166,3 +166,6 @@ This causes the transaction to run for a longer time, which lengthens its window
 \vspace{1mm}\noindent\textbf{Results (IBM Power8).}
 
 \vspace{1mm}\noindent\textbf{Results (IBM Power8 with suspend/resume).}
+We implemented Algorithm~\ref{alg:inswrite} on Power8 where each read of a sequence lock during a transactional read operation was enclosed within a suspend/resume instruction to access them without 
+incurring tracking set aborts. We remark that this does not affect the opacity of the implementation. 
+We also implemented the variant of Hybrid NOrec in which the update to gsl is performed using a fetch-increment primitive, albeit within a suspend/resume~\cite{hynorecriegel}.  
