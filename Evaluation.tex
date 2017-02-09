@@ -25,9 +25,10 @@ All code was compiled with the GNU C++ compiler (G++) 4.8.4 with build target x8
 %We used the default glibc allocator.
 
 \vspace{1mm}\noindent\textbf{Experimental system (IBM Power8).}
-The experimental system is a IBM S822L with 2x 12-core 3.02GHz POWER8 processor cards, 128GB of RAM, running Ubuntu 16.04 LTS.
+The experimental system is a IBM S822L with 2x 12-core 3.02GHz processor cards, 128GB of RAM, running Ubuntu 16.04 LTS.
 All code was compiled using G++ 5.3.1. This is a 2-socket machine which each contain 2 NUMA \emph{zones}; it is more expensive to access memory on a different NUMA zone and even more if the NUMA zone is on a different 
-socket.
+socket. IBM Power8 uses the L2 cache for detecting tracking set aborts and bounds the transaction capacity (for reads and writes) to 8KB~\cite{htm-survey}.
+This is in contrast to Intel which tracks conflicts at the level of L3 and bounds the transaction capacity for reads (and resp. L1 for writes).
 
 \vspace{1mm}\noindent\textbf{Hybrid TM implementations.}
 For TL2, we used the implementation published by its authors.
@@ -38,7 +39,7 @@ We implemented Algorithm~\ref{alg:inswrite} on Power8 where each read of a seque
 incurring tracking set aborts (Algorithm~\ref{alg:inswrite}\textsuperscript{$\ast$}). We remark that this does not affect the opacity of the implementation. 
 We also implemented the variant of Hybrid NOrec (Hybrid NOrec\textsuperscript{$\ast$}) in which the update to gsl is performed using a fetch-increment primitive, albeit within a suspend/resume~\cite{hynorecriegel}. 
 
-\vspace{1mm}\noindent\textbf{Methodology.}
+\vspace{1mm}\noindent\textbf{Experimental methodology.}
 We used a simple unbalanced binary search tree (BST) microbenchmark as a vehicle to study the performance of our implementations.
 The BST implements a dictionary, which contains a set of keys, each with an associated value.
 For each TM algorithm %$A$ %\in \{$TL2, TLE, Algorithm~1, Algorithm~2, Hybrid NOrec$\}$,
