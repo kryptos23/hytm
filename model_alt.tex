@@ -134,8 +134,6 @@ A fast-path transaction essentially encapsulates a hardware transaction. Specifi
 we say that a transaction $T_k\in \ms{txns}(E)$ is a fast-path transaction if $E|k$ contains at least one cached event.
 An event of a \emph{hardware transaction} includes series of direct trivial accesses and at least one cached access
 followed by a cache-commit primitive.
-
-Concretely, the HyTM model provides automatic detection of contending accesses for fast-path transactions:
 %
 \begin{remark}[Tracking set aborts]
 \label{re:traborts}
@@ -150,7 +148,6 @@ The next event of $T_k$ in any extension of $E\cdot e$ is $A_k$.
 %is $A_k$.
 \end{remark}
 %
-We also assume that there is a constant $\TS$ such that the condition $|\tau_i| \leq \TS$ must always hold.
 %
 \begin{remark}[Capacity aborts]
 \label{re:capacity}
