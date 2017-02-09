@@ -70,10 +70,10 @@ Figure~\ref{fig-exp-bst} shows the results for both types of workloads.
 \begin{figure}
     \centering
     \setlength\tabcolsep{0pt}
-\begin{minipage}{0.49\linewidth}
+\begin{minipage}{0.495\linewidth}
     \centering
-    \textbf{2x Intel E7-4830 v3 12-core}
-    \begin{tabular}{m{0.05\linewidth}m{0.47\linewidth}m{0.47\linewidth}}
+    \textbf{2x12-core Intel E7-4830v3}
+    \begin{tabular}{m{0.04\linewidth}m{0.48\linewidth}m{0.48\linewidth}}
         &
         \fcolorbox{black!50}{black!20}{\parbox{\dimexpr \linewidth-2\fboxsep-2\fboxrule}{\centering {\footnotesize No threads perform \textit{RangeIncrement} (W1)}}} &
         \fcolorbox{black!50}{black!20}{\parbox{\dimexpr \linewidth-2\fboxsep-2\fboxrule}{\centering {\footnotesize One thread performs \textit{RangeIncrement} (W2)}}}
@@ -92,10 +92,10 @@ Figure~\ref{fig-exp-bst} shows the results for both types of workloads.
         \\
     \end{tabular}
 \end{minipage}
-\begin{minipage}{0.49\linewidth}
+\begin{minipage}{0.495\linewidth}
     \centering
-    \textbf{2x IBM POWER8 12-core}
-    \begin{tabular}{m{0.05\linewidth}m{0.47\linewidth}m{0.47\linewidth}}
+    \textbf{2x12-core IBM POWER8}
+    \begin{tabular}{m{0.04\linewidth}m{0.48\linewidth}m{0.48\linewidth}}
         &
         \fcolorbox{black!50}{black!20}{\parbox{\dimexpr \linewidth-2\fboxsep-2\fboxrule}{\centering {\footnotesize No threads perform \textit{RangeIncrement} (W1)}}} &
         \fcolorbox{black!50}{black!20}{\parbox{\dimexpr \linewidth-2\fboxsep-2\fboxrule}{\centering {\footnotesize One thread performs \textit{RangeIncrement} (W2)}}}
@@ -104,13 +104,13 @@ Figure~\ref{fig-exp-bst} shows the results for both types of workloads.
         \includegraphics[width=\linewidth]{figures/graphs/power8/0i0d10000k-nrq0.png} &
         \includegraphics[width=\linewidth]{figures/graphs/power8/0i0d10000k-nrq1.png}
         \\
-        \vspace{-5mm}\rotatebox{90}{\small 2\% updates} &
-        \vspace{-5mm}\includegraphics[width=\linewidth]{figures/graphs/power8/1i1d10000k-nrq0.png} &
-        \vspace{-5mm}\includegraphics[width=\linewidth]{figures/graphs/power8/1i1d10000k-nrq1.png}
-        \\
         \vspace{-5mm}\rotatebox{90}{\small 10\% updates} &
         \vspace{-5mm}\includegraphics[width=\linewidth]{figures/graphs/power8/5i5d10000k-nrq0.png} &
         \vspace{-5mm}\includegraphics[width=\linewidth]{figures/graphs/power8/5i5d10000k-nrq1.png}
+        \\
+        \vspace{-5mm}\rotatebox{90}{\small 40\% updates} &
+        \vspace{-5mm}\includegraphics[width=\linewidth]{figures/graphs/power8/20i20d10000k-nrq0.png} &
+        \vspace{-5mm}\includegraphics[width=\linewidth]{figures/graphs/power8/20i20d10000k-nrq1.png}
         \\
     \end{tabular}
 \end{minipage}

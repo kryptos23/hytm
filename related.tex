@@ -26,6 +26,7 @@ increment (and resp. decrement) at the start (and resp. end). In $\mathcal{M}'$,
 and if not, aborts the transaction; otherwise the transaction is continued as an uninstrumented hardware transaction.
 The code for the fast-path and the slow-path is identical to $\mathcal{M}$.
 Assuming the hardware transactions do not perform any direct accesses, opacity is immediate.
+\trevor{cite my BA at disc that effectively came up with this idea?}
 
 \vspace{1mm}\noindent\textit{Other approaches.}
 Recent work has investigated fallback to \emph{reduced} hardware transactions~\cite{MS13}
