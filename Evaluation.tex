@@ -28,7 +28,8 @@ All code was compiled with the GNU C++ compiler (G++) 4.8.4 with build target x8
 
 \vspace{1mm}\noindent\textbf{Experimental system (IBM Power8).}
 The experimental system is a IBM S822L with 2x 12-core 3.02GHz POWER8 processor cards, 128GB of RAM, running Ubuntu 16.04 LTS.
-All code was compiled using G++ 5.3.1.
+All code was compiled using G++ 5.3.1. This is a 2-socket machine which each contain 2 NUMA \emph{zones}; it is more expensive to access memory on a different NUMA zone and even more if the NUMA zone is on a different 
+socket.
 
 \vspace{1mm}\noindent\textbf{Hybrid TM implementations.}
 For TL2, we used the implementation published by its authors.
