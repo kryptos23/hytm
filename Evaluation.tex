@@ -30,6 +30,13 @@ All code was compiled using G++ 5.3.1. This is a 2-socket machine which each con
 socket. IBM Power8 uses the L2 cache for detecting tracking set aborts and bounds the transaction capacity (for reads and writes) to 8KB~\cite{htm-survey}.
 This is in contrast to Intel which tracks conflicts at the level of L3 and bounds the transaction capacity for reads (and resp. L1 for writes).
 
+We pin one thread on each core within a NUMA zone before moving to the next zone.
+We remark that unlike the thread pinning policy for Intel which saturated the first socket before moving to the next, this proved to be the best policy
+for IBM Power8 which experiences severe negative scaling when threads are saturated on a single 8-way hardware multithreaded core.
+severe negative scaling when threads are saturated on a single 8-way hardware multithreaded core. 
+This is because all threads on a core share resources, including the L1 and L2 cache, a single branch execution pipeline, 
+and only two load-store pipeline.
+
 \vspace{1mm}\noindent\textbf{Hybrid TM implementations.}
 For TL2, we used the implementation published by its authors.
 We implemented the other algorithms in C++.

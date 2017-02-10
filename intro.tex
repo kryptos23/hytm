@@ -58,9 +58,12 @@ Algorithm~1 is progressive for all transactions, but it incurs high instrumentat
 Algorithm~2 avoids all instrumentation in fast-path read operations, but is progressive only for slow-path reading transactions.
 We also sketch how \emph{some} hardware instrumentation can be performed \textit{non-speculatively} without violating opacity.
 
-We performed experiments comparing our HyTM algorithms to TL2, Transactional Lock Elision (TLE) and Hybrid NOrec~\cite{hynorecriegel} using a binary search tree microbenchmark.
-In these experiments, we studied two types of workloads: workloads in which essentially all transactions commit on the fast-path, and workloads in which some thread periodically performs transactions on the slow-path.
-These experiments demonstrate that hardware instrumentation is a dominating factor in the performance of HyTMs, and that simplistic algorithms like TLE perform very well unless transactions periodically run on the slow-path.
+We performed experiments comparing our HyTM algorithms to TL2, Transactional Lock Elision (TLE) and Hybrid NOrec~\cite{hynorecriegel} 
+using a binary search tree microbenchmark.
+In these experiments, we studied two types of workloads: workloads in which essentially all transactions commit on the fast-path, 
+and workloads in which some thread periodically performs transactions on the slow-path.
+These experiments demonstrate that hardware instrumentation is a dominating factor in the performance of HyTMs, 
+and that simplistic algorithms like TLE perform very well unless transactions periodically run on the slow-path.
 
 Our experiments with Intel and IBM Power8 HTMs   
 seem to suggest that (i) the \emph{cost of concurrency} also exists in practice, (ii) it is important to build HyTMs that provide progressiveness for a maximal set of transactions with minimal fast-path instrumentation
