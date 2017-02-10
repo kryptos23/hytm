@@ -192,7 +192,7 @@ Typically one would accomplish this by logging all writes so that a process can 
 however, logging the writes inside the transaction would be at least as costly as just performing them.
 
 Observe that Hybrid NOrec does far worse with updates in Power8 than on the Intel machine.
-This is due to the fact that fetch-increment on a single location experiences severe negative scaling on the Power8 processes: e.g., in one second, a single
+This is due to the fact that fetch-increment on a single location experiences severe negative scaling on the Power8 processor: e.g., in one second, a single
 thread can perform 37 fetch-add operations while 6 threads perform a total of 9 million and 24 threads perform only 4 million fetch-add operations.
 In contrast, the Intel machine performs 32 million operations with 6 threads and 45 million with 24 threads. This is likely because this Intel processor provides 
 fetch-add instructions while it must be emulated on the Power8 processor (using load-linked/store-conditional).
