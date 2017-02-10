@@ -13,13 +13,13 @@
 read$_k(X_j)$
     ov$_j$ := v$_j$  //\label{line:lin1}
     or$_j$ := r$_j$ //\medcom direct read \label{line:hread}
-    if or$_j$ & 1 then return $A_k$ 
+    if or$_j.\lit{isLocked}()$ then return $A_k$ 
     return ov$_j$ //\vspace{-2mm}
 
 write$_k(X_j,v)$
     or$_j$ := r$_j$  //\label{line:m1}
-    if or$_j$ & 1 then return $A_k$
-    r$_j$ := or$_j$+2  //\label{line:m2}
+    if or$_j.\lit{isLocked}()$ then return $A_k$
+    r$_j$ := or$_j.\lit{Lock}()$  //\label{line:m2}
     v$_j$ := v  //\label{line:lin2} 
     return OK //\vspace{-2mm}
 
@@ -28,11 +28,11 @@ tryC$_k$()
 
 Function: release(Q)
     for each X$_j$ $\in Q$
-	r$_j$ := or$_j$+1 // \label{line:rel1}\vspace{-2mm}
+	r$_j$ := or$_j.\lit{unLock}()$ // \label{line:rel1}\vspace{-2mm}
 	
 Function: acquire(Q)
     for each X$_j$ $\in Q$	
-	if r$_j.\lit{isSet}()$  // \medcom CAS/LLSC \label{line:acq1}
+	if r$_j.\lit{setLock}()$  // \medcom CAS/LLSC \label{line:acq1}
 	    Lset(T$_k$) := Lset(T$_k$) $\cup$ {X$_j$}
 	else
 	    release(Lset(T$_k$))
@@ -48,14 +48,14 @@ Read$_k$(X$_j$)
     or$_j$ := r$_j$ //\label{line:readorec}
     ov$_j$ := v$_j$ //\label{line:read2}
     Rset(T$_k$) := Rset(T$_k$)$\cup$ {X$_j$,or$_j$} //\label{line:rset}
-    if or$_j$ $\mathrel{\&} 1$ then return $A_k$ //\label{line:abort0}	
+    if or$_j.\lit{isLocked}()$ then return $A_k$ //\label{line:abort0}	
     if not validate() then return $A_k$ //\label{line:valid}
     return ov$_j$ //\vspace{-2mm}
 
 write$_k(X_j,v)$
     or$_j$ := r$_j$
     nv$_j$ := v
-    if or$_j$ & 1 then return $A_k$
+    if or$_j.\lit{isLocked}()$ then return $A_k$
     Wset(T$_k$) := Wset(T$_k$) $\cup$ {X$_j$, nv$_j$, or$_j$}
     return OK //\vspace{-2mm}
 
@@ -71,7 +71,7 @@ tryC$_k$()
     return C$_k$  //\vspace{-2mm}
 
 Function: validate()
-    if $\exists$ X$_j$ $\in$ Rset(T$_k$):or$_j \neq$ r$_j$ then return false // \label{line:valid}
+    if $\exists$ X$_j$ $\in$ Rset(T$_k$):or$_j.\lit{version} \neq$ r$_j.\lit{version}$ then return false // \label{line:valid}
     return true
 
 \end{lstlisting}

@@ -252,7 +252,7 @@
 
 \title{Cost of Concurrency in Hybrid Transactional Memory}
 \author{
-Trevor Brown$^1$\thanks{tabrown@untoronto.ca}~~~Srivatsan Ravi$^2$\thanks{srivatsanravi@purdue.edu} \\
+Trevor Brown$^1$\thanks{tabrown@cs.utoronto.ca}~~~Srivatsan Ravi$^2$\thanks{srivatsanravi@purdue.edu} \\
 $^1$\normalsize University of Toronto\\
 $^2$\normalsize Purdue University
 }
@@ -284,8 +284,10 @@ that are  optimal in terms of hardware instrumentation.
 We explore the concurrency vs. hardware instrumentation vs. software validation
 tradeoffs for these algorithms.
 Our experiments with Intel and IBM Power8 HTMs   
-seem to suggest that (i) the \emph{cost of concurrency} also exists in practice, (ii) it is important to build HyTMs that provide progressiveness for a maximal set of transactions with minimal fast-path instrumentation
-without using global contending bottlenecks and (iii) there is no easy to way to derive more efficient HyTMs by taking advantage of non-speculative accesses within the fast-path.
+seem to suggest that (i) the \emph{cost of concurrency} also exists in practice, 
+(ii) it is important to build HyTMs that provide progressiveness for a maximal set of transactions, but reducing fast-path instrumentation
+without using global contending bottlenecks and (iii) 
+there is no easy to way to derive more efficient HyTMs by taking advantage of non-speculative accesses within the fast-path.
 \end{abstract}
 
 \newpage

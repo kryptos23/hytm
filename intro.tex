@@ -58,14 +58,17 @@ Algorithm~1 is progressive for all transactions, but it incurs high instrumentat
 Algorithm~2 avoids all instrumentation in fast-path read operations, but is progressive only for slow-path reading transactions.
 We also sketch how \emph{some} hardware instrumentation can be performed \textit{non-speculatively} without violating opacity.
 
-We performed experiments comparing our HyTM algorithms to TL2, Transactional Lock Elision (TLE) and Hybrid NOrec~\cite{hynorecriegel} using a binary search tree microbenchmark.
-In these experiments, we studied two types of workloads: workloads in which essentially all transactions commit on the fast-path, and workloads in which some thread periodically performs transactions on the slow-path.
-These experiments demonstrate that hardware instrumentation is a dominating factor in the performance of HyTMs, and that simplistic algorithms like TLE perform very well unless transactions periodically run on the slow-path.
-
+We performed experiments comparing our HyTM algorithms to TL2, Transactional Lock Elision (TLE) and Hybrid NOrec~\cite{hynorecriegel} 
+using a binary search tree microbenchmark.
+In these experiments, we studied two types of workloads: workloads in which essentially all transactions commit on the fast-path, 
+and workloads in which some thread periodically performs transactions on the slow-path.
 Our experiments with Intel and IBM Power8 HTMs   
-seem to suggest that (i) the \emph{cost of concurrency} also exists in practice, (ii) it is important to build HyTMs that provide progressiveness for a maximal set of transactions with minimal fast-path instrumentation
-without using global contending bottlenecks and (iii) there is no easy to way to derive more efficient HyTMs by taking advantage of non-speculative accesses within the fast-path.
-
+seem to suggest that (i) the \emph{cost of concurrency} also exists in practice; Algorithm~1 which is truly progressive performs poorly on Intel
+and even more so on IBM Power8 (ii) 
+it is important to build HyTMs that provide progressiveness for a maximal set of transactions, but reducing fast-path instrumentation
+without using global contending bottlenecks as demonstrated by Algorithm~2 which scales well on both Intel and Power8 (iii) 
+there is no easy to way to derive more efficient HyTMs by taking advantage of non-speculative accesses supported within the fast-path in Power8 processors
+(but not in Intel HTMs).
 %We explore the concurrency vs. hardware instrumentation vs. software validation tradeoffs for these algorithms.
 %Preliminary experiments on Intel Haswell (resp. IBM Power 8) not supporting (resp. supporting) non-speculative accesses inside hardware,
 %seem to suggest that the inherent \emph{cost to concurrency} in HyTMs also exists in practice and discuss algorithmic techniques to overcome them.
@@ -75,6 +78,6 @@ without using global contending bottlenecks and (iii) there is no easy to way to
 to access memory locations non-speculatively.
 \cref{sec:lb} presents our main lower bound result on the step-complexity of progressive HyTMs
 while \cref{sec:hytmalgos} presents several opaque HyTM algorithms.
-\cref{sec:eval} summarizes resuls from our experiments on Intel Haswell and IBM Power 8 architectures.
+\cref{sec:eval} summarizes resuls from our experiments on Intel Haswell and IBM Power8 architectures.
 \cref{sec:rel} presents the related work along with concluding remarks.
 %

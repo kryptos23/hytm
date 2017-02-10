@@ -19,7 +19,7 @@ read$_k$(X$_j$)
 
 write$_k$(X$_j$, v)
     or$_j$ := r$_j$ 
-    r$_j$ := or$_j$ + 2 
+    r$_j$ := or$_j.\lit{Lock}()$ 
     v$_j$ := v 
     return OK //\vspace{-2mm}
 
@@ -32,13 +32,8 @@ try$C_k$()
 //\textbf{Code for slow-path transactions}
 tryC$_k$()
     if Wset(T$_k$) = $\emptyset$ then return $C_k$
-    while not flag do flag := CAS(L, 0, 1)
-    for each X$_j \in$ Wset(T$_k$)
-        nr$_j$ := r$_j$
-        if or$_j \neq$ nr$_j$ then
-            release(Wset(T$_k$))
-            return $A_k$
-    for each X$_j \in$ Wset(T$_k$) do r$_j$ := nr$_j$ + 1
+    L$.\lit{Lock}()$
+    if not acquire(Wset(T$_k$)) then return $A_k$
     if validate() then
         release(Wset(T$_k$))
         return $A_k$
@@ -47,8 +42,8 @@ tryC$_k$()
     return C$_k$ //\vspace{-2mm}
     
 Function: release(Q)
-    for each X$_j \in$ Q do r$_j$ := nr$_j$ + 1
-    L := 0; return OK
+    for each X$_j \in$ Q do r$_j$ := nr$_j.\lit{unLock}()$
+    L$.\lit{unLock}()$; return OK
 \end{lstlisting}
 \end{minipage}
 \vspace{-2mm}
