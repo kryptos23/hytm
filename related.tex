@@ -25,8 +25,7 @@ HyTM $\mathcal{M}'$ in which a shared \emph{fetch-and-add} metadata base object 
 increment (and resp. decrement) at the start (and resp. end). In $\mathcal{M}'$, a ``fast'' fast-path transaction checks first checks if $F$ is $0$
 and if not, aborts the transaction; otherwise the transaction is continued as an uninstrumented hardware transaction.
 The code for the fast-path and the slow-path is identical to $\mathcal{M}$.
-Assuming the hardware transactions do not perform any direct accesses, opacity is immediate.
-\trevor{cite my BA at disc that effectively came up with this idea?}
+Assuming the hardware transactions do not perform any direct accesses, opacity is immediate~\cite{brownfaster15}.
 
 \vspace{1mm}\noindent\textit{Other approaches.}
 Recent work has investigated fallback to \emph{reduced} hardware transactions~\cite{MS13}
