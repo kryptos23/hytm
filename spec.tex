@@ -14,25 +14,6 @@ if in any execution $E$ of $\mathcal{M}$; $\mathcal{T} \subseteq \ms{txns}(E)$,
 if any transaction $T_k \in \mathcal{T}$ returns $A_k$ in $E$, there exists 
 another concurrent transaction $T_m$ that \emph{conflicts} (both access the same t-object and at least one writes) with $T_k$ in $E$~\cite{tm-book}.
 
-The proof of the lemma below is a simple extension of the analogous lemma from \cite{hytm14disc}
-allowing direct trivial accesses inside fast-path transactions which in turn is inspired by an analogous result concerning \emph{disjoint-access parallel} STMs~\cite{AHM09}. 
-Intuitively, the proof follows follows from the fact that
-the tracking set of a process executing a fast-path transaction is invalidated due to contention on a base
-object with another transaction (cf. Remark~\ref{re:traborts}).
-%
-\begin{lemma}
-\label{lm:hytm}
-%
-Let $\mathcal{M}$ be any progressive HyTM implementation in which fast-path transactions may perform trivial
-direct accesses.
-Let $E_1 \cdot E_2$ be an execution of $\mathcal{M}$ where
-$E_1$ (and resp. $E_2$) is the step contention-free
-execution fragment of fast-path transaction $T_1$ (and resp. $T_2$),
-$T_1$ and $T_2$ do not conflict in $E_1 \cdot E_2$, and
-at least one of $T_1$ or $T_2$ is a fast-path transaction. 
-Then, $T_1$ and $T_2$ do not contend on any base object in $E_1 \cdot E_2$.
-\end{lemma}
-%
 We construct an execution of a progressive opaque HyTM in which every t-read performed by a read-only slow-path transaction
 must access linear (in the size of the read set) number of distinct base objects.
 %
@@ -49,6 +30,27 @@ distinct t-reads of t-objects $X_1,\ldots , X_m$. We show inductively that for e
 $i\in \{1,\ldots , m\}$; $m \in \mathbb{N}$, the $i^{\ms{th}}$ t-read must access $i-1$ distinct base objects
 during its execution. The (partial) steps in our execution are depicted in Figure~\ref{fig:indis}.
 
+For each $i\in \{1,\ldots , m\}$, $\mathcal{M}$ has an execution of the form depicted in Figure~\ref{sfig:inv-2}.
+Start with the complete step contention-free execution of slow-path read-only transaction $T_{\phi}$ that performs
+$(i-1)$ t-reads: $\Read_{\phi}(X_1)\cdots \Read_{\phi}(X_{i-1})$, followed by the t-complete step contention-free execution of a fast-path transaction $T_{i}$
+that writes $nv_i\neq v_i$ to $X_i$ and commits and then the complete step contention-free execution fragment of $T_{\phi}$ that performs its $i^{th}$ t-read:
+$\Read_{\phi}(X_i) \rightarrow nv_i$. Indeed, by progressiveness, $T_i$ cannot incur tracking set aborts and since it accesses only a single t-object, it cannot incur capacity aborts.
+Moreover, in this execution, the t-read of $X_i$ by slow-path transaction $T_{\phi}$ must return the value $nv$ written by fast-path transaction $T_i$ since this execution is indistinguishable
+to $T_{\phi}$ from the execution in Figure~\ref{sfig:inv-1}. 
+Finally, we construct $(i-1)$ different executions of the form depicted in Figure~\ref{sfig:inv-3}: for each $\ell \leq (i-1)$, 
+a fast-path transaction $T_{\ell}$ (preceding $T_i$ in real-time ordering, but invoked following the $(i-1)$ t-reads by $T_{\phi}$) writes $nv_{\ell}\neq v$ to $X_{\ell}$ and commmits, followed by
+the t-read of $X_i$ by $T_{\phi}$. Observe that, $T_{\ell}$ and $T_i$ which access mutually disjoint data sets cannot contend on each other since if they did, they would concurrently contend
+on some base object and incur a tracking set abort, thus violating progressiveness.
+Indeed, by the TM-liveness property we assumed (cf. Section~\ref{sec:hytm} and invisible reads for $T_{\phi}$, each of these $(i-1)$ executions exist. 
+
+In each of these $(i-1)$ executions, t-read of $X_i$ cannot return the new value $nv$:
+the only possible serialization for transactions is $T_{\ell}$, $T_i$, $T_{\phi}$; but $\Read_{\phi}(X_{\ell})$
+performed by $T_k$ that returns the initial value $v$ is not legal in this serialization---contradiction to the assumption of opacity.
+Finally, we note that, for all $\ell, \ell' \leq (i-1)$;$\ell' \neq \ell$, 
+fast-path transactions $T_{\ell}$ and $T_{\ell'}$ access mutually disjoint sets of base objects thus forcing the t-read of $X_i$ to access least $i-1$ different base objects
+in the worst case.
+Consequently, for all $i \in \{2,\ldots, m\}$, slow-path transaction $T_{\phi}$ must perform at least $i-1$ steps 
+while executing the $i^{th}$ t-read in such an execution.
 \end{proofsketch}
 %
 %
@@ -72,12 +74,12 @@ only if their data
 sets are connected in the \emph{conflict graph}, capturing 
 data-set overlaps among all concurrent transactions~\cite{AHM09}. It is well known that weak DAP STMs with invisible reads must perform incremental validation even if the required TM-progress condition requires
 transactions to commit only in the absence of any concurrent transaction~\cite{tm-book,prog15-pact}. For example, DSTM~\cite{HLM+03} is a weak DAP STM that is progressive and consequently incurs the validation
-complexity. On the other hand, TL2 and NOrec are not weak DAP since they employ a global versioned lock that mitigates the cost of incremental validation, but this creates allows two transactions accessing
+complexity. On the other hand, TL2 and NOrec are not weak DAP since they employ a global versioned lock that mitigates the cost of incremental validation, but this allows two transactions accessing
 disjoint data sets to concurrently contend on the same memory location. Indeed, this inspires the proof of Theorem~\ref{th:impossibility}. 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{figure*}[!t]
 \begin{center}
-	\subfloat[Slow-path transaction $T_{\phi}$ performs $i-1$ distinct t-reads followed by the t-read of $X_i$ that returns value $nv$ 
+	\subfloat[Slow-path transaction $T_{\phi}$ performs $i-1$ distinct t-reads (each returning the initial value) followed by the t-read of $X_i$ that returns value $nv$ 
 	writtten by fast-path transaction $T_i$\label{sfig:inv-1}]{\scalebox{0.6}[0.6]{\input{dap}}}
         \\
         \vspace{1mm}

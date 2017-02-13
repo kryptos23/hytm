@@ -9,6 +9,7 @@
 \usepackage{multicol}
 \usepackage{amsmath}
 \usepackage{framed}
+ \usepackage{mathptmx}
 \usepackage{float}
  \floatstyle{boxed} 
  \restylefloat{figure}
@@ -16,7 +17,7 @@
 %\usepackage{mdframed}
 %\usepackage{amsthm}
 \usepackage{tikz}
-\usepackage[margin=0.99in]{geometry}
+\usepackage[margin=1in]{geometry}
 \usepackage{hyperref}
 \usepackage{color}
 \usepackage{soul}
@@ -283,7 +284,7 @@ We then present \emph{opaque} HyTM algorithms providing \emph{progressiveness fo
 that are  optimal in terms of hardware instrumentation. 
 We explore the concurrency vs. hardware instrumentation vs. software validation
 tradeoffs for these algorithms.
-Our experiments with Intel and IBM Power8 HTMs   
+Our experiments with Intel and IBM POWER8 HTMs   
 seem to suggest that (i) the \emph{cost of concurrency} also exists in practice, 
 (ii) it is important to build HyTMs that provide progressiveness for a maximal set of transactions, but reducing fast-path instrumentation
 without using global contending bottlenecks and (iii) 

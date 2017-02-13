@@ -34,14 +34,14 @@ If all the locks on the write set were acquired successfully, $T_k$ performs val
 the t-objects in shared memory, releases the locks and returns $C_k$; else $p_i$ aborts the transaction.
 
 \vspace{1mm}\noindent\textit{Direct accesses inside fast-path:}
-As indicated in the pseudocode of Algorithm~\ref{alg:inswrite}, some accesses may be performed uncached (as allowed
-in IBM Power 8) and the resulting implementation would still be opaque.
+As indicated in the pseudocode of Algorithm~\ref{alg:inswrite}, some accesses may be performed direct (as allowed
+in IBM POWER8) and the resulting implementation would still be opaque.
 
 \vspace{1mm}\noindent\textbf{Instrumentation-optimal HyTMs that are progressive only for slow-path transactions.}
 Algorithm~\ref{alg:inswrite2} does not incur the linear instrumentation cost
 on the fast-path reading transactions (as in Algorithm~\ref{alg:inswrite}, but provides progressiveness only
 for slow-path reading transactions. 
-The instrumentation cost on fast-path t-reads is avoided by using a global single-bit lock $L$ that serializes all updating slow-path transactions
+The instrumentation cost on fast-path t-reads is avoided by using a global lock $L$ that serializes all updating slow-path transactions
 during the tryCommit.%
 
 \vspace{1mm}\noindent\textbf{Sacrificing progressiveness and minimizing contention window.}

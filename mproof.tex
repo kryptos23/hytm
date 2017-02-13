@@ -1,6 +1,12 @@
 \section{Proof of Lemma~\ref{lm:hytm}}
 \label{app:lm}
 %
+The proof of the lemma below is a simple extension of the analogous lemma from \cite{hytm14disc}
+allowing direct trivial accesses inside fast-path transactions which in turn is inspired by an analogous result concerning \emph{disjoint-access parallel} STMs~\cite{AHM09}. 
+Intuitively, the proof follows follows from the fact that
+the tracking set of a process executing a fast-path transaction is invalidated due to contention on a base
+object with another transaction (cf. Remark~\ref{re:traborts}).
+%
 \begin{lemma}
 %\label{lm:hytm}
 %
@@ -8,7 +14,7 @@ Let $\mathcal{M}$ be any progressive HyTM implementation in which fast-path tran
 direct accesses.
 Let $E_1 \cdot E_2$ be an execution of $\mathcal{M}$ where
 $E_1$ (and resp. $E_2$) is the step contention-free
-execution fragment of fast-path transaction $T_1$ (and resp. $T_2$),
+execution fragment of transaction $T_1$ (and resp. $T_2$),
 $T_1$ and $T_2$ do not conflict in $E_1 \cdot E_2$, and
 at least one of $T_1$ or $T_2$ is a fast-path transaction. 
 Then, $T_1$ and $T_2$ do not contend on any base object in $E_1 \cdot E_2$.

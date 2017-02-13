@@ -14,7 +14,6 @@ HyTMs in theory and practice (on currently available HTM architectures).
 
 The proof of Theorem~\ref{th:impossibility} is based on the analogous proof for step complexity of STMs that are \emph{disjoint-access parallel}~\cite{prog15-pact, tm-book}.
 Our model extends the HyTM model in \cite{hytm14disc} which did not allow direct accesses on the fast-path.
-
 Our implementation of Hybrid NOrec follows \cite{hynorecriegel}, which additionally proposed the use of direct accesses
 in fast-path transactions to reduce instrumentation overhead in the AMD ASF architecture.
 
@@ -35,4 +34,8 @@ in which an all-software slow-path is augmented using a slightly faster slow pat
 that is optimistically used to avoid running some transactions on the true software-only slow path.
 Amalgamated lock elision (ALE) was proposed in \cite{ale15} which improves over TLE
 by executing the slow-path as a series of segments, each of which is a dynamic length hardware transaction.
-%
+\cite{Calciu14} propose Invyswell, a HyTM design that proposes multiple hardware and software modes of execution that gives flexiblity to avoid instrumentation overhead in uncontended executions.
+
+We remark that such multi-path approaches may be easily applied to each of the Algorithms proposed in this paper. However, 
+in the search for an efficient HyTM for Intel and POWER8 architectures, it is important to strike the fine balance between concurrency, hardware instrumentation and software validation cost.
+Our lower bound, experimented methodology and evaluation of complexity-optimal HyTMs provides the first clear characterization of these tradeoffs. 
