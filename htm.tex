@@ -1,6 +1,9 @@
 %\documentclass[nocopyrightspace,numbers,10pt,preprint]{sigplanconf}
 %\documentclass[conference,compsocconf,letterpaper]{sig-alternate-05-2015}
-\documentclass[11pt,pdftex,a4paper]{article}%
+\documentclass[11pt,pdftex]{article}%
+\setlength{\paperheight}{11in}
+\setlength{\paperwidth}{8.5in}
+
 %\documentclass{llncs}
 %\usepackage{llncsdoc}
 \usepackage{verbatim}
@@ -9,7 +12,6 @@
 \usepackage{multicol}
 \usepackage{amsmath}
 \usepackage{framed}
- \usepackage{mathptmx}
 \usepackage{float}
  \floatstyle{boxed} 
  \restylefloat{figure}
@@ -17,7 +19,7 @@
 %\usepackage{mdframed}
 %\usepackage{amsthm}
 \usepackage{tikz}
-\usepackage[margin=1in]{geometry}
+\usepackage[margin=0.98in]{geometry}
 \usepackage{hyperref}
 \usepackage{color}
 \usepackage{soul}
@@ -248,6 +250,8 @@
 \definecolor{pdfbgcolor}{RGB}{180,180,180}
 %% conditionally set the pdf background color only on trevor's computer
 \IfFileExists{trbotpc.txt}{\pagecolor{pdfbgcolor}}{}
+
+\usepackage{mathptmx}
 
 \begin{document}
 

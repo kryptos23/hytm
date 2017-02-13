@@ -14,6 +14,9 @@ for fn in "${fields3[@]}" ; do
 	#f=`echo $fn | cut -d"~" -f1`
 	echo -n ,$fn >> $outfile
 done
+for f in "${fields4[@]}" ; do
+	echo -n ,$f >> $outfile
+done
 echo -n ",obj1type,obj1size,obj1allocated,obj2type,obj2size,obj2allocated" >> $outfile
 echo -n ",filename" >> $outfile
 echo -n ",cmd" >> $outfile
@@ -26,6 +29,7 @@ cat $outfile
 
 ## args: outfile, errfile, pattern
 parseFiles() {
+echo > $1 # delete existing file
 ## print csv contents
 for x in $3 ; do
 
@@ -33,13 +37,13 @@ for x in $3 ; do
 
         ## prepend information in filename
         fnamedata=`echo $x | tr "." ","`
-        echo -n "$fnamedata" > $1
+        echo -n "$fnamedata" >> $1
 
         ## grep fields from file
         for f in "${fields[@]}" ; do
                 nlines=`cat $x | grep "$f" | wc -l` ; if [ $nlines -ne 1 ]; then echo "WARNING: grep returned $nlines lines for field $f in file $x" >> $2 ; fi
                 echo -n , >> $1
-                cat $x | grep "$f" | cut -d":" -f2 | cut -d" " -f2 | tr -d " _abcdefghijklmnopqrstuvwxyz\r\n" >> $1
+                cat $x | grep "$f" | cut -d":" -f2 | tr -d " _abcdefghijklmnopqrstuvwxyz\r\n" >> $1
         done
 
         ## grep second type of fields (x=###)
@@ -56,6 +60,12 @@ for x in $3 ; do
                 echo -n , >> $1
                 ${path}/scripts/add `cat $x | grep -E "${f}[ ]+:" | cut -d":" -f2 | cut -d" " -f$n | tr -d "\r" | tr "\n" " "` >> $1
                 #echo ; echo ; echo "f=$f" ; cat $x | grep -E "${f}[ ]+:" | cut -d":" -f2 | cut -d" " -f$n | tr -d "\r" | tr "\n" " " ; echo ; echo
+        done
+
+        ## grep fourth type of fields
+        for f in "${fields4[@]}" ; do
+                echo -n , >> $1
+                cat $x | grep "$f" | tail -1 | cut -d":" -f2 | tr -d " _abcdefghijklmnopqrstuvwxyz\r\n" >> $1
         done
 
     ## add memory allocation info

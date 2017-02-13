@@ -14,4 +14,8 @@ fields2=("MILLIS_TO_RUN" "INS" "DEL" "MAXKEY" "WORK_THREADS" "RECLAIM_TYPE" "ALL
 ## a specific space-delimited subfield will be extracted from each line and summed
 fields3=("allocated~5" "deallocated~2" "recycled~2" "pool~2" "reclaim~2")
 
+## (grep $fields4[i] must yield one or more lines of the form "abc : ### [...]")
+## any fields here will be grepped and only the LAST line will be used.
+fields4=("total fast htm commit" "total fallback commit")
+
 source scripts/format-script-end.bash
