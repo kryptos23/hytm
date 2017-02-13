@@ -35,11 +35,6 @@ An \emph{execution} of a TM implementation $\mathcal{M}$ is an
 execution fragment where, informally, each event respects the
 specification of base objects and the algorithms specified by $\mathcal{M}$.
 
-We consider the dynamic programming model: the \emph{read set} (resp., the \emph{write set}) of a transaction $T_k$ in an execution $E$,
-denoted $\Rset_E(T_k)$ (resp., $\Wset_E(T_k)$), is the set of t-objects that $T_k$ attempts to read (and resp. write) 
-by issuing a t-read (resp., t-write) invocation in $E$ (for brevity, we sometimes 
-omit the subscript $E$ from the notation).
-
 For any finite execution $E$ and execution fragment $E'$, $E\cdot E'$ denotes the concatenation of $E$ and $E'$,
 and we say that $E\cdot E'$ is an \emph{extension}
 of $E$.
@@ -59,6 +54,10 @@ The execution $E$ is \emph{complete} if all transactions in $\txns(E)$
 are complete in $E$.
 A transaction $T_k\in \txns(E)$ is \emph{t-complete} if $E|k$
 ends with $A_k$ or $C_k$; otherwise, $T_k$ is \emph{t-incomplete}.
+We consider the dynamic programming model: the \emph{read set} (resp., the \emph{write set}) of a transaction $T_k$ in an execution $E$,
+denoted $\Rset_E(T_k)$ (resp., $\Wset_E(T_k)$), is the set of t-objects that $T_k$ attempts to read (and resp. write) 
+by issuing a t-read (resp., t-write) invocation in $E$ (for brevity, we sometimes 
+omit the subscript $E$ from the notation).
 
 We assume that base objects are accessed with \emph{read-modify-write} (rmw) primitives. 
 A rmw primitive event on a base object is \emph{trivial} if, in any configuration, its application
@@ -88,11 +87,6 @@ such that the condition $|\tau_i| \leq \TS$ must always hold; this
 condition will be enforced by our model.
 A base object $b$ is \emph{present} in $\tau_i$ with mode $m$ if $\exists v, (b,v,m) \in \tau_i$.
 
-Any transaction $T_k \in \ms{txns}(E)$ that performs at least one cached access necessarily performs a \emph{cache-commit} primitive as the last event of $E|k$ if it has already not terminated before. 
-A \emph{cache-commit} primitive issued by process $i$ with
-a valid $\tau_i$ does the following: for each base object $b$ such that $(b,v,\exclusive) \in \tau_i$, the value of $b$ in $C$ is updated to $v$. 
-Finally, $\tau_i$ is set to $\emptyset$ and the primitive 
-returns $\textit{commit}$. 
 % A trivial (resp.\ nontrivial) 
 % cached primitive $\langle g,h \rangle$ applied to $b$ 
 % by process $i$ 
@@ -138,7 +132,7 @@ followed by a cache-commit primitive.
 \begin{remark}[Tracking set aborts]
 \label{re:traborts}
 %
-Let $T_k \in \ms{txns}(E)$ be any t-incomplete transaction executed by process $i$, 
+Let $T_k \in \ms{txns}(E)$ be any t-incomplete fast-path transaction executed by process $i$, 
 where $(b,v,\exclusive)\in\tau_i$ (resp., $(b,v,\shared)\in\tau_i$) after execution $E$, and $e$ be any event (resp., nontrivial event) 
 that some process $j\neq i$ is poised to apply after $E$.
 The next event of $T_k$ in any extension of $E\cdot e$ is $A_k$.
@@ -151,7 +145,8 @@ The next event of $T_k$ in any extension of $E\cdot e$ is $A_k$.
 %
 \begin{remark}[Capacity aborts]
 \label{re:capacity}
-Any cached access performed by a process $i$ first checks the condition $|\tau_i|=\TS$, where $\TS$ is a pre-defined constant, and if so, it
+Any cached access performed by a process $i$ executing a fast-path 
+transaction $T_k$; $|\Dset(T_k)|>1$ first checks the condition $|\tau_i|=\TS$, where $\TS$ is a pre-defined constant, and if so, it
 sets $\tau_i=\emptyset$ and immediately returns $\bot$. 
 \end{remark}
 

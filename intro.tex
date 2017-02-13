@@ -16,7 +16,7 @@ set) step-complexity for transactions. Subsequent STM
 implementations like NOrec~\cite{norec} and TL2~\cite{DSS06}
 minimize the impact on performance due to incremental validation.
 NOrec uses a global sequence lock that is read at the start of a transaction and performs \emph{value-based}
-validation during read operations only if the value of the global lock has changed (by an updating transaction) 
+validation during read operations only if the value of the global lock has been changed (by an updating transaction) 
 since reading it.
 TL2, on the other hand, eliminates incremental validation completely.
 Like NOrec, it uses a global sequence lock, but each data item also 
@@ -25,7 +25,7 @@ When a data item is read, if its associated sequence lock value is different
 from the value that was read from the sequence lock at the start of the transaction, then the transaction aborts.
 
 In fact, STMs like TL2 and NOrec ensure progress in the absence of data conflicts with 
-O(1) step complexity read operations and \emph{invisible reads} (read operations 
+O(1) step complexity read operations and \emph{invisible reads} (read operations which 
 do not modify shared memory) 
 Nonetheless, TM designs that are implemented entirely in software still incur significant performance overhead.
 Thus, current CPUs have included instructions to mark a block of memory accesses as transactional~\cite{Rei12, asf, bluegene}, allowing them to be executed \emph{atomically} in hardware.
@@ -36,7 +36,7 @@ complemented with \emph{slower} software transactions that do not have spurious 
 
 To allow hardware transactions in a HyTM to detect conflicts with software transactions, they must be \emph{instrumented} to perform additional metadata accesses, which introduces overhead.
 Hardware transactions typically provide automatic conflict detection at cacheline granularity,
-thus ensuring that the transaction itself would be aborted if it experiences memory contention on the cacheline.
+thus ensuring that the transaction itself will be aborted if it experiences memory contention on the cacheline.
 This is at least the case with Intel's Transactional Synchronization Extensions~\cite{haswell}.
 The IBM Power8 ISA additionally allows hardware transactions to access metadata \emph{non-speculatively}, 
 thus bypassing automatic conflict detection. While this has the advantage of potentially reducing contention aborts
@@ -74,10 +74,10 @@ there is no easy to way to derive more efficient HyTMs by taking advantage of no
 %seem to suggest that the inherent \emph{cost to concurrency} in HyTMs also exists in practice and discuss algorithmic techniques to overcome them.
 
 \vspace{1mm}\noindent\textbf{Roadmap.}
-\cref{sec:hytm} presents details of the HyTM model that extends the model introduced in \cite{htmdisc15} 
-to access memory locations non-speculatively.
-\cref{sec:lb} presents our main lower bound result on the step-complexity of progressive HyTMs
-while \cref{sec:hytmalgos} presents several opaque HyTM algorithms.
-\cref{sec:eval} summarizes resuls from our experiments on Intel Haswell and IBM Power8 architectures.
-\cref{sec:rel} presents the related work along with concluding remarks.
+\cref{sec:hytm} presents details of the HyTM model that extends the model introduced in \cite{htmdisc15}.
+\cref{sec:lb} presents our main lower bound result on the step-complexity of slow-path transactions in progressive HyTMs
+while \cref{sec:hytmalgos} presents several opaque HyTM algorithms that are progressive for a subset of transactions.
+\cref{sec:eval} presents our results from our experiments on Intel Haswell and IBM Power8 architectures which provide a clear characterization of the cost
+of concurrency in HyTMs as well as the ability to use direct accesses within hardware transactions.
+\cref{sec:rel} presents the related work along with concluding remarks. Formal proofs and pseudocodes are provided in the Appendix.
 %

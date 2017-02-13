@@ -3,23 +3,6 @@
 \label{sec:lb}
 %
 %
-\begin{figure*}[!t]
-\begin{center}
-	\subfloat[Slow-path transaction $T_{\phi}$ performs $i-1$ distinct t-reads followed by the t-read of $X_i$ that returns value $nv$ 
-	writtten by fast-path transaction $T_i$\label{sfig:inv-1}]{\scalebox{0.6}[0.6]{\input{dap}}}
-        \\
-        \vspace{1mm}
-	\subfloat[Fast-path transaction $T_i$ does not contend with any of the $i-1$ t-reads performed by $T_{\phi}$;
-	this execution is indistinguishable to $T_{\phi}$ from \ref{sfig:inv-1} and t-read of $X_i$ must return $nv$\label{sfig:inv-2}]{\scalebox{0.6}[0.6]{\input{dap2}}}
-	\\
-	\vspace{1mm}
-	\subfloat[To distinguish the $i-1$ different executions, t-read of $X_i$ by slow-path transaction $T_{\phi}$ is forced
-	to access $i-1$ different base objects\label{sfig:inv-3}]{\scalebox{0.6}[0.6]{\input{dap3}}}
-	\caption{Proof steps for Theorem~\ref{th:impossibility}
-        \label{fig:indis}} 
-\end{center}
-\end{figure*}
-%
 In this section, we show that it is impossible to implement opaque \emph{progressive} HyTMs with \emph{invisible reads}
 with $O$(1) step-complexity read operations for slow-path transactions. 
 This result holds even if fast-path transactions may perform
@@ -60,11 +43,13 @@ There exists an execution $E$ of $\mathcal{M}$ and some slow-path read-only tran
 that incurs a time complexity of $\Omega (m^2)$; $m=|\Rset(T_k)|$.
 \end{theorem}
 %
-For the proof, we construct an execution of a read-only slow-path transaction $T_{\phi}$ that performs $m \in \mathbb{N}$
+\begin{proofsketch}
+We construct an execution of a read-only slow-path transaction $T_{\phi}$ that performs $m \in \mathbb{N}$
 distinct t-reads of t-objects $X_1,\ldots , X_m$. We show inductively that for each 
 $i\in \{1,\ldots , m\}$; $m \in \mathbb{N}$, the $i^{\ms{th}}$ t-read must access $i-1$ distinct base objects
 during its execution. The (partial) steps in our execution are depicted in Figure~\ref{fig:indis}.
 
+\end{proofsketch}
 %
 %
 \vspace{1mm}\noindent\textbf{How STM implementations mitigate the lower bound cost.}
@@ -89,3 +74,20 @@ data-set overlaps among all concurrent transactions~\cite{AHM09}. It is well kno
 transactions to commit only in the absence of any concurrent transaction~\cite{tm-book,prog15-pact}. For example, DSTM~\cite{HLM+03} is a weak DAP STM that is progressive and consequently incurs the validation
 complexity. On the other hand, TL2 and NOrec are not weak DAP since they employ a global versioned lock that mitigates the cost of incremental validation, but this creates allows two transactions accessing
 disjoint data sets to concurrently contend on the same memory location. Indeed, this inspires the proof of Theorem~\ref{th:impossibility}. 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure*}[!t]
+\begin{center}
+	\subfloat[Slow-path transaction $T_{\phi}$ performs $i-1$ distinct t-reads followed by the t-read of $X_i$ that returns value $nv$ 
+	writtten by fast-path transaction $T_i$\label{sfig:inv-1}]{\scalebox{0.6}[0.6]{\input{dap}}}
+        \\
+        \vspace{1mm}
+	\subfloat[Fast-path transaction $T_i$ does not contend with any of the $i-1$ t-reads performed by $T_{\phi}$;
+	this execution is indistinguishable to $T_{\phi}$ from \ref{sfig:inv-1} and t-read of $X_i$ must return $nv$\label{sfig:inv-2}]{\scalebox{0.6}[0.6]{\input{dap2}}}
+	\\
+	\vspace{1mm}
+	\subfloat[To distinguish the $i-1$ different executions, t-read of $X_i$ by slow-path transaction $T_{\phi}$ is forced
+	to access $i-1$ different base objects\label{sfig:inv-3}]{\scalebox{0.6}[0.6]{\input{dap3}}}
+	\caption{Proof steps for Theorem~\ref{th:impossibility}
+        \label{fig:indis}} 
+\end{center}
+\end{figure*}

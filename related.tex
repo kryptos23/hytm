@@ -4,15 +4,17 @@
 %
 \vspace{1mm}\noindent\textbf{HyTM implementations and complexity.}
 Early HyTMs like the ones described in \cite{damronhytm, kumarhytm} provided progressiveness, but
-subsequent HyTM proposals like \emph{PhTM}~\cite{phasedtm} and \emph{HybridNOrec}~\cite{hybridnorec} sacrificed progressiveness for lesser instrumentation overheads.
-This instrumentation cost on the fast-path was precisely characterized in \cite{htmdisc15}.
-In this paper, we proved the inherent cost of concurrency on the slow-path thus establishing an interesting, but intuitive complexity separation between progressive STMs and HyTMs.
-Moreover, to the best of our knowledge, this is the first work to consider the theoretical foundations of the cost of concurrency in HyTMs in theory and practice (on currently available HTM architectures).
+subsequent HyTM proposals like PhTM~\cite{phasedtm} and HybridNOrec~\cite{hybridnorec} sacrificed progressiveness for lesser instrumentation overheads.
+However, the clear tradeoff in terms of concurrency vs. instrumentation for these HyTMs have not been studied in the context of currently available HTM
+architectures. This instrumentation cost on the fast-path was precisely characterized in \cite{htmdisc15}.
+In this paper, we proved the inherent cost of concurrency on the slow-path thus establishing a surprising, 
+but intuitive complexity separation between progressive STMs and HyTMs.
+Moreover, to the best of our knowledge, this is the first work to consider the theoretical foundations of the cost of concurrency in 
+HyTMs in theory and practice (on currently available HTM architectures).
 
 The proof of Theorem~\ref{th:impossibility} is based on the analogous proof for step complexity of STMs that are \emph{disjoint-access parallel}~\cite{prog15-pact, tm-book}.
 Our model extends the HyTM model in \cite{hytm14disc} which did not allow direct accesses on the fast-path.
 
-\cite{kumarhytm} described an implementation that requires support for direct accesses in a hardware transaction. 
 Our implementation of Hybrid NOrec follows \cite{hynorecriegel}, which additionally proposed the use of direct accesses
 in fast-path transactions to reduce instrumentation overhead in the AMD ASF architecture.
 
@@ -29,8 +31,8 @@ Assuming the hardware transactions do not perform any direct accesses, opacity i
 
 \vspace{1mm}\noindent\textit{Other approaches.}
 Recent work has investigated fallback to \emph{reduced} hardware transactions~\cite{MS13}
-in which an all-software slow-path is replaced by a mix of hardware and software transactions. 
-Afek \emph{et al}. proposed amalgamated lock elision (ALE)~\cite{ale15} which improves over TLE
+in which an all-software slow-path is augmented using a slightly faster slow path 
+that is optimistically used to avoid running some transactions on the true software-only slow path.
+Amalgamated lock elision (ALE) was proposed in \cite{ale15} which improves over TLE
 by executing the slow-path as a series of segments, each of which is a dynamic length hardware transaction.
-
-\vspace{1mm}\noindent\textbf{Concluding remarks.}
+%
