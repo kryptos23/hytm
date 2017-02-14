@@ -46,6 +46,7 @@ Indeed, by the TM-liveness property we assumed (cf. Section~\ref{sec:hytm} and i
 In each of these $(i-1)$ executions, t-read of $X_i$ cannot return the new value $nv$:
 the only possible serialization for transactions is $T_{\ell}$, $T_i$, $T_{\phi}$; but $\Read_{\phi}(X_{\ell})$
 performed by $T_k$ that returns the initial value $v$ is not legal in this serialization---contradiction to the assumption of opacity.
+In other words, slow-path transaction $T_{\phi}$ is forced to verify the validity of t-objects in $\Rset(T_{\phi})$.
 Finally, we note that, for all $\ell, \ell' \leq (i-1)$;$\ell' \neq \ell$, 
 fast-path transactions $T_{\ell}$ and $T_{\ell'}$ access mutually disjoint sets of base objects thus forcing the t-read of $X_i$ to access least $i-1$ different base objects
 in the worst case.

@@ -1,4 +1,4 @@
-\section{Proof of Lemma~\ref{lm:hytm}}
+\section{Proof of Theorem~\ref{th:impossibility}}
 \label{app:lm}
 %
 The proof of the lemma below is a simple extension of the analogous lemma from \cite{hytm14disc}
@@ -8,13 +8,13 @@ the tracking set of a process executing a fast-path transaction is invalidated d
 object with another transaction (cf. Remark~\ref{re:traborts}).
 %
 \begin{lemma}
-%\label{lm:hytm}
+\label{lm:hytm}
 %
 Let $\mathcal{M}$ be any progressive HyTM implementation in which fast-path transactions may perform trivial
 direct accesses.
 Let $E_1 \cdot E_2$ be an execution of $\mathcal{M}$ where
 $E_1$ (and resp. $E_2$) is the step contention-free
-execution fragment of transaction $T_1$ (and resp. $T_2$),
+execution fragment of transaction $T_1$ (and resp. $T_2$) executed by process $p_1$ (and resp. $p_2$),
 $T_1$ and $T_2$ do not conflict in $E_1 \cdot E_2$, and
 at least one of $T_1$ or $T_2$ is a fast-path transaction. 
 Then, $T_1$ and $T_2$ do not contend on any base object in $E_1 \cdot E_2$.
@@ -22,7 +22,7 @@ Then, $T_1$ and $T_2$ do not contend on any base object in $E_1 \cdot E_2$.
 \begin{proof}
 Suppose, by contradiction that $T_1$ and $T_2$ 
 contend on the same base object in $E_1\cdot E_2$.
-Let $p_1$ (and resp. $p_2$) be the process executing transaction $T_1$ (and resp. $T_2$).
+%Let $p_1$ (and resp. $p_2$) be the process executing transaction $T_1$ (and resp. $T_2$).
 
 If in $E_1$, $T_1$ performs a nontrivial event on a base object on which they contend, let $e_1$ be the last
 event in $E_1$ in which $T_1$ performs such an event to some base object $b$ and $e_2$, the first event
@@ -122,6 +122,8 @@ $\alpha_1^i$ (and resp. $\alpha_2^i$) is the complete step contention-free execu
 $\Read_{\phi}(X_i) \rightarrow v$ (and resp. $\Read_{\phi}(X_i) \rightarrow A_{\phi}$).
 \end{itemize}
 %
+Note that in the execution so defined above, we assume that each fast-path transactions $T_i$ and $T_{\ell}$;$\ell \leq (i-1)$ are executed by distinct processes.
+%
 \begin{claim}
 \label{cl:ic2}
 For all $i\in \{2,\ldots, m\}$ and $\ell \leq (i-1)$, $\mathcal{M}$ has an execution of the form $\mathbb{E}_{1\ell}^{i}$ or 
@@ -170,7 +172,7 @@ Consider the $(i-1)$ different executions:
 $\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot \rho^i$ (cf. Figure~\ref{sfig:inv-3}).
 For all $\ell, \ell' \leq (i-1)$;$\ell' \neq \ell$, 
 $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \beta^{\ell'}$
-in which fast-path transactions $T_{\ell}$ and $T_{\ell'}$ access mutually disjoint data sets.
+in which fast-path transactions $T_{\ell}$ (executed by process $p_{\ell}$) and $T_{\ell'}$ (executed by process $p_{\ell'}$) access mutually disjoint data sets.
 By invisible reads and Lemma~\ref{lm:hytm}, the pairs of transactions $T_{\ell'}$, $T_{i}$ and $T_{\ell'}$, $T_{\ell}$
 do not contend on any base object in this execution.
 This implies that $\pi^{i-1}\cdot \beta^{\ell} \cdot \beta^{\ell'} \cdot \rho^i$ is an execution of $\mathcal{M}$ in which
@@ -187,5 +189,6 @@ $\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot
 \end{proof}
 %
 Thus, for all $i \in \{2,\ldots, m\}$, slow-path transaction $T_{\phi}$ must perform at least $i-1$ steps 
-while executing the $i^{th}$ t-read in the execution fragment $\pi_{j}^i$.
+while executing the $i^{th}$ t-read in the execution fragment $\pi_{j}^i$. Inductively, this gives the $\sum\limits_{i=1}^{m-1} i=\frac{m(m-1)}{2}$ step complexity for $T_{\phi}$.
+
 \end{proof}

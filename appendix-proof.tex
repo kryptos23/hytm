@@ -107,7 +107,7 @@ However, any two fast-path transactions accessing conflicting data sets must nec
 %
 \begin{claim}
 \label{cl:readfrom}
-$S$ is legal.
+$S$ is legal, i.e., every t-read returns the value of the latest committed t-write in $S$.
 \end{claim}
 %
 \begin{proof}
@@ -154,7 +154,7 @@ Suppose that $\ell_{\TryC_i} <_{E} \ell_{\TryC_k} <_{E} \ell_{\Read_j(X_m)}$.
 Thus, $T_k$ returns a response from the event in Line~\ref{line:acq} 
 before the read of the base object associated with $X_m$ by $T_j$ in Line~\ref{line:read2}. 
 Since $T_i$ and $T_k$ are both committed in $E$, $T_k$ returns \emph{true} from the event in
-Line~\ref{line:acq} only after $T_i$ writes $0$ to $r_{m}$ in Line~\ref{line:rel1}.
+Line~\ref{line:acq} only after $T_i$ releases $r_{m}$ in Line~\ref{line:rel1}.
 
 If $T_j$ is a slow-path transaction, 
 recall that $\Read_j(X_m)$ checks if $X_j$ is locked by a concurrent transaction, 
