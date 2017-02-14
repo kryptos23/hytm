@@ -11,9 +11,7 @@ In this paper, we proved the inherent cost of concurrency on the slow-path thus 
 but intuitive complexity separation between progressive STMs and HyTMs.
 Moreover, to the best of our knowledge, this is the first work to consider the theoretical foundations of the cost of concurrency in 
 HyTMs in theory and practice (on currently available HTM architectures).
-
-The proof of Theorem~\ref{th:impossibility} is based on the analogous proof for step complexity of STMs that are \emph{disjoint-access parallel}~\cite{prog15-pact, tm-book}.
-Our model extends the HyTM model in \cite{hytm14disc} which did not allow direct accesses on the fast-path.
+Proof of Theorem~\ref{th:impossibility} is based on the analogous proof for step complexity of STMs that are \emph{disjoint-access parallel}~\cite{prog15-pact, tm-book}.
 Our implementation of Hybrid NOrec follows \cite{hynorecriegel}, which additionally proposed the use of direct accesses
 in fast-path transactions to reduce instrumentation overhead in the AMD ASF architecture.
 

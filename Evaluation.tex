@@ -6,33 +6,32 @@ In this section, we study the performance characteristics of Algorithms~\ref{alg
 Our experimental goals are (G1) to study the performance impact of instrumentation on the fast-path and validation on the slow path, 
 (G2) to understand how Algorithms~\ref{alg:inswrite} and \ref{alg:inswrite2} perform relative to the other algorithms,
 (G3) the impact of HyTM algorithm design on the performance in Intel and IBM Power8 HTMs, and 
-(G4) to determine whether direct accesses can be used to obtain significant performance improvements on IBM Power8 using the supported suspend/resume isntruction to escape from a hardware transaction.
+(G4) to determine whether direct accesses can be used to obtain significant performance improvements on IBM POWER8 using the supported suspend/resume isntruction to escape from a hardware transaction.
 
 \vspace{1mm}\noindent\textbf{Experimental system (Intel).}
-The experimental system is a large-scale 2-socket Intel E7-4830 v3 with 12 cores per socket and 2 hyperthreads (HTs) per core, for a total of 48 threads.
-Each core has a private 32KB L1 cache and 256KB L2 cache (which is shared between HTs on a core).
+The experimental system is a 2-socket Intel E7-4830 v3 with 12 cores per socket and 2 hyperthreads (HTs) per core, for a total of 48 threads.
+Each core has a private 32KB L1 cache and 256KB L2 cache (shared between HTs on a core).
 All cores on a socket share a 30MB L3 cache.
 This system has a non-uniform memory architecture (NUMA) in which threads have significantly different access costs to different parts of memory depending on which processor they are currently executing on.
+The machine has 128GB of RAM, and runs Ubuntu 14.04 LTS.
+All code was compiled with the GNU C++ compiler (G++) 4.8.4 with build target x86\_64-linux-gnu and compilation options \texttt{-std=c++0x -O3 -mx32}.
 
 We pin threads so that the first socket is saturated before we place any threads on the second socket.
 Thus, thread counts 1-24 run on a single socket.
 Furthermore, hyperthreading is engaged on the first socket for thread counts 13-24, and on the second socket for thread counts 37-48.
 Consequently, our graphs clearly show the effects of NUMA and hyperthreading.
-
-The machine has 128GB of RAM, and runs Ubuntu 14.04 LTS.
-All code was compiled with the GNU C++ compiler (G++) 4.8.4 with build target x86\_64-linux-gnu and compilation options \texttt{-std=c++0x -O3 -mx32}.
 %Thread support was provided by the POSIX Threads library.
 %We used the default glibc allocator.
 
 \vspace{1mm}\noindent\textbf{Experimental system (IBM POWER8).}
 The experimental system is a IBM S822L with 2x 12-core 3.02GHz processor cards, 128GB of RAM, running Ubuntu 16.04 LTS.
 All code was compiled using G++ 5.3.1. This is a 2-socket machine which each contain 2 NUMA \emph{zones}; it is more expensive to access memory on a different NUMA zone and even more if the NUMA zone is on a different 
-socket. IBM Power8 uses the L2 cache for detecting tracking set aborts and bounds the transaction capacity (for reads and writes) to 8KB~\cite{htm-survey}.
+socket. POWER8 uses the L2 cache for detecting tracking set aborts and bounds the transaction capacity (for reads and writes) to 8KB~\cite{htm-survey}.
 This is in contrast to Intel which tracks conflicts at the level of L3 and bounds the transaction capacity for reads (and resp. L1 for writes).
 
 We pin one thread on each core within a NUMA zone before moving to the next zone.
 We remark that unlike the thread pinning policy for Intel which saturated the first socket before moving to the next, this proved to be the best policy
-for IBM Power8 which experiences severe negative scaling when threads are saturated on a single 8-way hardware multithreaded core.
+for POWER8 which experiences severe negative scaling when threads are saturated on a single 8-way hardware multithreaded core.
 severe negative scaling when threads are saturated on a single 8-way hardware multithreaded core. 
 This is because all threads on a core share resources, including the L1 and L2 cache, a single branch execution pipeline, 
 and only two load-store pipeline.
@@ -41,7 +40,6 @@ and only two load-store pipeline.
 For TL2, we used the implementation published by its authors.
 We implemented the other algorithms in C++.
 Each hybrid TM algorithm first attempts to execute a transaction on the fast path, and will continue to execute on the fast path until the transaction has experienced 20 aborts, at which point it will fall back to the slow path.
-
 We implemented Algorithm~\ref{alg:inswrite} on POWER8 where each read of a sequence lock during a transactional read operation was enclosed within a suspend/resume instruction to access them without 
 incurring tracking set aborts (Algorithm~\ref{alg:inswrite}\textsuperscript{$\ast$}). We remark that this does not affect the opacity of the implementation. 
 We also implemented the variant of Hybrid NOrec (Hybrid NOrec\textsuperscript{$\ast$}) in which the update to gsl is performed using a fetch-increment primitive, albeit within a suspend/resume~\cite{hynorecriegel}. 
@@ -159,8 +157,8 @@ then $p$ can fill the cache miss by loading it from the shared L3 cache.
 However, if the lock was last held by a thread on a different socket, 
 then $p$ must read the lock state from main memory, which is significantly more expensive.)
 
-On the other hand, in each graph in the W2 workloads, the performance of each HyTM (and TL2) is similar to its performance in the corresponding graph in the W1 workloads.
-For Algorithm~\ref{alg:inswrite} (and TL2), this is because it is progressive.
+On the other hand, in each graph in the W2 workloads, the performance of each HyTM (and TL2) is similar to its performance in the corresponding W1 workload graph.
+For Algorithm~\ref{alg:inswrite} (and TL2), this is because of progressiveness.
 Although Algorithm~\ref{alg:inswrite2} is not truly progressive, fast-path transactions will abort only if they are concurrent with the commit procedure of a slow-path transaction.
 In \textit{RangeIncrement} operations, there is a long read-only prefix (which is exceptionally long because of Algorithm~\ref{alg:inswrite2}'s quadratic validation) followed by a relatively small set of writes.
 Thus, \textit{RangeIncrement} operations have relatively little impact on the fast-path.
