@@ -39,10 +39,10 @@ Moreover, in this execution, the t-read of $X_i$ by slow-path transaction $T_{\p
 to $T_{\phi}$ from the execution in Figure~\ref{sfig:inv-1}. 
 
 We now construct $(i-1)$ different executions of the form depicted in Figure~\ref{sfig:inv-3}: for each $\ell \leq (i-1)$, 
-a fast-path transaction $T_{\ell}$ (preceding $T_i$ in real-time ordering, but invoked following the $(i-1)$ t-reads by $T_{\phi}$) writes $nv_{\ell}\neq v$ to $X_{\ell}$ and commmits, followed by
+a fast-path transaction $T_{\ell}$ (preceding $T_i$ in real-time ordering, but invoked following the $(i-1)$ t-reads by $T_{\phi}$) writes $nv_{\ell}\neq v$ to $X_{\ell}$ and commits, followed by
 the t-read of $X_i$ by $T_{\phi}$. Observe that, $T_{\ell}$ and $T_i$ which access mutually disjoint data sets cannot contend on each other since if they did, they would concurrently contend
 on some base object and incur a tracking set abort, thus violating progressiveness.
-Indeed, by the TM-liveness property we assumed (cf. Section~\ref{sec:hytm} and invisible reads for $T_{\phi}$, each of these $(i-1)$ executions exist. 
+Indeed, by the TM-liveness property we assumed (cf. Section~\ref{sec:hytm}) and invisible reads for $T_{\phi}$, each of these $(i-1)$ executions exist. 
 
 In each of these $(i-1)$ executions, t-read of $X_i$ cannot return the new value $nv$:
 the only possible serialization for transactions is $T_{\ell}$, $T_i$, $T_{\phi}$; but $\Read_{\phi}(X_{\ell})$
