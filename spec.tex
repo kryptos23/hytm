@@ -37,7 +37,8 @@ that writes $nv_i\neq v_i$ to $X_i$ and commits and then the complete step conte
 $\Read_{\phi}(X_i) \rightarrow nv_i$. Indeed, by progressiveness, $T_i$ cannot incur tracking set aborts and since it accesses only a single t-object, it cannot incur capacity aborts.
 Moreover, in this execution, the t-read of $X_i$ by slow-path transaction $T_{\phi}$ must return the value $nv$ written by fast-path transaction $T_i$ since this execution is indistinguishable
 to $T_{\phi}$ from the execution in Figure~\ref{sfig:inv-1}. 
-Finally, we construct $(i-1)$ different executions of the form depicted in Figure~\ref{sfig:inv-3}: for each $\ell \leq (i-1)$, 
+
+We now construct $(i-1)$ different executions of the form depicted in Figure~\ref{sfig:inv-3}: for each $\ell \leq (i-1)$, 
 a fast-path transaction $T_{\ell}$ (preceding $T_i$ in real-time ordering, but invoked following the $(i-1)$ t-reads by $T_{\phi}$) writes $nv_{\ell}\neq v$ to $X_{\ell}$ and commmits, followed by
 the t-read of $X_i$ by $T_{\phi}$. Observe that, $T_{\ell}$ and $T_i$ which access mutually disjoint data sets cannot contend on each other since if they did, they would concurrently contend
 on some base object and incur a tracking set abort, thus violating progressiveness.
@@ -55,7 +56,7 @@ while executing the $i^{th}$ t-read in such an execution.
 \end{proofsketch}
 %
 %
-\vspace{1mm}\noindent\textbf{How STM implementations mitigate the lower bound cost.}
+\vspace{1mm}\noindent\textbf{How STM implementations mitigate the quadratic lower bound step complexity.}
 NOrec~\cite{norec} is a progressive opaque STM that minimizes the average step-complexity resulting from incremental 
 validation of t-reads. Transactions read a global versioned lock at the start, and perform value-based validation
 during t-read operations \emph{iff} the global version has changed.
@@ -84,11 +85,12 @@ disjoint data sets to concurrently contend on the same memory location. Indeed, 
 	writtten by fast-path transaction $T_i$\label{sfig:inv-1}]{\scalebox{0.6}[0.6]{\input{dap}}}
         \\
         \vspace{1mm}
-	\subfloat[Fast-path transaction $T_i$ does not contend with any of the $i-1$ t-reads performed by $T_{\phi}$;
-	this execution is indistinguishable to $T_{\phi}$ from \ref{sfig:inv-1} and t-read of $X_i$ must return $nv$\label{sfig:inv-2}]{\scalebox{0.6}[0.6]{\input{dap2}}}
+	\subfloat[Fast-path transaction $T_i$ does not contend with any of the $i-1$ t-reads performed by $T_{\phi}$ and must be committed in this execution since it cannot incur a tracking set or capacity abort.
+	The t-read of $X_i$ must return $nv$ because this execution is indistinguishable to $T_{\phi}$ from \ref{sfig:inv-1}\label{sfig:inv-2}]{\scalebox{0.6}[0.6]{\input{dap2}}}
 	\\
 	\vspace{1mm}
-	\subfloat[To distinguish the $i-1$ different executions, t-read of $X_i$ by slow-path transaction $T_{\phi}$ is forced
+	\subfloat[In each of these each $i-1$ executions, fast-path transactions cannot incur a tracking set or capacity abort. By opacity, the t-read of $X_i$ by $T_{\phi}$ cannot return new value $nv$.
+	Therefore, to distinguish the $i-1$ different executions, t-read of $X_i$ by slow-path transaction $T_{\phi}$ is forced
 	to access $i-1$ different base objects\label{sfig:inv-3}]{\scalebox{0.6}[0.6]{\input{dap3}}}
 	\caption{Proof steps for Theorem~\ref{th:impossibility}
         \label{fig:indis}} 

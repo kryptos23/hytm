@@ -13,7 +13,7 @@ Moreover, to the best of our knowledge, this is the first work to consider the t
 HyTMs in theory and practice (on currently available HTM architectures).
 Proof of Theorem~\ref{th:impossibility} is based on the analogous proof for step complexity of STMs that are \emph{disjoint-access parallel}~\cite{prog15-pact, tm-book}.
 Our implementation of Hybrid NOrec follows \cite{hynorecriegel}, which additionally proposed the use of direct accesses
-in fast-path transactions to reduce instrumentation overhead in the AMD ASF architecture.
+in fast-path transactions to reduce instrumentation overhead in the AMD Advanced Synchronization Facility (ASF) architecture.
 
 \vspace{1mm}\noindent\textbf{Beyond the two path HyTM approach.}
 \vspace{1mm}\noindent\textit{Employing an uninstrumented fast fast-path.}
@@ -24,7 +24,7 @@ HyTM $\mathcal{M}'$ in which a shared \emph{fetch-and-add} metadata base object 
 increment (and resp. decrement) at the start (and resp. end). In $\mathcal{M}'$, a ``fast'' fast-path transaction checks first checks if $F$ is $0$
 and if not, aborts the transaction; otherwise the transaction is continued as an uninstrumented hardware transaction.
 The code for the fast-path and the slow-path is identical to $\mathcal{M}$.
-Assuming the hardware transactions do not perform any direct accesses, opacity is immediate~\cite{brownfaster15}.
+%Assuming the hardware transactions do not perform any direct accesses, opacity is immediate~\cite{brownfaster15}.
 
 \vspace{1mm}\noindent\textit{Other approaches.}
 Recent work has investigated fallback to \emph{reduced} hardware transactions~\cite{MS13}
@@ -32,8 +32,9 @@ in which an all-software slow-path is augmented using a slightly faster slow pat
 that is optimistically used to avoid running some transactions on the true software-only slow path.
 Amalgamated lock elision (ALE) was proposed in \cite{ale15} which improves over TLE
 by executing the slow-path as a series of segments, each of which is a dynamic length hardware transaction.
-\cite{Calciu14} propose Invyswell, a HyTM design that proposes multiple hardware and software modes of execution that gives flexiblity to avoid instrumentation overhead in uncontended executions.
+Invyswell~\cite{Calciu14} is a HyTM design with multiple hardware and software modes of execution that gives flexiblity to avoid instrumentation overhead in uncontended executions.
 
 We remark that such multi-path approaches may be easily applied to each of the Algorithms proposed in this paper. However, 
-in the search for an efficient HyTM for Intel and POWER8 architectures, it is important to strike the fine balance between concurrency, hardware instrumentation and software validation cost.
-Our lower bound, experimented methodology and evaluation of complexity-optimal HyTMs provides the first clear characterization of these tradeoffs. 
+in the search for an efficient HyTM, it is important to strike the fine balance between concurrency, hardware instrumentation and software validation cost.
+Our lower bound, experimental methodology and evaluation of HyTMs provides the first clear characterization of these tradeoffs in both Intel and POWER8 architectures. 
+%

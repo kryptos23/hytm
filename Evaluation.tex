@@ -5,7 +5,7 @@
 In this section, we study the performance characteristics of Algorithms~\ref{alg:inswrite} and \ref{alg:inswrite2}, Hybrid NOrec, TLE and TL2.
 Our experimental goals are (G1) to study the performance impact of instrumentation on the fast-path and validation on the slow path, 
 (G2) to understand how Algorithms~\ref{alg:inswrite} and \ref{alg:inswrite2} perform relative to the other algorithms,
-(G3) the impact of HyTM algorithm design on the performance in Intel and IBM Power8 HTMs, and 
+(G3) the impact of HyTM algorithm design on the performance in Intel and IBM POWER8 HTMs, and 
 (G4) to determine whether direct accesses can be used to obtain significant performance improvements on IBM POWER8 using the supported suspend/resume isntruction to escape from a hardware transaction.
 
 \vspace{1mm}\noindent\textbf{Experimental system (Intel).}
@@ -144,7 +144,6 @@ Since this is a read-only workload, this instrumentation is responsible for the 
 In the W1 workloads, TLE, Algorithm~\ref{alg:inswrite2} and Hybrid NOrec perform similarly (with a small performance advantage for Hybrid NOrec at high thread counts).
 This is because the fast paths for these three algorithms have similar amounts of instrumentation: there is no instrumentation for reads or writes, 
 and the transaction itself incurs one or two metadata accesses.
-
 In contrast, in the W2 workloads, TLE performs quite poorly, compared to the HyTM algorithms.
 In these workloads, transactions must periodically run on the slow-path, and in TLE, 
 this entails acquiring a global lock that restricts progress for all other threads.
@@ -156,7 +155,6 @@ if the lock was last held by another thread on the same socket,
 then $p$ can fill the cache miss by loading it from the shared L3 cache.
 However, if the lock was last held by a thread on a different socket, 
 then $p$ must read the lock state from main memory, which is significantly more expensive.)
-
 On the other hand, in each graph in the W2 workloads, the performance of each HyTM (and TL2) is similar to its performance in the corresponding W1 workload graph.
 For Algorithm~\ref{alg:inswrite} (and TL2), this is because of progressiveness.
 Although Algorithm~\ref{alg:inswrite2} is not truly progressive, fast-path transactions will abort only if they are concurrent with the commit procedure of a slow-path transaction.
@@ -184,8 +182,7 @@ it is incredibly important either to have minimal instrumentation in transaction
 same cache lines as program data. Of course, the latter is not possible for HyTMs, which do not have control over the layout of program data.
 Consequently, Algorithm~\ref{alg:inswrite2} outperforms Algorithm~\ref{alg:inswrite} in POWER8 quite easily by avoiding the per-read instrumentation. 
 
-Algorithm~\ref{alg:inswrite} is improved by suspend/resume on sequence locks, but suspend/resume instructions are expensive on Power8, 
-so it still performs relatively poorly. 
+Algorithm~\ref{alg:inswrite} is improved slightly by the expensive (on POWER8) suspend/resume on sequence locks, so it still performs relatively poorly. 
 To make suspend/resume a practical tool, one could imagine attempting to 
 collect several metadata accesses and perform them together to amortize the cost of a suspend/resume pair. For instance, 
 in Algorithm~\ref{alg:inswrite}, one might try to update the locks for all of a transactions writes at once, when the transaction commits. 
@@ -196,7 +193,7 @@ Observe that Hybrid NOrec does far worse with updates in POWER8 than on the Inte
 This is due to the fact that fetch-increment on a single location experiences severe negative scaling on the Power8 processor: e.g., in one second, a single
 thread can perform 37 fetch-add operations while 6 threads perform a total of 9 million and 24 threads perform only 4 million fetch-add operations.
 In contrast, the Intel machine performs 32 million operations with 6 threads and 45 million with 24 threads. This is likely because this Intel processor provides 
-fetch-add instructions while it must be emulated on the POWER8 processor (using load-linked/store-conditional).
+fetch-add instructions while it must be emulated on the POWER8 processor.
 
 In Hybrid NOrec\textsuperscript{$\ast$}, the non-speculative increment of gsl actually makes performance worse. Recall that in Hybrid NOrec, 
 if a fast path transaction $T_1$ increments gsl, and then a software transaction $T_2$ reads gsl (as part of validation) before $T_1$ commits, then $T_1$ will abort, 

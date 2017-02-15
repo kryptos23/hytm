@@ -37,25 +37,24 @@ the t-objects in shared memory, releases the locks and returns $C_k$; else $p_i$
 As indicated in the pseudocode of Algorithm~\ref{alg:inswrite}, some accesses may be performed direct (as allowed
 in IBM POWER8) and the resulting implementation would still be opaque.
 
-\vspace{1mm}\noindent\textbf{Instrumentation-optimal HyTMs that are progressive only for slow-path transactions.}
+\vspace{1mm}\noindent\textbf{Instrumentation-optimal HyTMs that are progressive only for slow-path reading transactions.}
 Algorithm~\ref{alg:inswrite2} does not incur the linear instrumentation cost
 on the fast-path reading transactions (as in Algorithm~\ref{alg:inswrite}, but provides progressiveness only
 for slow-path reading transactions. 
-The instrumentation cost on fast-path t-reads is avoided by using a global lock $L$ that serializes all updating slow-path transactions
-during the tryCommit.%
+The instrumentation cost on fast-path t-reads is avoided by using a global lock that serializes all updating slow-path transactions
+during the tryCommit. Fast-path transactions simply check if this lock is held qithout acquiring it (similar to TLE~\cite{tle}). While the per-read instrumentation in Algorithm~\ref{alg:inswrite}
+overhead is avoided, Algorithm~\ref{alg:inswrite2} still incurs the per-write instrumentation cost.
 
 \vspace{1mm}\noindent\textbf{Sacrificing progressiveness and minimizing contention window.}
 Observe that the lower bound in Theorem~\ref{th:impossibility} assumes progressiveness for both slow-path and fast-path transactions
-along with opacity and invisible reads.
-Figure~\ref{fig:main} summarizes the complexity costs
-associated with the HyTM algorithms considered in this paper.
+along with opacity and invisible reads. Note that Algorithm~\ref{alg:inswrite2} retains the validation step complexity cost since it provides progressiveness for slow-path readers.
 
 Hybrid NOrec~\cite{hybridnorec} is a HyTM implementation that does not satisfy progressiveness
 (unlike its STM counterpart NOrec), but mitigates
 the step-complexity cost on slow-path transactions by performing incremental validation 
 during a transactional read \emph{iff} 
 the shared memory has changed since the start of the transaction.
-Conceptually, hybrid NOrec uses a global sequence lock \emph{gsl} that is incremented 
+Conceptually, Hybrid NOrec uses a global sequence lock \emph{gsl} that is incremented 
 at the start and end of each transaction's commit procedure.
 Readers can use the value of gsl to determine whether shared memory has changed between two configurations.
 Unfortunately, with this approach, two fast path transactions will always conflict on the gsl if their 
@@ -66,5 +65,7 @@ Instead of incrementing gsl, a fast path transaction checks if esl is locked and
 Then, at the end of the fast path transaction's commit procedure, 
 it increments gsl twice (quickly locking and releasing it and immediately commits in hardware), thus, the 
 window for fast path transactions to contend on gsl is very small.
-%
+
+Figure~\ref{fig:main} summarizes the complexity costs
+associated with the HyTM algorithms considered in this paper.
 %

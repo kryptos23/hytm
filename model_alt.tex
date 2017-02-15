@@ -41,8 +41,8 @@ of $E$.
 For every transaction identifier $k$,
 $E|k$ denotes the subsequence of $E$ restricted to events of
 transaction $T_k$.
-% If $E|k$ is non-empty,
-% we say that $T_k$ \emph{participates} in $E$,
+If $E|k$ is non-empty,
+we say that $T_k$ \emph{participates} in $E$,
 Let $\txns(E)$ denote the set of transactions that participate in $E$.
 Two executions $E$ and $E'$
 are \emph{indistinguishable} to a set $\mathcal{T}$ of transactions, if
@@ -100,7 +100,6 @@ A base object $b$ is \emph{present} in $\tau_i$ with mode $m$ if $\exists v, (b,
 % hardware transaction) or the value of $b$ in the current
 % memory configuration, and finally $h(v)$ is returned.
 %
-
 \vspace{1mm}\noindent\textbf{Hardware aborts.}
 A tracking set can be \emph{invalidated} by a concurrent process: 
 if, in a configuration $C$ where  $(b,v,\exclusive)\in\tau_i$
@@ -125,8 +124,8 @@ An event of a slow-path transaction is either an invocation or response of a t-o
 a direct rmw primitive on a base object. 
 A fast-path transaction essentially encapsulates a hardware transaction. Specifically, in any execution $E$,
 we say that a transaction $T_k\in \ms{txns}(E)$ is a fast-path transaction if $E|k$ contains at least one cached event.
-An event of a \emph{hardware transaction} includes series of direct trivial accesses and at least one cached access
-followed by a cache-commit primitive.
+An event of a \emph{hardware transaction} is either an invocation or response of a t-operation, or
+a direct trivial access or a cached access, or a cache-commit primitive.
 %
 \begin{remark}[Tracking set aborts]
 \label{re:traborts}
@@ -159,7 +158,7 @@ does not include any direct access to base objects.
 \vspace{1mm}\noindent\textbf{HyTM properties.}
 %\trevor{reading here}
 We consider the TM-correctness property of \emph{opacity}~\cite{tm-book}: an execution
-$E$ is opaque if there exists a \emph{legal} sequential execution $S$ equivalent to some t-completion of $E$
+$E$ is opaque if there exists a \emph{legal} (every t-read of a t-object returns the value of its latest committed t-write) sequential execution $S$ equivalent to some t-completion of $E$
 that respects the \emph{real-time ordering} of transactions in $E$.
 We also assume a weak \emph{TM-liveness} property for t-operations: every t-operation returns a matching
 response within a finite number of its own steps if running step-contention free from a configuration in which every other transaction is t-complete.

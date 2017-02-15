@@ -1,5 +1,5 @@
 \begin{algorithm*}[!t]
-\caption{Opaque HyTM implementation with sequential slow-path and progressive fast-path TM-progress; code for $T_k$ by process $p_i$}
+\caption{Opaque HyTM implementation that is progressive only for slow-path reading transactions; code for $T_k$ by process $p_i$}
 \label{alg:inswrite2}
 \vspace{-2mm}
 \noindent\lstset{style=customc}
@@ -10,8 +10,7 @@
 
 //\textbf{Code for fast-path transactions}
 start$_k$()
-    l := L 
-    if l & 1 $\neq$ 0 then return $A_k$ //\vspace{-2mm}
+    if L$.\lit{isLocked()}$ then return $A_k$ //\vspace{-2mm}
 
 read$_k$(X$_j$)
     ov$_j$ := v$_j$ 
