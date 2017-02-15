@@ -290,8 +290,8 @@ We explore the concurrency vs. hardware instrumentation vs. software validation
 tradeoffs for these algorithms.
 Our experiments with Intel and IBM POWER8 HTMs   
 seem to suggest that (i) the \emph{cost of concurrency} also exists in practice, 
-(ii) it is important to build HyTMs that provide progressiveness for a maximal set of transactions, but reducing fast-path instrumentation
-without using global contending bottlenecks and (iii) 
+(ii) it is important to implement HyTMs that provide progressiveness for a maximal set of transactions without incurring high hardware instrumentation overhead or
+using global contending bottlenecks and (iii) 
 there is no easy way to derive more efficient HyTMs by taking advantage of non-speculative accesses within hardware.
 \end{abstract}
 

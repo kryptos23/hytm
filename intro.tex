@@ -63,11 +63,11 @@ using a binary search tree microbenchmark.
 We carefully designed our experiments and implementations to ensure that our measurements expose fundamental performance differences between algorithms, and not system configuration errors or implementation overheads.
 In these experiments, we studied two types of workloads: workloads in which essentially all transactions commit on the fast-path, 
 and workloads in which some thread periodically performs transactions on the slow-path.
-Our experiments with Intel and IBM Power8 HTMs   
+Our experiments with Intel and IBM POWER8 HTMs   
 seem to suggest that (i) the \emph{cost of concurrency} also exists in practice; high hardware instrumentation impacts performance negatively on Intel and even more so on POWER8 due to its limited transactional
 cache capacity, (ii) 
-it is important to build HyTMs that provide progressiveness for a maximal set of transactions, but reduce fast-path instrumentation overhead
-without using global contending bottlenecks and (iii) 
+it is important to implement HyTMs that provide progressiveness for a maximal set of transactions without incurring high hardware instrumentation overhead or
+using global contending bottlenecks and (iii) 
 there is no easy to way to derive more efficient HyTMs by taking advantage of non-speculative accesses supported within the fast-path in POWER8 processors
 (but not in Intel HTMs).
 %We explore the concurrency vs. hardware instrumentation vs. software validation tradeoffs for these algorithms.
