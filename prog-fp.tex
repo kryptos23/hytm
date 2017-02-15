@@ -33,7 +33,7 @@ tryC$_k$()
     if Wset(T$_k$) = $\emptyset$ then return $C_k$
     L$.\lit{Lock}()$
     if not acquire(Wset(T$_k$)) then return $A_k$
-    if validate() then
+    if not validate() then
         release(Wset(T$_k$))
         return $A_k$
     for each X$_j \in$ Wset(T$_k$) do v$_j$ := nv$_j$
