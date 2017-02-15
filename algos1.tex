@@ -11,12 +11,12 @@ and a \emph{sequence lock} $r_{j}$.
 For a fast-path transaction $T_k$ executed by process $p_i$, the $\Read_k(X_j)$ implementation first reads $r_j$ (direct)
 and returns $A_k$ if some other process $p_j$ holds a lock on $X_j$.
 Otherwise, it returns the value of $X_j$.
-As with $\Read_k(X_j)$, the $\Write (X_j,v)$ implementation returns $A_k$ if some other process $p_j$ holds a lock on $X_j$.
-Process $p_i$ then locks $r_j$. If the cache has not been invalidated, $p_i$ updates the shared memory
+As with $\Read_k(X_j)$, the $\Write (X_j,v)$ implementation returns $A_k$ if some other process $p_j$ holds a lock on $X_j$; otherwise
+process $p_i$ increments the sequence lock $r_j$. If the cache has not been invalidated, $p_i$ updates the shared memory
 during $\TryC_k$ by invoking the $\ms{commit-cache}$ primitive.
 
 \vspace{1mm}\noindent\textit{Slow-path read-only transactions:}
-Any $\Read_k(X_j)$ invoked by a slow-path transaction first reads the value of the object from $v_j$, 
+Any $\Read_k(X_j)$ invoked by a slow-path transaction first reads the value of the t-object from $v_j$, 
 adds $r_j$ to $\Rset(T_k)$ if its not held by a concurrent transaction
 and then performs \emph{validation} on its entire read set to check if any of them have been modified. 
 If either of these conditions is true,
@@ -34,16 +34,15 @@ If all the locks on the write set were acquired successfully, $T_k$ performs val
 the t-objects in shared memory, releases the locks and returns $C_k$; else $p_i$ aborts the transaction.
 
 \vspace{1mm}\noindent\textit{Direct accesses inside fast-path:}
-As indicated in the pseudocode of Algorithm~\ref{alg:inswrite}, some accesses may be performed direct (as allowed
-in IBM POWER8) and the resulting implementation would still be opaque.
+Note that the accesses of the sequence lock during the t-read may be performed directly without incurring tracking set aborts and the resulting implementation would still be opaque.
 
 \vspace{1mm}\noindent\textbf{Instrumentation-optimal HyTMs that are progressive only for slow-path reading transactions.}
 Algorithm~\ref{alg:inswrite2} does not incur the linear instrumentation cost
-on the fast-path reading transactions (as in Algorithm~\ref{alg:inswrite}, but provides progressiveness only
+on the fast-path reading transactions (inherent to Algorithm~\ref{alg:inswrite}), but provides progressiveness only
 for slow-path reading transactions. 
 The instrumentation cost on fast-path t-reads is avoided by using a global lock that serializes all updating slow-path transactions
-during the tryCommit. Fast-path transactions simply check if this lock is held qithout acquiring it (similar to TLE~\cite{tle}). While the per-read instrumentation in Algorithm~\ref{alg:inswrite}
-overhead is avoided, Algorithm~\ref{alg:inswrite2} still incurs the per-write instrumentation cost.
+during the tryCommit. Fast-path transactions simply check if this lock is held without acquiring it (similar to TLE~\cite{tle}). While the per-read instrumentation overhead
+is avoided, Algorithm~\ref{alg:inswrite2} still incurs the per-write instrumentation cost.
 
 \vspace{1mm}\noindent\textbf{Sacrificing progressiveness and minimizing contention window.}
 Observe that the lower bound in Theorem~\ref{th:impossibility} assumes progressiveness for both slow-path and fast-path transactions

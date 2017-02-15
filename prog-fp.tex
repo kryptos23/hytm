@@ -18,7 +18,7 @@ read$_k$(X$_j$)
 
 write$_k$(X$_j$, v)
     or$_j$ := r$_j$ 
-    r$_j$ := or$_j.\lit{Lock}()$ 
+    r$_j$ := or$_j.\lit{Inc}()$ 
     v$_j$ := v 
     return OK //\vspace{-2mm}
 

@@ -19,7 +19,7 @@ read$_k(X_j)$
 write$_k(X_j,v)$
     or$_j$ := r$_j$  //\label{line:m1}
     if or$_j.\lit{isLocked}()$ then return $A_k$
-    r$_j$ := or$_j.\lit{Lock}()$  //\label{line:m2}
+    r$_j$ := or$_j.\lit{Inc}()$  //\label{line:m2}
     v$_j$ := v  //\label{line:lin2} 
     return OK //\vspace{-2mm}
 
