@@ -3,7 +3,7 @@
 \label{alg:inswrite2}
 \vspace{-2mm}
 \noindent\lstset{style=customc}
-\begin{minipage}{0.49\textwidth}
+\begin{minipage}{0.45\textwidth}
 \begin{lstlisting}[frame=none,firstnumber=1,mathescape=true]
 //\textbf{Shared objects}
     L, global lock
@@ -18,7 +18,7 @@ read$_k$(X$_j$)
 
 write$_k$(X$_j$, v)
     or$_j$ := r$_j$ 
-    r$_j$ := or$_j.\lit{Inc}()$ 
+    r$_j$ := or$_j.\lit{IncSequence}()$ 
     v$_j$ := v 
     return OK //\vspace{-2mm}
 
@@ -26,7 +26,7 @@ try$C_k$()
     return commitCache$_i$() 
 \end{lstlisting}
 \end{minipage}
-\begin{minipage}{0.49\textwidth}
+\begin{minipage}{0.54\textwidth}
 \begin{lstlisting}[frame=none,firstnumber=last,mathescape=true]
 //\textbf{Code for slow-path transactions}
 tryC$_k$()
@@ -41,8 +41,8 @@ tryC$_k$()
     return C$_k$ //\vspace{-2mm}
     
 Function: release(Q)
-    for each X$_j \in$ Q do r$_j$ := nr$_j.\lit{unLock}()$
-    L$.\lit{unLock}()$; return OK
+    for each X$_j \in$ Q do r$_j$ := nr$_j.\lit{unlock}()$
+    L$.\lit{unlock}()$; return OK
 \end{lstlisting}
 \end{minipage}
 \vspace{-2mm}

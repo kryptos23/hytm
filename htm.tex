@@ -101,8 +101,7 @@
 \usepackage{xcolor}
 \definecolor{pdfbgcolor}{RGB}{180,180,180}
 \definecolor{trevcolor}{RGB}{0,80,200}
-
-%% conditionally set the pdf background color only on trevor's computer
+% conditionally set the pdf background color only on trevor's computer
 \IfFileExists{trbotpc.txt}{\pagecolor{pdfbgcolor}}{}
 
 \newenvironment{reptheorem}[1][Theorem]{\noindent\textbf{#1}}{}
@@ -246,11 +245,6 @@
     otherkeywords={then,word,process_local,type,xbegin,xabort,xend}
 }
 
-\usepackage{xcolor}
-\definecolor{pdfbgcolor}{RGB}{180,180,180}
-%% conditionally set the pdf background color only on trevor's computer
-\IfFileExists{trbotpc.txt}{\pagecolor{pdfbgcolor}}{}
-
 \usepackage{mathptmx}
 
 \begin{document}
@@ -276,7 +270,7 @@ good performance by carefully avoiding the overhead of \emph{incremental validat
 still providing \emph{progressiveness} (allowing transactional aborts only due to \emph{data conflicts}).
 Hardware transactional memory (HTM) implementations promise even better performance, 
 but offer no progress guarantees.
-Thus, they must be combined with STMs, leading to \emph{hybrid} TMs (HyTM)
+Thus, they must be combined with STMs, leading to \emph{hybrid} TMs (HyTMs)
 in which hardware transactions must be \emph{instrumented} (i.e., access metadata) 
 to detect contention with software transactions.
 

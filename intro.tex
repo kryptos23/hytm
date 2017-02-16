@@ -26,7 +26,7 @@ from the value that was read from the sequence lock at the start of the transact
 
 In fact, STMs like TL2 and NOrec ensure progress in the absence of data conflicts with 
 O(1) step complexity read operations and \emph{invisible reads} (read operations which 
-do not modify shared memory) 
+do not modify shared memory).
 Nonetheless, TM designs that are implemented entirely in software still incur significant performance overhead.
 Thus, current CPUs have included instructions to mark a block of memory accesses as transactional~\cite{Rei12, asf, bluegene}, allowing them to be executed \emph{atomically} in hardware.
 Hardware transactions promise better performance than STMs, but they offer no progress guarantees 
@@ -34,9 +34,9 @@ since they may experience \emph{spurious} aborts. This motivates the need for
 \emph{hybrid} TMs in which the \emph{fast} hardware transactions are 
 complemented with \emph{slower} software transactions that do not have spurious aborts.
 
-To allow hardware transactions in a HyTM to detect conflicts with software transactions, they must be \emph{instrumented} to perform additional metadata accesses, which introduces overhead.
+To allow hardware transactions in a HyTM to detect conflicts with software transactions, hardware transactions must be \emph{instrumented} to perform additional metadata accesses, which introduces overhead.
 Hardware transactions typically provide automatic conflict detection at cacheline granularity,
-thus ensuring that the transaction itself will be aborted if it experiences memory contention on the cacheline.
+thus ensuring that a transaction will be aborted if it experiences memory contention on a cacheline.
 This is at least the case with Intel's Transactional Synchronization Extensions~\cite{haswell}.
 The IBM POWER8 architecture additionally allows hardware transactions to access metadata \emph{non-speculatively}, 
 thus bypassing automatic conflict detection. While this has the advantage of potentially reducing contention aborts
@@ -60,16 +60,13 @@ We also sketch how \emph{some} hardware instrumentation can be performed \textit
 
 We performed experiments comparing our HyTM algorithms to TL2, Transactional Lock Elision (TLE)~\cite{tle} and Hybrid NOrec~\cite{hynorecriegel} 
 using a binary search tree microbenchmark.
-We carefully designed our experiments and implementations to ensure that our measurements expose fundamental performance differences between algorithms, and not system configuration errors or implementation overheads.
+We carefully designed our experiments and implementations to ensure that our measurements expose fundamental performance differences between algorithms, and not simply system configuration issues or implementation overheads.
 In these experiments, we studied two types of workloads: workloads in which essentially all transactions commit on the fast-path, 
 and workloads in which some thread periodically performs transactions on the slow-path.
-Our experiments with Intel and IBM POWER8 HTMs   
-seem to suggest that (i) the \emph{cost of concurrency} also exists in practice; high hardware instrumentation impacts performance negatively on Intel and even more so on POWER8 due to its limited transactional
-cache capacity, (ii) 
-it is important to implement HyTMs that provide progressiveness for a maximal set of transactions without incurring high hardware instrumentation overhead or
-using global contending bottlenecks and (iii) 
-there is no easy to way to derive more efficient HyTMs by taking advantage of non-speculative accesses supported within the fast-path in POWER8 processors
-(but not in Intel HTMs).
+Our experiments with Intel and IBM POWER8 HTMs seem to suggest the following.
+(i) The \emph{cost of concurrency} also exists in practice; high hardware instrumentation impacts performance negatively on Intel and even more so on POWER8 due to its limited transactional cache capacity.
+(ii) It is important to implement HyTMs that provide progressiveness for a maximal set of transactions without incurring high hardware instrumentation overhead or using global contending bottlenecks.
+(iii) There is no easy to way to derive more efficient HyTMs by taking advantage of non-speculative accesses supported within the fast-path in POWER8 processors. %(but not in Intel HTMs).
 %We explore the concurrency vs. hardware instrumentation vs. software validation tradeoffs for these algorithms.
 %Preliminary experiments on Intel Haswell (resp. IBM Power 8) not supporting (resp. supporting) non-speculative accesses inside hardware,
 %seem to suggest that the inherent \emph{cost to concurrency} in HyTMs also exists in practice and discuss algorithmic techniques to overcome them.
@@ -80,6 +77,7 @@ The rest of the paper is organized as follows.
 \cref{sec:lb} presents our main lower bound result on the step-complexity of slow-path transactions in progressive HyTMs
 while \cref{sec:hytmalgos} presents opaque HyTMs that are progressive for a subset of transactions.
 \cref{sec:eval} presents results from experiments on Intel Haswell and IBM POWER8 architectures which provide a clear characterization of the cost
-of concurrency in HyTMs as well as the ability to use direct accesses within hardware transactions.
+of concurrency in HyTMs, and study the impact of %as well as the ability to use 
+non-speculative (or direct) accesses within hardware transactions on performance.
 \cref{sec:rel} presents the related work along with concluding remarks. Formal proofs and pseudocodes are provided in the Appendix.
 %

@@ -70,11 +70,11 @@ one of them is nontrivial.
 We now describe the execution model of a \emph{Hybrid transactional memory (HyTM)} implementation.
 In our HyTM model, shared memory configurations may be modified by accessing base objects via two kinds of
 primitives: \emph{direct} and \emph{cached}.
-(i) In a direct access, the rmw primitive operates on the memory state:
+(i) In a direct (also called non-speculative) access, the rmw primitive operates on the memory state:
 the direct-access event atomically reads the value of the object in
 the shared memory and, if necessary, modifies it.
 (ii) In a cached access performed by a process $i$, the rmw primitive operates on the \emph{cached}
-state recorded in process $i$'s \emph{tracking set} $\tau_i$. 
+state recorded in process $i$'s \emph{tracking set} $\tau_i$.
 
 More precisely, $\tau_i$ is a set of triples $(b, v, m)$ where $b$ is a base object identifier, $v$ is a value, 
 and $m \in \{\shared, \exclusive\}$ is an access \emph{mode}. 
