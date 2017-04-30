@@ -1,0 +1,199 @@
+%!TEX root = htm.tex
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{prog-fp-sp}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{prog-fp}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Proof of opacity for algorithms}
+\label{app:opacity}
+We will prove the opacity of Algorithm~\ref{alg:inswrite} even if some of accesses performed by fast-path transactions are direct (as indicated in the pseudocode).
+Analogous arguments apply to Algorithm~\ref{alg:inswrite2}.
+%
+
+Let $E$ by any execution of Algorithm~\ref{alg:inswrite}. 
+Since opacity is a safety property, it is sufficient to prove that every finite execution is opaque~\cite{icdcs-opacity}.
+Let $<_E$ denote a total-order on events in $E$.
+
+Let $H$ denote a subsequence of $E$ constructed by selecting
+\emph{linearization points} of t-operations performed in $E$.
+The linearization point of a t-operation $op$, denoted as $\ell_{op}$ is associated with  
+a base object event or an event performed during 
+the execution of $op$ using the following procedure. 
+
+\vspace{1mm}\noindent\textbf{Completions.}
+First, we obtain a completion of $E$ by removing some pending
+invocations or adding responses to the remaining pending invocations.
+Incomplete $\Read_k$, $\Write_k$ operation performed by a slow-path transaction $T_k$ is removed from $E$;
+an incomplete $\TryC_k$ is removed from $E$ if $T_k$ has not performed any write to a base object $r_j$; $X_j \in \Wset(T_k)$
+in Line~\ref{line:write}, otherwise it is completed by including $C_k$ after $E$.
+Every incomplete $\Read_k$, $\TryA_k$, $\Write_k$ and $\TryC_k$ performed by a fast-path transaction $T_k$ is removed from $E$.
+
+\vspace{1mm}\noindent\textbf{Linearization points.}
+Now a linearization $H$ of $E$ is obtained by associating linearization points to
+t-operations in the obtained completion of $E$.
+For all t-operations performed a slow-path transaction $T_k$, linearization points as assigned as follows:
+%
+\begin{itemize}
+\item For every t-read $op_k$ that returns a non-A$_k$ value, $\ell_{op_k}$ is chosen as the event in Line~\ref{line:read2}
+of Algorithm~\ref{alg:inswrite}, else, $\ell_{op_k}$ is chosen as invocation event of $op_k$
+\item For every $op_k=\Write_k$ that returns, $\ell_{op_k}$ is chosen as the invocation event of $op_k$
+\item For every $op_k=\TryC_k$ that returns $C_k$ such that $\Wset(T_k)
+  \neq \emptyset$, $\ell_{op_k}$ is associated with the first write to a base object performed by $\lit{release}$
+  when invoked in Line~\ref{line:rel}, 
+  else if $op_k$ returns $A_k$, $\ell_{op_k}$ is associated with the invocation event of $op_k$
+\item For every $op_k=\TryC_k$ that returns $C_k$ such that $\Wset(T_k) = \emptyset$, 
+$\ell_{op_k}$ is associated with Line~\ref{line:return}
+\end{itemize}
+%
+For all t-operations performed a fast-path transaction $T_k$, linearization points are assigned as follows:
+\begin{itemize}
+\item For every t-read $op_k$ that returns a non-A$_k$ value, $\ell_{op_k}$ is chosen as the event in Line~\ref{line:lin1}
+of Algorithm~\ref{alg:inswrite}, else, $\ell_{op_k}$ is chosen as invocation event of $op_k$
+\item
+For every $op_k$ that is a $\TryC_k$, $\ell_{op_k}$ is the $\ms{commit-cache}_k$ primitive invoked by $T_k$
+\item
+For every $op_k$ that is a $\Write_k$, $\ell_{op_k}$ is the event in Line~\ref{line:lin2}.
+\end{itemize}
+%
+$<_H$ denotes a total-order on t-operations in the complete sequential history $H$.
+
+\vspace{1mm}\noindent\textbf{Serialization points.}
+The serialization of a transaction $T_j$, denoted as $\delta_{T_j}$ is
+associated with the linearization point of a t-operation 
+performed by the transaction.
+
+We obtain a t-complete history ${\bar H}$ from $H$ as follows. 
+A serialization $S$ is obtained by associating serialization points to transactions in ${\bar H}$ as follows:
+for every transaction $T_k$ in $H$ that is complete, but not t-complete, 
+we insert $\textit{tryC}_k\cdot A_k$ immediately 
+after the last event of $T_k$ in $H$. 
+If $T_k$ is an updating transaction that commits, then $\delta_{T_k}$ is $\ell_{\TryC_k}$.
+If $T_k$ is a read-only or aborted transaction,
+then $\delta_{T_k}$ is assigned to the linearization point of the last t-read that returned a non-A$_k$ value in $T_k$.
+
+$<_S$ denotes a total-order on transactions in the t-sequential history $S$.
+Since for a given transaction, its
+serialization point is chosen between the first and last event of the transaction,
+if $T_i \prec_{H} T_j$, then $\delta_{T_i} <_{E} \delta_{T_j}$ implies $T_i <_S T_j$.
+
+Throughout this proof, we consider that process $p_i$ executing fast-path transaction $T_k \in \ms{txns}(E)$
+does not include the sequence lock $r_j$ in the tracking set of $p_i$ when accessed in Line~\ref{line:hread}
+during $\Read_k(X_j)$.
+%
+%
+\begin{claim}
+\label{cl:fast}
+If every transaction $T_k \in \ms{txns}(E)$ is fast-path, then $S$ is legal.
+\end{claim}
+%
+\begin{proof}
+%
+Recall that Algorithm~\ref{alg:inswrite} performs direct accesses only during the t-read operation in Line~\ref{line:hread} which involves reading the sequence lock $r_j$ corresponding to t-object $X_j$.
+However, any two fast-path transactions accessing conflicting data sets must necessarily incur a tracking abort (cf. Remark~\ref{re:traborts}) in $E$. It follows immediately that $S$ must be legal.
+\end{proof}
+%
+% \begin{claim}
+% \label{cl:alg1claim}
+% %
+% If process $p_i$ executing transaction $T_k\in \ms{txns}(E)$ holds the lock on $X_j\in \ms{Wset}(T_k)$ after $E$, then the value $r_j$ is an odd integer value.
+% \end{claim}
+% %
+% \begin{proof}
+% %
+% \end{proof}
+% %
+%
+\begin{claim}
+\label{cl:readfrom}
+$S$ is legal, i.e., every t-read returns the value of the latest committed t-write in $S$.
+\end{claim}
+%
+\begin{proof}
+%
+We claim that for every $\Read_j(X_m) \rightarrow v$, there exists some slow-path transaction $T_i$ (or resp. fast-path)
+that performs $\Write_i(X_m,v)$ and completes the event in Line~\ref{line:write} (or resp. Line~\ref{line:lin2}) such that
+$\Read_j(X_m) \not\prec_H^{RT} \Write_i(X_m,v)$.
+
+Suppose that $T_i$ is a slow-path transaction:
+since $\Read_j(X_m)$ returns the response $v$, the event in Line~\ref{line:read2}
+succeeds the event in Line~\ref{line:write} performed by $\TryC_i$. 
+Since $\Read_j(X_m)$ can return a non-abort response only after $T_i$ releases the lock on $r_m$ in
+Line~\ref{line:rel1}, $T_i$ must be committed in $S$.
+Consequently,
+$\ell_{\TryC_i} <_E \ell_{\Read_j(X_m)}$.
+Since, for any updating
+committing transaction $T_i$, $\delta_{T_i}=\ell_{\TryC_i}$, it follows that
+$\delta_{T_{i}} <_E \delta_{T_{j}}$.
+
+Otherwise if $T_i$ is a fast-path transaction, then clearly $T_i$ is a committed transaction in $S$.
+Recall that $\Read_j(X_m)$ can read $v$ during the event in Line~\ref{line:read2}
+only after $T_i$ applies the $\ms{commit-cache}$ primitive.
+By the assignment of linearization points, 
+$\ell_{\TryC_i} <_E \ell_{\Read_j(X_m)}$ and thus, $\delta_{T_{i}} <_E \ell_{\Read_j(X_m)}$.
+
+Thus, to prove that $S$ is legal, it suffices to show that  
+there does not exist a
+transaction $T_k$ that returns $C_k$ in $S$ and performs $\Write_k(X_m,v')$; $v'\neq v$ such that $T_i <_S T_k <_S T_j$. 
+%
+
+$T_i$ and $T_k$ are both updating transactions that commit. Thus, 
+($T_i <_S T_k$) $\Longleftrightarrow$ ($\delta_{T_i} <_{E} \delta_{T_k}$) and
+($\delta_{T_i} <_{E} \delta_{T_k}$) $\Longleftrightarrow$ ($\ell_{\TryC_i} <_{E} \ell_{\TryC_k}$).
+
+%
+Since, $T_j$ reads the value of $X$ written by $T_i$, one of the following is true:
+$\ell_{\TryC_i} <_{E} \ell_{\TryC_k} <_{E} \ell_{\Read_j(X_m)}$ or
+$\ell_{\TryC_i} <_{E} \ell_{\Read_j(X_m)} <_{E} \ell_{\TryC_k}$.
+
+Suppose that $\ell_{\TryC_i} <_{E} \ell_{\TryC_k} <_{E} \ell_{\Read_j(X_m)}$.
+
+(\textit{Case \RNum{1}:}) $T_i$ and $T_k$ are slow-path transactions.
+
+Thus, $T_k$ returns a response from the event in Line~\ref{line:acq} 
+before the read of the base object associated with $X_m$ by $T_j$ in Line~\ref{line:read2}. 
+Since $T_i$ and $T_k$ are both committed in $E$, $T_k$ returns \emph{true} from the event in
+Line~\ref{line:acq} only after $T_i$ releases $r_{m}$ in Line~\ref{line:rel1}.
+
+If $T_j$ is a slow-path transaction, 
+recall that $\Read_j(X_m)$ checks if $X_j$ is locked by a concurrent transaction, 
+then performs read-validation (Line~\ref{line:abort0}) before returning a matching response. 
+Indeed, $\Read_j(X_m)$ must return $A_j$ in any such execution.
+
+If $T_j$ is a fast-path transaction, it follows that $\Read_j(X_m)$ must return $A_j$
+immediately from Remark~\ref{re:traborts}.
+
+Thus, $\ell_{\TryC_i} <_E \ell_{\Read_j(X)} <_{E} \ell_{\TryC_k}$.
+
+(\textit{Case \RNum{2}:}) $T_i$ is a slow-path transaction and $T_k$ is a fast-path transaction.
+Thus, $T_k$ returns $C_k$ 
+before the read of the base object associated with $X_m$ by $T_j$ in Line~\ref{line:read2}, but after the response
+of \emph{acquire} by $T_i$ in Line~\ref{line:acq}.
+Since $\Read_j(X_m)$ reads the value of $X_m$ to be $v$ and not $v'$, $T_i$ performs the \emph{cas}
+to $v_m$ in Line~\ref{line:write} after the $T_k$ performs the $\ms{commit-cache}$ primitive (since if
+otherwise, $T_k$ would be aborted in $E$).
+But then the \emph{cas} on $v_m$ performed by $T_i$ would return $\false$ and $T_i$ would return $A_i$---contradiction.
+
+(\textit{Case \RNum{3}:}) $T_k$ is a slow-path transaction and $T_i$ is a fast-path transaction.
+This is analogous to the above case.
+
+(\textit{Case \RNum{4}:}) $T_i$ and $T_k$ are fast-path transactions.
+Follows immediately from Claim~\ref{cl:fast}.
+
+We now need to prove that $\delta_{T_{j}}$ indeed precedes $\ell_{\TryC_k}$ in $E$.
+Consider the two possible cases.
+Suppose that $T_j$ is a read-only transaction. 
+Then, $\delta_{T_j}$ is assigned to the last t-read performed by $T_j$ that returns a non-A$_j$ value. 
+If $\Read_j(X_m)$ is not the last t-read that returned a non-A$_j$ value, then there exists a $\Read_j(X')$ such that 
+$\ell_{\Read_j(X_m)} <_{E} \ell_{\TryC_k} <_E \ell_{read_j(X')}$.
+But then this t-read of $X'$ must abort by performing the checks in Line~\ref{line:abort0} or incur a tracking set abort---contradiction.
+
+Otherwise suppose that $T_j$ is an updating transaction that commits, then $\delta_{T_j}=\ell_{\TryC_j}$ which implies that
+$\ell_{read_j(X)} <_{E} \ell_{\TryC_k} <_E \ell_{\TryC_j}$. Then, $T_j$ must neccesarily perform the checks
+in Line~\ref{line:abort3} and return $A_j$ or incur a tracking set abort---contradiction to the assumption that $T_j$ is a committed transaction.%
+%
+\end{proof}
+%
+Since $S$ is legal and respects the real-time ordering of transactions, Algorithm~\ref{alg:inswrite} is opaque.
+%

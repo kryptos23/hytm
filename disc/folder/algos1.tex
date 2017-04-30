@@ -1,0 +1,70 @@
+%!TEX root = htm.tex
+\vspace{1mm}\noindent\textbf{Instrumentation-optimal progressive HyTM.}
+We describe a HyTM algorithm that is a tight bound for Theorem~\ref{th:impossibility} and the instrumentation cost on the fast-path transactions established in \cite{hytm14disc}.
+For every t-object $X_j$, our implementation maintains a base object $v_j$ that stores the value of $X_j$
+and a \emph{sequence lock} $r_{j}$. 
+% The sequence lock is an unsigned integer whose LSB bit stores the \emph{locked} state.
+% Specifically, we say that process $p_i$ \emph{holds a lock on $X_j$ after an execution $E$} if
+% $\textit{or}_j$ $\mathrel{\&} 1=1$ after $E$, where $\textit{or}_j$ is the value of $r_j$ after $E$.
+
+\vspace{1mm}\noindent\textit{Fast-path transactions:}
+For a fast-path transaction $T_k$ executed by process $p_i$, the $\Read_k(X_j)$ implementation first reads $r_j$ (direct)
+and returns $A_k$ if some other process $p_j$ holds a lock on $X_j$.
+Otherwise, it returns the value of $X_j$.
+As with $\Read_k(X_j)$, the $\Write (X_j,v)$ implementation returns $A_k$ if some other process $p_j$ holds a lock on $X_j$; otherwise
+process $p_i$ increments the sequence lock $r_j$. If the cache has not been invalidated, $p_i$ updates the shared memory
+during $\TryC_k$ by invoking the $\ms{commit-cache}$ primitive.
+
+\vspace{1mm}\noindent\textit{Slow-path read-only transactions:}
+Any $\Read_k(X_j)$ invoked by a slow-path transaction first reads the value of the t-object from $v_j$, 
+adds $r_j$ to $\Rset(T_k)$ if its not held by a concurrent transaction
+and then performs \emph{validation} on its entire read set to check if any of them have been modified. 
+If either of these conditions is true,
+the transaction returns $A_k$. Otherwise, it returns the value of $X_j$. 
+Validation of the read set is performed by re-reading the values of the sequence lock entires stored in $\Rset(T_k)$.
+%A read-only transaction simply returns $C_k$ during the tryCommit.
+
+\vspace{1mm}\noindent\textit{Slow-path updating transactions:}
+% The $\Write_k(X,v)$ implementation of a slow-path transaction stores
+% $v$ and the current value of $X_j$ locally, 
+% deferring the actual update in shared memory to tryCommit. 
+An updating slow-path transaction $T_k$ attempts to obtain exclusive write access to its 
+entire write set.
+If all the locks on the write set were acquired successfully, $T_k$ performs validation of the read set and if successful, updates the values of
+the t-objects in shared memory, releases the locks and returns $C_k$; else $p_i$ aborts the transaction.
+
+\vspace{1mm}\noindent\textit{Direct accesses inside fast-path:}
+Note that the accesses of the sequence lock during the t-read may be performed directly without incurring tracking set aborts and the resulting implementation would still be opaque.
+
+\vspace{1mm}\noindent\textbf{Instrumentation-optimal HyTMs that are progressive only for slow-path reading transactions.}
+Algorithm~\ref{alg:inswrite2} does not incur the linear instrumentation cost
+on the fast-path reading transactions (inherent to Algorithm~\ref{alg:inswrite}), but provides progressiveness only
+for slow-path reading transactions. 
+The instrumentation cost on fast-path t-reads is avoided by using a global lock that serializes all updating slow-path transactions
+during the tryCommit. Fast-path transactions simply check if this lock is held without acquiring it (similar to TLE~\cite{tle}). While the per-read instrumentation overhead
+is avoided, Algorithm~\ref{alg:inswrite2} still incurs the per-write instrumentation cost.
+
+\vspace{1mm}\noindent\textbf{Sacrificing progressiveness and minimizing contention window.}
+Observe that the lower bound in Theorem~\ref{th:impossibility} assumes progressiveness for both slow-path and fast-path transactions
+along with opacity and invisible reads. Note that Algorithm~\ref{alg:inswrite2} retains the validation step complexity cost since it provides progressiveness for slow-path readers.
+
+Hybrid NOrec~\cite{hybridnorec} is a HyTM implementation that does not satisfy progressiveness
+(unlike its STM counterpart NOrec), but mitigates
+the step-complexity cost on slow-path transactions by performing incremental validation 
+during a transactional read \emph{iff} 
+the shared memory has changed since the start of the transaction.
+Conceptually, Hybrid NOrec uses a global sequence lock \emph{gsl} that is incremented 
+at the start and end of each transaction's commit procedure.
+Readers can use the value of gsl to determine whether shared memory has changed between two configurations.
+Unfortunately, with this approach, two fast path transactions will always conflict on the gsl if their 
+commit procedures are concurrent.
+To reduce the contention window for fast path transactions, the gsl is actually implemented as two separate locks (the second one called \emph{esl}).
+A slow path transaction locks both esl and gsl while it is committing.
+Instead of incrementing gsl, a fast path transaction checks if esl is locked and aborts if it is.
+Then, at the end of the fast path transaction's commit procedure, 
+it increments gsl twice (quickly locking and releasing it and immediately commits in hardware), thus, the 
+window for fast path transactions to contend on gsl is very small.
+
+Figure~\ref{fig:main} summarizes the complexity costs
+associated with the HyTM algorithms considered in this paper.
+%

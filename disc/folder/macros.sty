@@ -1,0 +1,65 @@
+
+\newcommand{\act}[1]{%
+    \relax\ifmmode
+        \mathord{\mathcode`\-="702D \sf #1\mathcode`\-="2200}%
+    \else
+%        $\mathord{\mathcode`\-="702D\sf #1\mathcode`\-="2200}$%
+%        {\sfshape #1}%
+        {\sf #1}%
+    \fi
+}
+
+\newcommand{\tup}[1]{%
+    \relax\ifmmode
+%        \mathord{\mathcode`\-="702D\bf #1\mathcode`\-="2200}%
+      \langle #1 \rangle%
+    \else
+%        $\mathord{\mathcode`\-="702D\bf #1\mathcode`\-="2200}$%
+        $\langle$ #1 $\rangle$%
+    \fi
+}
+
+\newcommand{\seq}[1]{%
+    \relax\ifmmode
+%        \mathord{\mathcode`\-="702D\bf #1\mathcode`\-="2200}%
+      \langle \! \langle #1 \rangle \! \rangle%
+    \else
+%        $\mathord{\mathcode`\-="702D\bf #1\mathcode`\-="2200}$%
+        $\langle \! \langle$ #1 $\rangle \! \rangle$%
+    \fi
+}
+
+\newcommand{\lit}[1]{%
+    \relax\ifmmode
+        \mathord{\mathcode`\-="702D\sf #1\mathcode`\-="2200}%
+    \else
+%        $\mathord{\mathcode`\-="702D\sf #1\mathcode`\-="2200}$%
+%        {\itshape #1}%
+        {\it #1}%
+    \fi
+}
+
+\newcommand{\ms}[1]{%
+    \relax\ifmmode
+        \mathord{\mathcode`\-="702D\it #1\mathcode`\-="2200}%
+    \else
+%        $\mathord{\mathcode`\-="702D\it #1\mathcode`\-="2200}$%
+%        {\itshape #1}%
+        {\it #1}%
+    \fi
+}
+
+\newcommand{\two}[4]{
+  \parbox{\columnwidth}{\vspace{1pt}\vfill
+    \parbox[l]{#1\columnwidth}{#3}%
+    \parbox[r]{#2\columnwidth}{#4}%
+}}
+
+%\newcommand{\ff}{\scriptsize}
+%\newcommand{\B}{\vspace*{-\smallskipamount}}
+%\newcommand{\BB}{\vspace*{-\medskipamount}}
+%\newcommand{\BBB}{\vspace*{-\bigskipamount}}
+%\newcommand{\F}{\vspace*{\smallskipamount}}
+\newcommand{\FF}{\vspace*{\medskipamount}}
+%\newcommand{\FFF}{\vspace*{\bigskipamount}}
+\newcommand{\T}{\hspace*{1em}}

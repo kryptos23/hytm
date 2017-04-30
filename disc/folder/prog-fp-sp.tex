@@ -1,0 +1,234 @@
+\begin{algorithm*}[!t]
+\caption{Progressive fast-path and slow-path opaque HyTM implementation; code for transaction $T_k$}
+\label{alg:inswrite}
+\vspace{-2mm}
+\noindent\lstset{style=customc}
+\begin{minipage}{0.45\textwidth}
+\begin{lstlisting}[frame=none,firstnumber=1,mathescape=true]
+//\textbf{Shared objects}
+    v$_j$, value of each t-object X$_j$ 
+    r$_{j}$, a sequence lock of each t-object X$_j$
+
+//\textbf{Code for fast-path transactions}
+read$_k(X_j)$
+    ov$_j$ := v$_j$  //\label{line:lin1}
+    or$_j$ := r$_j$ //\medcom direct read \label{line:hread}
+    if or$_j.\lit{isLocked}()$ then return $A_k$ 
+    return ov$_j$ //\vspace{-2mm}
+
+write$_k(X_j,v)$
+    or$_j$ := r$_j$  //\label{line:m1}
+    if or$_j.\lit{isLocked}()$ then return $A_k$
+    r$_j$ := or$_j.\lit{IncSequence}()$  //\label{line:m2}
+    v$_j$ := v  //\label{line:lin2} 
+    return OK //\vspace{-2mm}
+
+tryC$_k$()
+    commit-cache$_i$ // \label{line:lin3}\vspace{-2mm}
+
+Function: release(Q)
+    for each X$_j$ $\in Q$
+	r$_j$ := or$_j.\lit{unlock}()$ // \label{line:rel1}\vspace{-2mm}
+	
+Function: acquire(Q)
+    for each X$_j$ $\in Q$	
+	if r$_j.\lit{tryLock}()$  // \medcom CAS/LLSC \label{line:acq1}
+	    Lset(T$_k$) := Lset(T$_k$) $\cup$ {X$_j$}
+	else
+	    release(Lset(T$_k$))
+	    return false
+    return true
+\end{lstlisting}
+\end{minipage}
+\begin{minipage}{0.54\textwidth}
+\begin{lstlisting}[frame=none,firstnumber=last,mathescape=true]
+//\textbf{Code for slow-path transactions}
+Read$_k$(X$_j$)
+    if X$_j$ $\in$ Wset(T$_k$) then	return Wset(T$_k$).locate(X$_j$) 
+    or$_j$ := r$_j$ //\label{line:readorec}
+    ov$_j$ := v$_j$ //\label{line:read2}
+    Rset(T$_k$) := Rset(T$_k$) $\cup$ {X$_j$,or$_j$} //\label{line:rset}
+    if or$_j.\lit{isLocked}()$ then return $A_k$ //\label{line:abort0}	
+    if not validate() then return $A_k$ //\label{line:valid}
+    return ov$_j$ //\vspace{-2mm}
+
+write$_k(X_j,v)$
+    or$_j$ := r$_j$
+    nv$_j$ := v
+    if or$_j.\lit{isLocked}()$ then return $A_k$
+    Wset(T$_k$) := Wset(T$_k$) $\cup$ {X$_j$, nv$_j$, or$_j$}
+    return OK //\vspace{-2mm}
+
+tryC$_k$()
+    if Wset(T$_k$) = $\emptyset$ then return $C_k$ // \label{line:return}
+    if not acquire(Wset(T$_k$)) then return $A_k$ // \label{line:acq}
+    if not validate() // \label{line:abort3}
+	    release(Wset(T$_k$)) 
+	    return A$_k$ 
+    for each X$_j$ $\in$ Wset(T$_k$)
+	    v$_j$:= nv$_j$ //\label{line:write}
+    release(Wset(T$_k$))  // \label{line:rel}	
+    return C$_k$  //\vspace{-2mm}
+
+Function: validate()
+    if $\exists$ X$_j$ $\in$ Rset(T$_k$):or$_j.\lit{getSequence()} \neq$ r$_j.\lit{getSequence()}$ then return false//\label{line:valid}
+    return true
+
+\end{lstlisting}
+\end{minipage}
+\vspace{-2mm}
+\end{algorithm*}
+%
+% \begin{algorithm*}[!ht]
+% \caption{Progressive fast-path and slow-path opaque HyTM implementation; code for transaction $T_k$}
+% \label{alg:inswrite}
+% \begin{algorithmic}[1]
+%   	\begin{multicols}{2}
+%   	{
+%   	\footnotesize
+% 	\Part{Shared objects}{
+% 		\State $v_j$, value of each t-object $X_j$ 
+% 		\State $r_{j}$, a sequence lock for each t-object $X_j$
+% 	}\EndPart	
+% 	\Statex
+% 	\Part{Process local objects}{
+% 		\State $\Rset(T_k)$, storing $\{X_j,r_j\}$
+% 		\State $\Wset(T_k)$, storing $\{X_j, v_j\}$
+% 	}\EndPart
+% 	\Statex
+% 	\textbf{Code for fast-path transactions}
+% 	\Statex
+% 	\Part{$\textit{read}_k(X_j)$}\quad\Comment{fast-path}{
+% 		\State $\textit{ov}_j := \Read(v_j)$ \Comment{cached read} \label{line:lin1}
+% 		 \State $\underline{\textit{or}_j := \Read(r_j)}$ \Comment{uncached read}
+% 		\If{$\textit{or}_j$ $\mathrel{\&}1$}  \label{line:hread}
+% 			\Return $A_k$ \EndReturn
+% 		\EndIf
+% 		
+% 		\Return $\textit{ov}_j$ \EndReturn
+% 		
+%    	 }\EndPart
+% 	\Statex
+% 	%\Comment{What is the best strategy to buffer writes?}
+% 	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
+% 		\State $\textit{or}_j := \Read(r_j)$ \Comment{cached read} \label{line:m1}
+% 		\If{$\textit{or}_j$ $\mathrel{\&} 1$}  		
+% 			\Return $A_k$ \EndReturn
+% 		\EndIf
+% 		
+% 		\State $\underline{\Write(r_j,\textit{or}_j+2)}$ \label{line:m2}
+% 		\State $\underline{\Write(v_j,v)}$ \Comment{uncached write} \label{line:lin2} 
+% 		\Return $\ok$ \EndReturn
+% 		
+%    	}\EndPart
+% 	\Statex
+% 	
+% 	\Part{$\textit{tryC}_k$()}{\quad\Comment{fast-path}
+% 		\State $\ms{commit-cache}_i$ \label{line:lin3} \Comment{returns $C_k$ or $A_k$}
+%   	 }\EndPart
+%   	 
+%   	 \Statex
+%   	\Part{Function: $\lit{release}(Q)$}{
+%   		\ForAll{$X_j \in Q$}	
+%  			\State $r_j.\lit{write}(or_j+1)$ \label{line:rel1}	
+% 		\EndFor
+% 		
+% 	}\EndPart
+%  	\Statex
+% 	\Part{Function: $\lit{acquire}(Q)$}{
+%   		\ForAll{$X_j \in Q$}	
+%  			\If{ $r_j.\lit{setV}()$} \label{line:acq1}
+% 			  \State $\ms{Lset}(T_k):=\ms{Lset}(T_k)\cup \{X_j\}$
+% 			  \Return $\true$ \EndReturn
+% 			\EndIf
+% 			\State $\lit{release}(\ms{Lset}(T_k))$
+% 			\Return $\false$ \EndReturn
+% 		\EndFor
+% 		
+% 	}\EndPart
+% 	\Statex
+% 	\Statex \Comment{Implement using LL/SC on Power8}
+% 	\Part{Function: $\lit{setV}()$}{
+% % 		\State $\ms{success} \gets \lit{false}$
+% % 		
+% % 		\While{($\neg \ms{success}$)} \Comment {spin until we get the lock}
+% 		%\State $\ms{or}_j \gets$ $r_j.\Read()$ $\mathrel{\&}1111...1110$
+% 		\If{$r_j$.CAS($or_j$, $or_j+1$)} 
+% 		  \Return $\false$  \EndReturn
+% 		\EndIf
+% 		\Return $\true$ \EndReturn
+% 	}\EndPart
+%   	 
+%   	 \newpage
+% 	\textbf{Code for slow-path transactions}
+% 	\Statex
+% 	\Part{\Read$_k(X_j)$}\quad\Comment{slow-path}{
+% 		  \If{$X_j\in \Wset(T_k)$}
+% 		    \Return $\Wset(T_k).\lit{locate}(X_j)$ \EndReturn
+% 		  \Else
+% 		  
+% 		  \State $\textit{or}_j := \Read(r_j)$ \label{line:readorec}
+% 		  \State $\textit{ov}_j := \Read(v_j)$ \label{line:read2}
+% 		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$ \label{line:rset}
+% 		  \If{$\textit{or}_j$ $\mathrel{\&} 1$} \label{line:abort0}	
+% 			\Return $A_k$ \EndReturn
+% 		  \EndIf
+% 		 
+% 		  \If{$\neg \lit{validate}()$} \label{line:valid}
+% 			\Return $A_k$ \EndReturn
+% 		  \EndIf
+% 		  \EndIf
+% 		  \Return $\textit{ov}_j$ \EndReturn
+% 		
+%    	 }\EndPart
+% 	\Statex
+% 	\Part{\Write$_k(X_j,v)$}\quad\Comment{slow-path}{
+% 		
+% 			\State $\textit{or}_j := \Read(r_j)$
+% 			\State $\textit{nv}_j := v$
+% 			\If{$\textit{or}_j$ $\mathrel{\&} 1$}	
+% 			  \Return $A_k$ \EndReturn
+% 			\EndIf
+% 			\State $\Wset(T_k) := \Wset(T_k)\cup\{X_j,\textit{nv}_j, \textit{or}_j\}$
+% 			\Return $\ok$ \EndReturn
+% 		
+%    	}\EndPart
+% 	\Statex
+% 	
+% 	%\Statex	
+% 	\Part{\TryC$_k$()}\quad\Comment{slow-path}{
+% 		\If{$\Wset(T_k)= \emptyset$}
+% 			\Return $C_k$ \EndReturn \label{line:return}
+% 		\EndIf
+% 		\If{$\lit{acquire}(\Wset(T_k))$}	\label{line:acq}
+% 		
+% 		\If{$\neg \lit{validate}()$} \label{line:abort3}
+% 			\State $\lit{release}( \ms{Wset}(T_k))$ 
+% 			\Return $A_k$ \EndReturn
+% 		\EndIf
+% 		\ForAll{$X_j \in \Wset(T_k)$}
+% 	 		\State  $v_j.\lit{write}(\textit{nv}_j)$ \label{line:write}
+% 			 
+% 	 	\EndFor	
+% 		  
+% 		\State $\lit{release}(\Wset(T_k))$   \label{line:rel}	
+%    		\Return $C_k$ \EndReturn
+%    		\Else
+% 		  \Return $A_k$ \EndReturn
+% 		\EndIf
+%    	 }\EndPart		
+% 	 
+%  	
+% 	\Statex
+% 	\Statex \Comment{Check if read set is consistent}
+% 	\Part{Function: $\lit{validate}()$}{\quad\Comment{Validate slow-path reading transactions}
+% 		\If{$\exists X_j \in Rset(T_k)$:$(\textit{or}_j\neq \Read(r_j))$} \label{line:valid}
+% 			\Return $\false$ \EndReturn
+% 		  \EndIf
+% 		 \Return $\true$ \EndReturn
+% 	}\EndPart
+% 		
+%   	 }
+% 	\end{multicols}
+%   \end{algorithmic}
+% \end{algorithm*}
