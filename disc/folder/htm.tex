@@ -12,22 +12,45 @@
 %\graphicspath{{./graphics/}}%helpful if your graphic files are in another directory
 
 \bibliographystyle{plainurl}% the recommended bibstyle
+\usepackage{multicol}
+\usepackage{amsmath}
+\usepackage{framed}
+
+\usepackage{float}
+\floatstyle{boxed} 
+\restylefloat{figure}
+%\expandafter\def\csname ver@subfig.sty\endcsname{}
+\usepackage{tikz}
+\usepackage{cleveref}
+\crefname{section}{\S}{\S\S}
+%\usepackage{hyperref}
 \usepackage{macros}
 \usepackage[ruled]{algorithm}
 \usepackage{algpseudocode}
 \usepackage{ioa_code}
- \usepackage{float}
-   \floatstyle{boxed} 
-   \restylefloat{figure}
-% \expandafter\def\csname ver@subfig.sty\endcsname{}
-%\usepackage{subfig}
-\usepackage{multicol}
-\usepackage{amsmath}
-\usepackage{framed}
-\usepackage{tikz}
-\usepackage{cleveref}
-\crefname{section}{\S}{\S\S}
-\usepackage{hyperref}
+\usepackage{listings}
+\lstset{numbers=left,numberblanklines=false}
+\newcommand\Small{\fontsize{7.6}{7.6}\selectfont}
+\newcommand*\LSTfont{\Small\ttfamily\SetTracking{encoding=*}{-60}\lsstyle}
+
+\lstdefinestyle{customc}{
+    belowcaptionskip=1\baselineskip,
+    breaklines=true,
+    frame=L,	
+    xleftmargin=\parindent,
+    language=C,
+    showstringspaces=false,
+    escapeinside={//}{\^^M},
+    basicstyle=\LSTfont, %\scriptsize\ttfamily,
+    keywordstyle=\bfseries\color{green!40!black},
+    commentstyle=\itshape\color{gray!60!black},
+    identifierstyle=\color{blue!50!black},
+    stringstyle=\color{orange},
+    numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=5pt,                   % how far the line-numbers are from the code
+    numberstyle=\tiny\color{black},  % the style that is used for the line-numbers
+    otherkeywords={then,word,process_local,type,xbegin,xabort,xend}
+}
 
 \def\P{\ensuremath{\mathcal{P}}}
 \def\DP{\ensuremath{\Diamond\mathcal{P}}}

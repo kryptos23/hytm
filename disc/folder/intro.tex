@@ -42,7 +42,7 @@ The IBM POWER8 architecture additionally allows hardware transactions to access 
 thus bypassing automatic conflict detection. While this has the advantage of potentially reducing contention aborts
 in hardware, this makes the design of HyTM implementations potentially harder to prove correct.
 
-In \cite{htmdisc15}, it was shown that hardware transactions in progressive HyTMs must perform
+In \cite{hytm14disc}, it was shown that hardware transactions in progressive HyTMs must perform
 at least one metadata access per transactional read and write.
 In this paper, we show that in progressive HyTMs with invisible reads, 
 software transactions \textit{cannot} avoid incremental validation.
@@ -66,14 +66,14 @@ and workloads in which some thread periodically performs transactions on the slo
 Our experiments with Intel and IBM POWER8 HTMs seem to suggest the following.
 (i) The \emph{cost of concurrency} also exists in practice; high hardware instrumentation impacts performance negatively on Intel and even more so on POWER8 due to its limited transactional cache capacity.
 (ii) It is important to implement HyTMs that provide progressiveness for a maximal set of transactions without incurring high hardware instrumentation overhead or using global contending bottlenecks.
-(iii) There is no easy to way to derive more efficient HyTMs by taking advantage of non-speculative accesses supported within the fast-path in POWER8 processors. %(but not in Intel HTMs).
+(iii) There is no easy way to derive more efficient HyTMs by taking advantage of non-speculative accesses supported within the fast-path in POWER8 processors. %(but not in Intel HTMs).
 %We explore the concurrency vs. hardware instrumentation vs. software validation tradeoffs for these algorithms.
 %Preliminary experiments on Intel Haswell (resp. IBM Power 8) not supporting (resp. supporting) non-speculative accesses inside hardware,
 %seem to suggest that the inherent \emph{cost to concurrency} in HyTMs also exists in practice and discuss algorithmic techniques to overcome them.
 
 \vspace{1mm}\noindent\textbf{Roadmap.}
 The rest of the paper is organized as follows.
-\cref{sec:hytm} presents details of the HyTM model that extends the model introduced in \cite{htmdisc15}.
+\cref{sec:hytm} presents details of the HyTM model that extends the model introduced in \cite{hytm14disc}.
 \cref{sec:lb} presents our main lower bound result on the step-complexity of slow-path transactions in progressive HyTMs
 while \cref{sec:hytmalgos} presents opaque HyTMs that are progressive for a subset of transactions.
 \cref{sec:eval} presents results from experiments on Intel Haswell and IBM POWER8 architectures which provide a clear characterization of the cost
