@@ -15,7 +15,7 @@
 \usepackage{multicol}
 \usepackage{amsmath}
 \usepackage{framed}
-
+\usepackage{subcaption}
 \usepackage{float}
 \floatstyle{boxed} 
 \restylefloat{figure}
@@ -28,6 +28,9 @@
 \usepackage[ruled]{algorithm}
 \usepackage{algpseudocode}
 \usepackage{ioa_code}
+\usepackage{tabto}
+\newcommand{\medcom}[1]{\tabto{5cm} \com \mbox{#1}}
+
 \usepackage{listings}
 \lstset{numbers=left,numberblanklines=false}
 \newcommand\Small{\fontsize{7.6}{7.6}\selectfont}
@@ -197,6 +200,7 @@ there is no easy way to derive more efficient HyTMs by taking advantage of non-s
 \input{Evaluation}
 %
 \input{related}
+%
 \bibliography{references2}
 \newpage
 \appendix
