@@ -1,9 +1,14 @@
 code/stamp/nbproject/
 code/stamp/bin/
-htm.synctex.gz
-hybridnorec.synctex.gz
 htm.pdf
 hybridnorec.pdf
 code/from_power8_machine.7z
 code/stamp/jemalloc-4.2.1/
 data/dsbench/graphs_dsbench2/
+*.bbl
+*.blg
+*.synctex.gz
+*.aux
+*.log
+*.vtc
+*.out

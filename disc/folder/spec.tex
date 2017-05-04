@@ -79,19 +79,45 @@ transactions to commit only in the absence of any concurrent transaction~\cite{t
 complexity. On the other hand, TL2 and NOrec are not weak DAP since they employ a global versioned lock that mitigates the cost of incremental validation, but this allows two transactions accessing
 disjoint data sets to concurrently contend on the same memory location. Indeed, this inspires the proof of Theorem~\ref{th:impossibility}. 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \begin{figure*}[!t]
+% \begin{center}
+% 	\subfloat[Slow-path transaction $T_{\phi}$ performs $i-1$ distinct t-reads (each returning the initial value) followed by the t-read of $X_i$ that returns value $nv$ 
+% 	writtten by fast-path transaction $T_i$\label{sfig:inv-1}]{\scalebox{0.6}[0.6]{\input{dap}}}
+%         \\
+%         \vspace{1mm}
+% 	\subfloat[Fast-path transaction $T_i$ does not contend with any of the $i-1$ t-reads performed by $T_{\phi}$ and must be committed in this execution since it cannot incur a tracking set or capacity abort.
+% 	The t-read of $X_i$ must return $nv$ because this execution is indistinguishable to $T_{\phi}$ from \ref{sfig:inv-1}\label{sfig:inv-2}]{\scalebox{0.6}[0.6]{\input{dap2}}}
+% 	\\
+% 	\vspace{1mm}
+% 	\subfloat[In each of these each $i-1$ executions, fast-path transactions cannot incur a tracking set or capacity abort. By opacity, the t-read of $X_i$ by $T_{\phi}$ cannot return new value $nv$.
+% 	Therefore, to distinguish the $i-1$ different executions, t-read of $X_i$ by slow-path transaction $T_{\phi}$ is forced
+% 	to access $i-1$ different base objects\label{sfig:inv-3}]{\scalebox{0.6}[0.6]{\input{dap3}}}
+% 	\caption{Proof steps for Theorem~\ref{th:impossibility}
+%         \label{fig:indis}} 
+% \end{center}
+% \end{figure*}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{figure*}[!t]
 \begin{center}
-	\subfloat[Slow-path transaction $T_{\phi}$ performs $i-1$ distinct t-reads (each returning the initial value) followed by the t-read of $X_i$ that returns value $nv$ 
-	writtten by fast-path transaction $T_i$\label{sfig:inv-1}]{\scalebox{0.6}[0.6]{\input{dap}}}
+	\begin{subfigure}{\linewidth}{\scalebox{0.6}[0.6]{\input{dap}}}
+	\caption{Slow-path transaction $T_{\phi}$ performs $i-1$ distinct t-reads (each returning the initial value) followed by the t-read of $X_i$ that returns value $nv$ 
+	writtten by fast-path transaction $T_i$}\label{sfig:inv-1}
+	\end{subfigure}
         \\
-        \vspace{1mm}
-	\subfloat[Fast-path transaction $T_i$ does not contend with any of the $i-1$ t-reads performed by $T_{\phi}$ and must be committed in this execution since it cannot incur a tracking set or capacity abort.
-	The t-read of $X_i$ must return $nv$ because this execution is indistinguishable to $T_{\phi}$ from \ref{sfig:inv-1}\label{sfig:inv-2}]{\scalebox{0.6}[0.6]{\input{dap2}}}
+        \vspace{2mm}
+	\begin{subfigure}{\linewidth}{\scalebox{0.6}[0.6]{\input{dap2}}}
+	\caption{[Fast-path transaction $T_i$ does not contend with any of the $i-1$ t-reads performed by $T_{\phi}$ and must be committed in this execution since it cannot incur a tracking set or capacity abort.
+	The t-read of $X_i$ must return $nv$ because this execution is indistinguishable to $T_{\phi}$ from \ref{sfig:inv-1}}
+	\label{sfig:inv-2} 
+	\end{subfigure}
 	\\
-	\vspace{1mm}
-	\subfloat[In each of these each $i-1$ executions, fast-path transactions cannot incur a tracking set or capacity abort. By opacity, the t-read of $X_i$ by $T_{\phi}$ cannot return new value $nv$.
+	\vspace{2mm}
+	\begin{subfigure}{\linewidth}{\scalebox{0.6}[0.6]{\input{dap3}}}
+	 \caption{In each of these each $i-1$ executions, fast-path transactions cannot incur a tracking set or capacity abort. By opacity, the t-read of $X_i$ by $T_{\phi}$ cannot return new value $nv$.
 	Therefore, to distinguish the $i-1$ different executions, t-read of $X_i$ by slow-path transaction $T_{\phi}$ is forced
-	to access $i-1$ different base objects\label{sfig:inv-3}]{\scalebox{0.6}[0.6]{\input{dap3}}}
+	to access $i-1$ different base objects}
+	\label{sfig:inv-3}
+	\end{subfigure}
 	\caption{Proof steps for Theorem~\ref{th:impossibility}
         \label{fig:indis}} 
 \end{center}

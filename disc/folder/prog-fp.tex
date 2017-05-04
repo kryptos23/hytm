@@ -3,32 +3,37 @@
 \label{alg:inswrite2}
 \vspace{-2mm}
 \noindent\lstset{style=customc}
-\begin{minipage}{0.45\textwidth}
+\begin{minipage}{0.43\textwidth}
 \begin{lstlisting}[frame=none,firstnumber=1,mathescape=true]
 //\textbf{Shared objects}
     L, global lock
 
 //\textbf{Code for fast-path transactions}
 start$_k$()
-    if L$.\lit{isLocked()}$ then return $A_k$ //\vspace{-2mm}
+    if L$.\lit{isLocked()}$ then return $A_k$
 
 read$_k$(X$_j$)
     ov$_j$ := v$_j$ 
-    return ov$_j$ //\vspace{-2mm}
+    return ov$_j$
 
 write$_k$(X$_j$, v)
     or$_j$ := r$_j$ 
     r$_j$ := or$_j.\lit{IncSequence}()$ 
     v$_j$ := v 
-    return OK //\vspace{-2mm}
+    return OK
 
 try$C_k$()
-    return commitCache$_i$() 
+    return commit-cache$_i$ 
 \end{lstlisting}
 \end{minipage}
+\hspace{0.02\textwidth}
 \begin{minipage}{0.54\textwidth}
 \begin{lstlisting}[frame=none,firstnumber=last,mathescape=true]
+
+
+
 //\textbf{Code for slow-path transactions}
+
 tryC$_k$()
     if Wset(T$_k$) = $\emptyset$ then return $C_k$
     L$.\lit{Lock}()$
@@ -38,7 +43,7 @@ tryC$_k$()
         return $A_k$
     for each X$_j \in$ Wset(T$_k$) do v$_j$ := nv$_j$
     release(Wset(T$_k$))
-    return C$_k$ //\vspace{-2mm}
+    return C$_k$
     
 Function: release(Q)
     for each X$_j \in$ Q do r$_j$ := nr$_j.\lit{unlock}()$

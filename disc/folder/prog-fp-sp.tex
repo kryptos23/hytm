@@ -1,34 +1,34 @@
 \begin{algorithm*}[!t]
 \caption{Progressive fast-path and slow-path opaque HyTM implementation; code for transaction $T_k$}
 \label{alg:inswrite}
-\vspace{-2mm}
+\vspace{-3mm}
 \noindent\lstset{style=customc}
-\begin{minipage}{0.45\textwidth}
+%\begin{minipage}{0.45\textwidth}
 \begin{lstlisting}[frame=none,firstnumber=1,mathescape=true]
 //\textbf{Shared objects}
     v$_j$, value of each t-object X$_j$ 
     r$_{j}$, a sequence lock of each t-object X$_j$
 
 //\textbf{Code for fast-path transactions}
+
 read$_k(X_j)$
     ov$_j$ := v$_j$  //\label{line:lin1}
-    or$_j$ := r$_j$ //\medcom direct read \label{line:hread}
+    or$_j$ := r$_j$//\medcom direct read\label{line:hread}
     if or$_j.\lit{isLocked}()$ then return $A_k$ 
-    return ov$_j$ //\vspace{-2mm}
+    return ov$_j$
 
 write$_k(X_j,v)$
     or$_j$ := r$_j$  //\label{line:m1}
     if or$_j.\lit{isLocked}()$ then return $A_k$
     r$_j$ := or$_j.\lit{IncSequence}()$  //\label{line:m2}
     v$_j$ := v  //\label{line:lin2} 
-    return OK //\vspace{-2mm}
+    return OK
 
 tryC$_k$()
-    commit-cache$_i$ // \label{line:lin3}\vspace{-2mm}
+    commit-cache$_i$ // \label{line:lin3}
 
 Function: release(Q)
-    for each X$_j$ $\in Q$
-	r$_j$ := or$_j.\lit{unlock}()$ // \label{line:rel1}\vspace{-2mm}
+    for each X$_j$ $\in Q$ do r$_j$ := or$_j.\lit{unlock}()$ // \label{line:rel1}
 	
 Function: acquire(Q)
     for each X$_j$ $\in Q$	
@@ -38,11 +38,13 @@ Function: acquire(Q)
 	    release(Lset(T$_k$))
 	    return false
     return true
-\end{lstlisting}
-\end{minipage}
-\begin{minipage}{0.54\textwidth}
-\begin{lstlisting}[frame=none,firstnumber=last,mathescape=true]
+//%\end{lstlisting}
+%\end{minipage}
+%\begin{minipage}{0.54\textwidth}
+%\begin{lstlisting}[frame=none,firstnumber=last,mathescape=true]
+
 //\textbf{Code for slow-path transactions}
+
 Read$_k$(X$_j$)
     if X$_j$ $\in$ Wset(T$_k$) then	return Wset(T$_k$).locate(X$_j$) 
     or$_j$ := r$_j$ //\label{line:readorec}
@@ -50,14 +52,14 @@ Read$_k$(X$_j$)
     Rset(T$_k$) := Rset(T$_k$) $\cup$ {X$_j$,or$_j$} //\label{line:rset}
     if or$_j.\lit{isLocked}()$ then return $A_k$ //\label{line:abort0}	
     if not validate() then return $A_k$ //\label{line:valid}
-    return ov$_j$ //\vspace{-2mm}
+    return ov$_j$
 
 write$_k(X_j,v)$
     or$_j$ := r$_j$
     nv$_j$ := v
     if or$_j.\lit{isLocked}()$ then return $A_k$
     Wset(T$_k$) := Wset(T$_k$) $\cup$ {X$_j$, nv$_j$, or$_j$}
-    return OK //\vspace{-2mm}
+    return OK
 
 tryC$_k$()
     if Wset(T$_k$) = $\emptyset$ then return $C_k$ // \label{line:return}
@@ -65,17 +67,16 @@ tryC$_k$()
     if not validate() // \label{line:abort3}
 	    release(Wset(T$_k$)) 
 	    return A$_k$ 
-    for each X$_j$ $\in$ Wset(T$_k$)
-	    v$_j$:= nv$_j$ //\label{line:write}
+    for each X$_j$ $\in$ Wset(T$_k$) do v$_j$:= nv$_j$ //\label{line:write}
     release(Wset(T$_k$))  // \label{line:rel}	
-    return C$_k$  //\vspace{-2mm}
+    return C$_k$
 
 Function: validate()
     if $\exists$ X$_j$ $\in$ Rset(T$_k$):or$_j.\lit{getSequence()} \neq$ r$_j.\lit{getSequence()}$ then return false//\label{line:valid}
     return true
 
 \end{lstlisting}
-\end{minipage}
+%\end{minipage}
 \vspace{-2mm}
 \end{algorithm*}
 %

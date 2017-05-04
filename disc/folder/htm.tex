@@ -16,9 +16,11 @@
 \usepackage{amsmath}
 \usepackage{framed}
 \usepackage{subcaption}
+\usepackage{graphicx}
 \usepackage{float}
 \floatstyle{boxed} 
 \restylefloat{figure}
+%\usepackage{subfig}
 %\expandafter\def\csname ver@subfig.sty\endcsname{}
 \usepackage{tikz}
 \usepackage{cleveref}
@@ -28,13 +30,17 @@
 \usepackage[ruled]{algorithm}
 \usepackage{algpseudocode}
 \usepackage{ioa_code}
+
+\newcommand{\comnospace}{$\triangleright$}
+\newcommand{\com}{\comnospace\ }
 \usepackage{tabto}
 \newcommand{\medcom}[1]{\tabto{5cm} \com \mbox{#1}}
 
 \usepackage{listings}
 \lstset{numbers=left,numberblanklines=false}
-\newcommand\Small{\fontsize{7.6}{7.6}\selectfont}
-\newcommand*\LSTfont{\Small\ttfamily\SetTracking{encoding=*}{-60}\lsstyle}
+
+%\newcommand\Small{\fontsize{7.6}{7.6}\selectfont}
+%\newcommand*\LSTfont{\Small\ttfamily\SetTracking{encoding=*}{-60}\lsstyle}
 
 \lstdefinestyle{customc}{
     belowcaptionskip=1\baselineskip,
@@ -44,13 +50,14 @@
     language=C,
     showstringspaces=false,
     escapeinside={//}{\^^M},
-    basicstyle=\LSTfont, %\scriptsize\ttfamily,
+%    basicstyle=\LSTfont,
+    basicstyle=\scriptsize\ttfamily,
     keywordstyle=\bfseries\color{green!40!black},
     commentstyle=\itshape\color{gray!60!black},
     identifierstyle=\color{blue!50!black},
     stringstyle=\color{orange},
     numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
-    numbersep=5pt,                   % how far the line-numbers are from the code
+    numbersep=10pt,                   % how far the line-numbers are from the code
     numberstyle=\tiny\color{black},  % the style that is used for the line-numbers
     otherkeywords={then,word,process_local,type,xbegin,xabort,xend}
 }
@@ -135,8 +142,8 @@
 %% Please provide for each author the \author and \affil macro, even when authors have the same affiliation, i.e. for each author there needs to be the  \author and \affil macros
 \author[1]{Trevor Brown}
 \author[2]{Srivatsan Ravi}
-\affil[1]{The Technion\\
-  \texttt{tabrown@cs.utoronto.ca}}
+\affil[1]{Technion, Israel Institute of Technology\\
+  \texttt{me@tbrown.pro}}
 \affil[2]{University of Southern California\\
   \texttt{srivatsr@usc.edu}}
 %\authorrunning{J.\,Q. Open and J.\,R. Access} %mandatory. First: Use abbreviated first/middle names. Second (only in severe cases): Use first author plus 'et. al.'
@@ -194,7 +201,7 @@ there is no easy way to derive more efficient HyTMs by taking advantage of non-s
 
 \input{intro}
 \input{model_alt}
-%\input{spec}
+\input{spec}
 \input{algos}
 %
 \input{Evaluation}
