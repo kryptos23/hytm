@@ -3,10 +3,10 @@
 \label{sec:eval}
 %
 In this section, we study the performance characteristics of Algorithms~\ref{alg:inswrite} and \ref{alg:inswrite2}, Hybrid NOrec, TLE and TL2.
-Our experimental goals are (G1) to study the performance impact of instrumentation on the fast-path and validation on the slow path, 
+Our experimental goals are (G1) to study the performance impact of instrumentation on the fast-path and validation on the slow-path, 
 (G2) to understand how Algorithms~\ref{alg:inswrite} and \ref{alg:inswrite2} perform relative to the other algorithms,
 (G3) the impact of HyTM algorithm design on the performance in Intel and IBM POWER8 HTMs, and 
-(G4) to determine whether direct accesses can be used to obtain significant performance improvements on IBM POWER8 using the supported suspend/resume isntruction to escape from a hardware transaction.
+(G4) to determine whether direct accesses can be used to obtain performance improvements on IBM POWER8 using the supported suspend/resume isntruction to escape from a hardware transaction.
 
 \vspace{1mm}\noindent\textbf{Experimental system (Intel).}
 The experimental system is a 2-socket Intel E7-4830 v3 with 12 cores per socket and 2 hyperthreads (HTs) per core, for a total of 48 threads.
@@ -39,7 +39,7 @@ and only two load-store pipeline.
 \vspace{1mm}\noindent\textbf{Hybrid TM implementations.}
 For TL2, we used the implementation published by its authors.
 We implemented the other algorithms in C++.
-Each hybrid TM algorithm first attempts to execute a transaction on the fast path, and will continue to execute on the fast path until the transaction has experienced 20 aborts, at which point it will fall back to the slow path.
+Each hybrid TM algorithm first attempts to execute a transaction on the fast-path, and will continue to execute on the fast-path until the transaction has experienced 20 aborts, at which point it will fall back to the slow-path.
 We implemented Algorithm~\ref{alg:inswrite} on POWER8 where each read of a sequence lock during a transactional read operation was enclosed within a suspend/resume instruction to access them without 
 incurring tracking set aborts (Algorithm~\ref{alg:inswrite}\textsuperscript{$\ast$}). We remark that this does not affect the opacity of the implementation. 
 We also implemented the variant of Hybrid NOrec (Hybrid NOrec\textsuperscript{$\ast$}) in which the update to gsl is performed using a fetch-increment primitive, albeit within a suspend/resume~\cite{hynorecriegel}. 
@@ -60,17 +60,17 @@ In this phase, each thread performs $(U/2)$\% \textit{Insert}, $(U/2)$\% \textit
 
 Uniformly random updates to an unbalanced BST have been proven to yield trees of logarithmic height with high probability.
 %Furthermore, updates and searches in an unbalanced BST are simple.
-Thus, in this type of workload, almost all transactions succeed in hardware, and the slow path is almost never used.
+Thus, in this type of workload, almost all transactions succeed in hardware, and the slow-path is almost never used.
 %there is no need. and have small read and write sets This workload is highly disjoint access parallel, and the height of the tree is relatively small, so most transactions succeed in hardware.
-To study performance when transactions regularly run on the slow path, we introduced another operation called a \textit{RangeIncrement} that often fails in hardware and must run on the slow path.
+To study performance when transactions regularly run on slow-path, we introduced an operation called a \textit{RangeIncrement} that often fails in hardware and must run on the slow-path.
 A \textit{RangeIncrement}$(low, hi)$ atomically increments the values 
 associated with each key in the range $[low, hi]$ present in the tree.
 Note that a \textit{RangeIncrement} is more likely to experience data 
 conflicts and capacity aborts than BST updates, which only modify a single node.
 
 We consider two types of workloads: (W1) all $n$ threads perform \textit{Insert}, \textit{Delete} and \textit{Search}, and (W2) $n-1$ threads perform \textit{Insert}, \textit{Delete} and \textit{Search} and one thread performs only \textit{RangeIncrement} operations.
-%In W2, one can think of the thread $p$ that performs \textit{RangeIncrement} operations as a tunable knob that controls the fraction of time in the execution that the slow path is being executed.
-%Increasing the size of the range $[low, hi]$ passed to \textit{RangeIncrement} will cause $p$ to spend more time on the slow path.
+%In W2, one can think of the thread $p$ that performs \textit{RangeIncrement} operations as a tunable knob that controls the fraction of time in the execution that the slow-path is being executed.
+%Increasing the size of the range $[low, hi]$ passed to \textit{RangeIncrement} will cause $p$ to spend more time on the slow-path.
 Figure~\ref{fig-exp-bst} shows the results for both types of workloads.
 
 %As a way of validating correctness in each trial, each thread maintains a \textit{checksum}.
@@ -142,7 +142,7 @@ Algorithm~\ref{alg:inswrite}, which has instrumentation in its fast-path read op
 Since this is a read-only workload, this instrumentation is responsible for the performance difference.
 
 In the W1 workloads, TLE, Algorithm~\ref{alg:inswrite2} and Hybrid NOrec perform similarly (with a small performance advantage for Hybrid NOrec at high thread counts).
-This is because the fast paths for these three algorithms have similar amounts of instrumentation: there is no instrumentation for reads or writes, 
+This is because the fast-paths for these three algorithms have similar amounts of instrumentation: there is no instrumentation for reads or writes, 
 and the transaction itself incurs one or two metadata accesses.
 In contrast, in the W2 workloads, TLE performs quite poorly, compared to the HyTM algorithms.
 In these workloads, transactions must periodically run on the slow-path, and in TLE, 
@@ -196,7 +196,7 @@ In contrast, the Intel machine performs 32 million operations with 6 threads and
 fetch-add instructions while it must be emulated on the POWER8 processor.
 
 In Hybrid NOrec\textsuperscript{$\ast$}, the non-speculative increment of gsl actually makes performance worse. Recall that in Hybrid NOrec, 
-if a fast path transaction $T_1$ increments gsl, and then a software transaction $T_2$ reads gsl (as part of validation) before $T_1$ commits, then $T_1$ will abort, 
+if a fast-path transaction $T_1$ increments gsl, and then a software transaction $T_2$ reads gsl (as part of validation) before $T_1$ commits, then $T_1$ will abort, 
 and $T_2$ will not see $T_1$'s change to gsl. 
 So, $T_2$ will have a higher chance of avoiding incremental validation (and, hence, will likely take less time to run, and have a smaller contention window). 
 However, in Hybrid NOrec\textsuperscript{$\ast$}, once $T_1$ increments gsl, $T_2$ will see the change to gsl, regardless of whether $T_1$ commits or aborts. Thus, 
