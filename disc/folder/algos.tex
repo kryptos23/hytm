@@ -1,4 +1,5 @@
 %!TEX root = htm.tex
+\vspace{-1mm}
 \section{Hybrid transactional memory algorithms}\label{sec:hytmalgos}
 %
 \begin{figure*}[!t]
@@ -6,13 +7,13 @@
      \scalebox{.64}[.64]{
      \begin{tabularx}{\textwidth}{c|c|c|c|c}
 %	\hline
-	~~~~~ & Algorithm~\ref{alg:inswrite} & Algorithm~\ref{alg:inswrite2} & TLE & HybridNorec\\ 
+	~~~~~ & Algorithm~\ref{alg:inswrite} & Algorithm~\ref{alg:inswrite2} & TLE & HybridNOrec\\ 
 	Instrumentation in fast-path reads & per-read & constant & constant & constant \\ 
 	Instrumentation in fast-path writes & per-write & per-write & constant & constant \\ 
-	Validation in slow-path reads & $\Theta(|Rset|)$ & $O(|Rset|)$ & None & $O(|Rset|)$, but validation only if concurrency \\ 
+	Validation in slow-path reads & $\Theta(|Rset|)$ & $O(|Rset|)$ & none & $O(|Rset|)$, but validation only if concurrency \\ 
 	h/w-s/f concurrency & prog. & prog. for slow-path readers & zero & not prog., but small contention window \\ 
 	Direct accesses inside fast-path & yes & no & no & yes \\ 
-	opacity & yes & yes & Yes & Yes 
+	opacity & yes & yes & yes & yes 
 	%    \hline
    \end{tabularx}
 \caption{Table summarizing complexities of HyTM implementations}\label{fig:main}    

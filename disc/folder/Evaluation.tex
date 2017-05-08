@@ -3,10 +3,10 @@
 \label{sec:eval}
 %
 In this section, we study the performance characteristics of Algorithms~\ref{alg:inswrite} and \ref{alg:inswrite2}, Hybrid NOrec, TLE and TL2.
-Our experimental goals are (G1) to study the performance impact of instrumentation on the fast-path and validation on the slow-path, 
-(G2) to understand how Algorithms~\ref{alg:inswrite} and \ref{alg:inswrite2} perform relative to the other algorithms,
-(G3) the impact of HyTM algorithm design on the performance in Intel and IBM POWER8 HTMs, and 
-(G4) to determine whether direct accesses can be used to obtain performance improvements on IBM POWER8 using the supported suspend/resume isntruction to escape from a hardware transaction.
+Our experimental goals are: (G1) to study the performance impact of instrumentation on the fast-path and validation on the slow-path, 
+%(G2) to understand how Algorithms~\ref{alg:inswrite} and \ref{alg:inswrite2} perform relative to the other algorithms,
+(G2) to understand how HyTM algorithm design affects performance with Intel and IBM POWER8 HTMs, and 
+(G3) to determine whether direct accesses can be used to obtain performance improvements on IBM POWER8 using the supported suspend/resume instruction to escape from a hardware transaction.
 
 \vspace{1mm}\noindent\textbf{Experimental system (Intel).}
 The experimental system is a 2-socket Intel E7-4830 v3 with 12 cores per socket and 2 hyperthreads (HTs) per core, for a total of 48 threads.
@@ -25,24 +25,29 @@ Consequently, our graphs clearly show the effects of NUMA and hyperthreading.
 
 \vspace{1mm}\noindent\textbf{Experimental system (IBM POWER8).}
 The experimental system is a IBM S822L with 2x 12-core 3.02GHz processor cards, 128GB of RAM, running Ubuntu 16.04 LTS.
-All code was compiled using G++ 5.3.1. This is a 2-socket machine which each contain 2 NUMA \emph{zones}; it is more expensive to access memory on a different NUMA zone and even more if the NUMA zone is on a different 
-socket. POWER8 uses the L2 cache for detecting tracking set aborts and bounds the transaction capacity (for reads and writes) to 8KB~\cite{htm-survey}.
-This is in contrast to Intel which tracks conflicts at the level of L3 and bounds the transaction capacity for reads (and resp. L1 for writes).
+All code was compiled using G++ 5.3.1.
+This is a dual socket machine, and each socket has two NUMA \emph{zones}.
+It is expensive to access memory on a different NUMA zone, and even more expensive if the NUMA zone is on a different socket.
+POWER8 uses the L2 cache for detecting tracking set aborts, and limits the size of a transaction's read- and write-set to 8KB each~\cite{htm-survey}.
+This is in contrast to Intel which tracks conflicts on the entire L3 cache, and only limits a transaction's read-set to the L3 cache size, and its write-set to the L1 cache size.
 
 We pin one thread on each core within a NUMA zone before moving to the next zone.
 We remark that unlike the thread pinning policy for Intel which saturated the first socket before moving to the next, this proved to be the best policy
-for POWER8 which experiences severe negative scaling when threads are saturated on a single 8-way hardware multithreaded core.
-severe negative scaling when threads are saturated on a single 8-way hardware multithreaded core. 
+for POWER8 which experiences severe negative scaling when threads are saturated on a single 8-way hardware multi-threaded core.
 This is because all threads on a core share resources, including the L1 and L2 cache, a single branch execution pipeline, 
-and only two load-store pipeline.
+and only two load-store pipelines.
 
 \vspace{1mm}\noindent\textbf{Hybrid TM implementations.}
 For TL2, we used the implementation published by its authors.
 We implemented the other algorithms in C++.
 Each hybrid TM algorithm first attempts to execute a transaction on the fast-path, and will continue to execute on the fast-path until the transaction has experienced 20 aborts, at which point it will fall back to the slow-path.
-We implemented Algorithm~\ref{alg:inswrite} on POWER8 where each read of a sequence lock during a transactional read operation was enclosed within a suspend/resume instruction to access them without 
+We implemented Algorithm~\ref{alg:inswrite} on POWER8 where each read of a sequence lock during a transactional read operation was enclosed within a pair of suspend/resume instructions to access them without 
 incurring tracking set aborts (Algorithm~\ref{alg:inswrite}\textsuperscript{$\ast$}). We remark that this does not affect the opacity of the implementation. 
-We also implemented the variant of Hybrid NOrec (Hybrid NOrec\textsuperscript{$\ast$}) in which the update to gsl is performed using a fetch-increment primitive, albeit within a suspend/resume~\cite{hynorecriegel}. 
+We also implemented the variant of Hybrid NOrec (Hybrid NOrec\textsuperscript{$\ast$}) in which the update to gsl is performed using a fetch-increment primitive between suspend/resume instructions, as is recommended in~\cite{hynorecriegel}.
+
+In each algorithm, instead of placing a lock next to each address in memory, we allocated a global array of one million locks, and used a simple hash function to map each address to one of these locks.
+This avoids the problem of having to change a program's memory layout to incorporate locks, and greatly reduces the amount of memory needed to store locks, at the cost of some possible false conflicts since many addresses map to each lock.
+Note that the exact same approach was taken by the authors of TL2.
 
 We chose \textit{not} to compile the hybrid TMs as separate libraries, since invoking library functions for each read and write can cause algorithms to incur enormous overhead.
 Instead, we compiled each hybrid TM directly into the code that uses it.
@@ -169,7 +174,7 @@ We believe this is due to NUMA effects, similar to those described in~\cite{BKLL
 Specifically, whenever a threads on the first socket performs a fast-path transaction that commits and modifies the global lock, it causes cache invalidations for all other threads.
 Threads on socket two must then load the lock state from main memory, which takes much longer than loading it from the shared L3 cache.
 This lengthens the transaction's window of contention, making it more likely to abort.
-(Inn the 0\% updates graph in the W2 workload, we still see this effect, because there is a thread performing \textit{RangeIncrement} operations.)
+(In the 0\% updates graph in the W2 workload, we still see this effect, because there is a thread performing \textit{RangeIncrement} operations.)
 %% IF THIS DISCREPANCY IS DUE TO NUMA EFFECTS HURTING UPDATES, WHY DOES THE GAP BETWEEN ALGORITHMS DECREASE AS THE NUMBER OF UPDATES INCREASES?
 % here's a subtle hypothesis. there are two different numa effects competing to be the dominating performance factor. one is the effect i just described above. the other is the negative performance impact of tree updates on traversals. this is something we saw in the oracle spaa paper when looking at tree updates in htm. i expect that the strength of the negative numa effects on tree traversals with increased updates is greater than the strength of the negative numa effects of esl and gsl updates. since the negative effects on tree traversals impact both algorithms, it makes the difference in performance less significant, masking the other numa effect.
 
@@ -190,7 +195,7 @@ Typically one would accomplish this by logging all writes so that a process can 
 However, logging the writes inside the transaction would be at least as costly as just performing them.
 
 Observe that Hybrid NOrec does far worse with updates in POWER8 than on the Intel machine.
-This is due to the fact that fetch-increment on a single location experiences severe negative scaling on the Power8 processor: e.g., in one second, a single
+This is due to the fact that fetch-increment on a single location experiences severe negative scaling on the POWER8 processor: e.g., in one second, a single
 thread can perform 37 fetch-add operations while 6 threads perform a total of 9 million and 24 threads perform only 4 million fetch-add operations.
 In contrast, the Intel machine performs 32 million operations with 6 threads and 45 million with 24 threads. This is likely because this Intel processor provides 
 fetch-add instructions while it must be emulated on the POWER8 processor.
@@ -198,7 +203,7 @@ fetch-add instructions while it must be emulated on the POWER8 processor.
 In Hybrid NOrec\textsuperscript{$\ast$}, the non-speculative increment of gsl actually makes performance worse. Recall that in Hybrid NOrec, 
 if a fast-path transaction $T_1$ increments gsl, and then a software transaction $T_2$ reads gsl (as part of validation) before $T_1$ commits, then $T_1$ will abort, 
 and $T_2$ will not see $T_1$'s change to gsl. 
-So, $T_2$ will have a higher chance of avoiding incremental validation (and, hence, will likely take less time to run, and have a smaller contention window). 
+So, $T_2$ will have a higher chance of avoiding incremental validation (and, hence, will likely take less time to run, and have a smaller contention window).
 However, in Hybrid NOrec\textsuperscript{$\ast$}, once $T_1$ increments gsl, $T_2$ will see the change to gsl, regardless of whether $T_1$ commits or aborts. Thus, 
 $T_2$ will be forced to perform incremental validation. In our experiments, we observed that a much larger number of transactions ran on 
 the fallback path in Hybrid NOrec\textsuperscript{$\ast$} than in Hybrid NOrec (often several orders of magnitude more).

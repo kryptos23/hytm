@@ -12,3 +12,5 @@ data/dsbench/graphs_dsbench2/
 *.log
 *.vtc
 *.out
+disc/folder/trbotpc.txt
+trbotpc.txt

@@ -57,7 +57,7 @@
     identifierstyle=\color{blue!50!black},
     stringstyle=\color{orange},
     numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
-    numbersep=10pt,                   % how far the line-numbers are from the code
+    numbersep=4pt,                   % how far the line-numbers are from the code
     numberstyle=\tiny\color{black},  % the style that is used for the line-numbers
     otherkeywords={then,word,process_local,type,xbegin,xabort,xend}
 }
@@ -150,7 +150,7 @@
 
 % \Copyright{John Q. Open and Joan R. Access}%mandatory, please use full first names. LIPIcs license is "CC-BY";  http://creativecommons.org/licenses/by/3.0/
 % 
-% \subjclass{Dummy classification -- please refer to \url{http://www.acm.org/about/class/ccs98-html}}% mandatory: Please choose ACM 1998 classifications from http://www.acm.org/about/class/ccs98-html . E.g., cite as "F.1.1 Models of Computation". 
+\subjclass{D.1.3 Concurrent Programming [Parallel programming]}% mandatory: Please choose ACM 1998 classifications from http://www.acm.org/about/class/ccs98-html . E.g., cite as "F.1.1 Models of Computation". 
 \keywords{Transactional memory, Lower bounds, Opacity}% mandatory: Please provide 1-5 keywords
 % % Author macros::end %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 
@@ -167,6 +167,12 @@
 % \SeriesVolume{42}
 % \ArticleNo{23}
 % Editor-only macros::end %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{xcolor}
+\definecolor{pdfbgcolor}{RGB}{180,180,180}
+\definecolor{trevcolor}{RGB}{0,80,200}
+% conditionally set the pdf background color only on trevor's computer
+%\IfFileExists{trbotpc.txt}{\pagecolor{pdfbgcolor}}{}
 
 \begin{document}
 
@@ -190,7 +196,7 @@ In fact, this result holds even if hardware transactions can \emph{read} metadat
 We then present \emph{opaque} HyTM algorithms providing \emph{progressiveness for a subset of transactions} 
 that are  optimal in terms of hardware instrumentation. 
 We explore the concurrency vs. hardware instrumentation vs. software validation
-tradeoffs for these algorithms.
+trade-offs for these algorithms.
 Our experiments with Intel and IBM POWER8 HTMs   
 seem to suggest that (i) the \emph{cost of concurrency} also exists in practice, 
 (ii) it is important to implement HyTMs that provide progressiveness for a maximal set of transactions without incurring high hardware instrumentation overhead or

@@ -150,7 +150,7 @@ sets $\tau_i=\emptyset$ and immediately returns $\bot$.
 
 \vspace{1mm}\noindent\textbf{Direct reads within fast-path.}
 Note that we specifically allow hardware transactions to perform reads without adding the corresponding base object to
-the process's tracking set, thus modelling the \emph{suspend/resume} instructions supported by 
+the process' tracking set, thus modeling the \emph{suspend/resume} instructions supported by 
 IBM POWER8 architectures. Note that Intel's HTM does not support this feature: an event of a fast-path transaction
 does not include any direct access to base objects.
 
