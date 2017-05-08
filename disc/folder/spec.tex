@@ -105,7 +105,7 @@ disjoint data sets to concurrently contend on the same memory location. Indeed, 
         \\
         \vspace{2mm}
 	\begin{subfigure}{\linewidth}{\scalebox{0.6}[0.6]{\input{dap2}}}
-	\caption{[Fast-path transaction $T_i$ does not contend with any of the $i-1$ t-reads performed by $T_{\phi}$ and must be committed in this execution since it cannot incur a tracking set or capacity abort.
+	\caption{Fast-path transaction $T_i$ does not contend with any of the $i-1$ t-reads performed by $T_{\phi}$ and must be committed in this execution since it cannot incur a tracking set or capacity abort.
 	The t-read of $X_i$ must return $nv$ because this execution is indistinguishable to $T_{\phi}$ from \ref{sfig:inv-1}}
 	\label{sfig:inv-2} 
 	\end{subfigure}
