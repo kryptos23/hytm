@@ -23,6 +23,7 @@
 #ifndef BINDING_H
 #define	BINDING_H
 
+#include <cassert>
 #include <sched.h>
 #include <iostream>
 #include <stdlib.h>
@@ -141,6 +142,11 @@ static void doBindThread(const int tid, const int nprocessors) {
 
 int binding_getActualBinding(const int tid, const int nprocessors) {
     int result = -1;
+#ifndef THREAD_BINDING
+    if (numCustomBindings == 0) {
+        return result;
+    }
+#endif
     unsigned bindings = 0;
     for (int i=0;i<nprocessors;++i) {
         if (CPU_ISSET_S(i, CPU_ALLOC_SIZE(nprocessors), cpusets[tid%nprocessors])) {
@@ -156,6 +162,11 @@ int binding_getActualBinding(const int tid, const int nprocessors) {
 }
 
 bool binding_isInjectiveMapping(const int nthreads, const int nprocessors) {
+#ifndef THREAD_BINDING
+    if (numCustomBindings == 0) {
+        return true;
+    }
+#endif
     bool covered[nprocessors];
     for (int i=0;i<nprocessors;++i) covered[i] = 0;
     for (int i=0;i<nthreads;++i) {

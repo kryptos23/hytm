@@ -5,7 +5,7 @@
 \vspace{1mm}\noindent\textbf{HyTM implementations and complexity.}
 Early HyTMs like the ones described in \cite{damronhytm, kumarhytm} provided progressiveness, but
 subsequent HyTM proposals like PhTM~\cite{phasedtm} and HybridNOrec~\cite{hybridnorec} sacrificed progressiveness for lesser instrumentation overheads.
-However, the clear tradeoff in terms of concurrency vs. instrumentation for these HyTMs have not been studied in the context of currently available HTM
+However, the clear trade-off in terms of concurrency vs. instrumentation for these HyTMs have not been studied in the context of currently available HTM
 architectures. This instrumentation cost on the fast-path was precisely characterized in \cite{hytm14disc}.
 In this paper, we proved the inherent cost of concurrency on the slow-path thus establishing a surprising, 
 but intuitive complexity separation between progressive STMs and HyTMs.
@@ -32,9 +32,9 @@ in which an all-software slow-path is augmented using a slightly faster slow-pat
 that is optimistically used to avoid running some transactions on the true software-only slow-path.
 Amalgamated lock elision (ALE) was proposed in \cite{ale15} which improves over TLE
 by executing the slow-path as a series of segments, each of which is a dynamic length hardware transaction.
-Invyswell~\cite{Calciu14} is a HyTM design with multiple hardware and software modes of execution that gives flexiblity to avoid instrumentation overhead in uncontended executions.
+Invyswell~\cite{Calciu14} is a HyTM design with multiple hardware and software modes of execution that gives flexibility to avoid instrumentation overhead in uncontended executions.
 
 We remark that such multi-path approaches may be easily applied to each of the Algorithms proposed in this paper. However, 
 in the search for an efficient HyTM, it is important to strike the fine balance between concurrency, hardware instrumentation and software validation cost.
-Our lower bound, experimental methodology and evaluation of HyTMs provides the first clear characterization of these tradeoffs in both Intel and POWER8 architectures. 
+Our lower bound, experimental methodology and evaluation of HyTMs provides the first clear characterization of these trade-offs in both Intel and POWER8 architectures. 
 %

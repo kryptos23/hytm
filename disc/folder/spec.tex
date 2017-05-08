@@ -43,8 +43,8 @@ the t-read of $X_i$ by $T_{\phi}$. Observe that, $T_{\ell}$ and $T_i$ which acce
 on some base object and incur a tracking set abort, thus violating progressiveness.
 Indeed, by the TM-liveness property we assumed (cf. Section~\ref{sec:hytm}) and invisible reads for $T_{\phi}$, each of these $(i-1)$ executions exist. 
 
-In each of these $(i-1)$ executions, t-read of $X_i$ cannot return the new value $nv$:
-the only possible serialization for transactions is $T_{\ell}$, $T_i$, $T_{\phi}$; but $\Read_{\phi}(X_{\ell})$
+In each of these $(i-1)$ executions, the final t-read of $X_i$ cannot return the new value $nv$:
+the only possible serialization for transactions is $T_{\ell}$, $T_i$, $T_{\phi}$; but the $\Read_{\phi}(X_{\ell})$
 performed by $T_k$ that returns the initial value $v$ is not legal in this serialization---contradiction to the assumption of opacity.
 In other words, slow-path transaction $T_{\phi}$ is forced to verify the validity of t-objects in $\Rset(T_{\phi})$.
 Finally, we note that, for all $\ell, \ell' \leq (i-1)$;$\ell' \neq \ell$, 
@@ -54,8 +54,8 @@ Consequently, for all $i \in \{2,\ldots, m\}$, slow-path transaction $T_{\phi}$ 
 while executing the $i^{th}$ t-read in such an execution.
 \end{proofsketch}
 %
-%
-\vspace{1mm}\noindent\textbf{How STM implementations mitigate the quadratic lower bound step complexity.}
+
+\noindent\textbf{How STM implementations mitigate the quadratic lower bound step complexity.}
 NOrec~\cite{norec} is a progressive opaque STM that minimizes the average step-complexity resulting from incremental 
 validation of t-reads. Transactions read a global versioned lock at the start, and perform value-based validation
 during t-read operations \emph{iff} the global version has changed.
@@ -81,7 +81,7 @@ disjoint data sets to concurrently contend on the same memory location. Indeed, 
 % \begin{figure*}[!t]
 % \begin{center}
 % 	\subfloat[Slow-path transaction $T_{\phi}$ performs $i-1$ distinct t-reads (each returning the initial value) followed by the t-read of $X_i$ that returns value $nv$ 
-% 	writtten by fast-path transaction $T_i$\label{sfig:inv-1}]{\scalebox{0.6}[0.6]{\input{dap}}}
+% 	written by fast-path transaction $T_i$\label{sfig:inv-1}]{\scalebox{0.6}[0.6]{\input{dap}}}
 %         \\
 %         \vspace{1mm}
 % 	\subfloat[Fast-path transaction $T_i$ does not contend with any of the $i-1$ t-reads performed by $T_{\phi}$ and must be committed in this execution since it cannot incur a tracking set or capacity abort.
@@ -100,7 +100,7 @@ disjoint data sets to concurrently contend on the same memory location. Indeed, 
 \begin{center}
 	\begin{subfigure}{\linewidth}{\scalebox{0.6}[0.6]{\input{dap}}}
 	\caption{Slow-path transaction $T_{\phi}$ performs $i-1$ distinct t-reads (each returning the initial value) followed by the t-read of $X_i$ that returns value $nv$ 
-	writtten by fast-path transaction $T_i$}\label{sfig:inv-1}
+	written by fast-path transaction $T_i$}\label{sfig:inv-1}
 	\end{subfigure}
         \\
         \vspace{2mm}
