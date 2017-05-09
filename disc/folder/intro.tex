@@ -9,7 +9,7 @@ operations as \emph{atomic transactions}.
 Several software TM designs~\cite{norec, ST95,HLM+03,fraser} have been introduced subsequent to the original TM proposal based in
 hardware~\cite{HM93}. 
 The original dynamic STM implementation DSTM~\cite{HLM+03} ensures that a transaction aborts only if there is a read-write \emph{data conflict} with a concurrent
-transaction (\`a la \emph{progressiveness}~\cite{tm-book}). However, read operations in DSTM must \emph{incrementally} validate
+transaction (\`a la \emph{progressiveness}~\cite{tm-book}). However, to satisfy \emph{opacity}~\cite{tm-book}, read operations in DSTM must \emph{incrementally} validate
 the responses of all previous read operations to avoid inconsistent executions. 
 This results in quadratic  (in the size of the transaction's read
 set) step-complexity for transactions. Subsequent STM 
@@ -42,9 +42,9 @@ The IBM POWER8 architecture additionally allows hardware transactions to access 
 thus bypassing automatic conflict detection. While this has the advantage of potentially reducing contention aborts
 in hardware, this makes the design of HyTM implementations potentially harder to prove correct.
 
-In \cite{hytm14disc}, it was shown that hardware transactions in progressive HyTMs must perform
+In \cite{hytm14disc}, it was shown that hardware transactions in opaque progressive HyTMs must perform
 at least one metadata access per transactional read and write.
-In this paper, we show that in progressive HyTMs with invisible reads, 
+In this paper, we show that in opaque progressive HyTMs with invisible reads, 
 software transactions \textit{cannot} avoid incremental validation.
 Specifically, we prove that \textit{each read operation} of a software transaction in a progressive HyTM
 must necessarily incur a validation cost that is \emph{linear} 
@@ -52,7 +52,7 @@ in the size of the transaction's read set.
 This is in contrast to TL2 which is progressive and has constant complexity read operations.
 Thus, in addition to the linear instrumentation cost in hardware transactions, there is a quadratic step complexity cost in software transactions.
 
-We then present \emph{opaque} HyTM algorithms providing \emph{progressiveness for a subset of transactions} that are  %both hardware and software transactions \trevor{maybe just ``transactions''?}
+We then present opaque HyTM algorithms providing \emph{progressiveness for a subset of transactions} that are  %both hardware and software transactions \trevor{maybe just ``transactions''?}
 optimal in terms of hardware instrumentation.
 Algorithm~1 is progressive for all transactions, but it incurs high instrumentation overhead in practice.
 Algorithm~2 avoids all instrumentation in fast-path read operations, but is progressive only for slow-path reading transactions.

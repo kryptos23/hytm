@@ -108,14 +108,14 @@ if, in a configuration $C$ where  $(b,v,\exclusive)\in\tau_i$
 \emph{invalid} and any subsequent event invoked by $i$
 sets $\tau_i$ to $\emptyset$ and returns $\bot$. We refer to this event as a \emph{tracking set abort}.
 
-Any transaction that performs at least one cached access must necessarily perform a \emph{cache-commit} primitive 
+Any transaction executed by a \emph{correct} process that performs at least one cached access must necessarily perform a \emph{cache-commit} primitive 
 that determines the terminal response of the transaction.
 A cache-commit primitive
 issued by process $i$ with
 a valid $\tau_i$ does the following: for each base object $b$ such that $(b,v,\exclusive) \in \tau_i$, the value of $b$ in $C$ is updated to $v$. 
 Finally, $\tau_i$ is set to $\emptyset$ and the operation returns $\textit{commit}$. 
 We assume that a fast-path transaction $T_k$ returns $A_k$
-as soon an underlying cached primitive or \emph{cache-commit} returns $\bot$.
+as soon a cached primitive or \emph{cache-commit} returns $\bot$.
 
 \vspace{1mm}\noindent\textbf{Slow-path and fast-path transactions.}
 We partition HyTM transactions into \emph{fast-path transactions} and \emph{slow-path transactions}.
