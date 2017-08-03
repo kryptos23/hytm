@@ -1,0 +1,21 @@
+\begin{tikzpicture}
+
+\node (w1) at (11,-2) [] {};
+\node (w2) at (10,0) [] {};
+
+\draw (w2) node [below] {\small {$W_2(X,v)$}};
+
+\draw (w1) node [below] {\small {$W_1(X,v)$}};
+%\draw (w1) node [below] {\tiny {$T_1$ commits}};
+
+\node[draw,align=left] at (11,1) {{\large Fast-Path}};
+\node[draw,align=left] at (11,-1) {{\large Slow-Path}};
+
+\begin{scope}   
+\draw [|-|,thick] (9,-2) node[left] {$T_1$} to (13,-2);
+\draw [|-,thick] (9,0) node[left] {$T_2$} to (11,0);
+\draw [-,dotted] (13.2,-2.5)  to (13.2,1) node[right] {$E'$};
+\end{scope}
+%
+%
+\end{tikzpicture}

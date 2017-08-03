@@ -1,0 +1,130 @@
+@Misc{asf,
+  OPTkey = 	 {},
+  OPTauthor = 	 {},
+  title = 	 {{Advanced Synchronization Facility Proposed Architectural Specification}},
+  month = 	 {March},
+  year = 	 {2009},
+  note = 	 {\url{http://developer.amd.com/wordpress/media/2013/09/45432-ASF_Spec_2.1.pdf}},
+  OPTannote = 	 {}
+}
+
+@inproceedings{ale15,
+  author    = {Yehuda Afek and
+               Alexander Matveev and
+               Oscar R. Moll and
+               Nir Shavit},
+  title     = {Amalgamated Lock-Elision},
+  booktitle = {Proceedings of 29th Int. Sym. on Distributed Computing, {DISC} '15},
+  pages     = {309--324},
+  year      = {2015},
+  url       = {http://dx.doi.org/10.1007/978-3-662-48653-5_21},
+  doi       = {10.1007/978-3-662-48653-5_21},
+  timestamp = {Mon, 05 Oct 2015 15:46:25 +0200},
+  biburl    = {http://dblp.uni-trier.de/rec/bib/conf/wdag/AfekMMS15},
+  bibsource = {dblp computer science bibliography, http://dblp.org}
+}
+
+@inproceedings{hytm14disc,
+  author    = {Dan Alistarh and
+               Justin Kopinsky and
+               Petr Kuznetsov and
+               Srivatsan Ravi and
+               Nir Shavit},
+  title     = {Inherent Limitations of Hybrid Transactional Memory},
+  booktitle = {Proceedings of 29th Int. Sym. on Distributed Computing, {DISC} '15},
+  pages     = {185--199},
+  year      = {2015},
+  url       = {http://dx.doi.org/10.1007/978-3-662-48653-5_13},
+  doi       = {10.1007/978-3-662-48653-5_13},
+  timestamp = {Mon, 05 Oct 2015 15:46:25 +0200},
+  biburl    = {http://dblp.uni-trier.de/rec/bib/conf/wdag/AlistarhKKRS15},
+  bibsource = {dblp computer science bibliography, http://dblp.org}
+}
+
+@article{AHM09,
+year={2011},
+issn={1432-4350},
+journal={Theory of Computing Systems},
+volume={49},
+number={4},
+doi={10.1007/s00224-010-9304-5},
+title={Inherent Limitations on Disjoint-Access Parallel Implementations of Transactional Memory},
+url={http://dx.doi.org/10.1007/s00224-010-9304-5},
+publisher={Springer-Verlag},
+keywords={Transactional memory; Disjoint-access parallelism; Partial snapshots; Lower bound; Impossibility result},
+author={Attiya, Hagit and Hillel, Eshcar and Milani, Alessia},
+pages={698-719},
+language={English}
+}
+
+@inproceedings{BKLL16,
+  author    = {Trevor Brown and
+               Alex Kogan and
+               Yossi Lev and
+               Victor Luchangco},
+  title     = {Investigating the Performance of Hardware Transactions on a Multi-Socket
+               Machine},
+  booktitle = {Proceedings of 28th {ACM} Sym. on Parallelism in Algorithms
+               and Architectures, {SPAA} '16},
+  pages     = {121--132},
+  year      = {2016},
+  url       = {http://doi.acm.org/10.1145/2935764.2935796},
+  doi       = {10.1145/2935764.2935796},
+  timestamp = {Tue, 06 Dec 2016 07:39:55 +0100},
+  biburl    = {http://dblp.uni-trier.de/rec/bib/conf/spaa/BrownKLL16},
+  bibsource = {dblp computer science bibliography, http://dblp.org}
+}
+
+@inproceedings{Calciu14,
+  author    = {Irina Calciu and
+               Justin Gottschlich and
+               Tatiana Shpeisman and
+               Gilles Pokam and
+               Maurice Herlihy},
+  title     = {Invyswell: a hybrid transactional memory for Haswell's restricted
+               transactional memory},
+  booktitle = {Int. Conf. on Par. Arch. and Compilation, {PACT} '14},
+  pages     = {187--200},
+  year      = {2014},
+  url       = {http://doi.acm.org/10.1145/2628071.2628086},
+  doi       = {10.1145/2628071.2628086},
+  timestamp = {Mon, 29 Sep 2014 15:48:09 +0200},
+  biburl    = {http://dblp.uni-trier.de/rec/bib/conf/IEEEpact/CalciuGSPH14},
+  bibsource = {dblp computer science bibliography, http://dblp.org}
+}
+
+@inproceedings{hybridnorec,
+  author = {Dalessandro, Luke and Carouge, Francois and White, Sean and Lev, Yossi and Moir, Mark and Scott, Michael L. and Spear, Michael F.},
+  biburl = {http://www.bibsonomy.org/bibtex/2140e12213aa417d19daa223093dca41d/dblp},
+  booktitle = {ASPLOS '11},
+  url = {http://doi.acm.org/10.1145/1950365.1950373},
+  interhash = {bd7ab35fdfe569cd4699bcca42ef36c3},
+  intrahash = {140e12213aa417d19daa223093dca41d},
+  isbn = {978-1-4503-0266-1},
+  keywords = {dblp},
+  pages = {39-52},
+  publisher = {ACM},
+  timestamp = {2011-03-10T00:00:00.000+0100},
+  title = {{Hybrid NOrec: a case study in the effectiveness of best effort hardware transactional memory}},
+  year = 2011
+}
+
+@article{norec,
+ author = {Dalessandro, Luke and Spear, Michael F. and Scott, Michael L.},
+ title = {NOrec: Streamlining STM by Abolishing Ownership Records},
+ journal = {SIGPLAN Not.},
+ issue_date = {May 2010},
+ volume = {45},
+ number = {5},
+ month = jan,
+ year = {2010},
+ issn = {0362-1340},
+ pages = {67--78},
+ numpages = {12},
+ url = {http://doi.acm.org/10.1145/1837853.1693464},
+ doi = {10.1145/1837853.1693464},
+ acmid = {1693464},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {ownership records, software transactional memory, transactional memory, transactional memory models},
+} 
