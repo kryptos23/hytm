@@ -8,7 +8,7 @@ Our experimental goals are: (G1) to study the performance impact of instrumentat
 (G2) to understand how HyTM algorithm design affects performance with Intel and IBM POWER8 HTMs, and 
 (G3) to determine whether direct accesses can be used to obtain performance improvements on IBM POWER8 using the supported suspend/resume instruction to escape from a hardware transaction.
 
-\paragraph{Experimental system}
+\subsection{Experimental system}
 The experimental Intel system is a 2-socket Intel E7-4830 v3 with 12 cores per socket and 2 hyperthreads (HTs) per core, for a total of 48 threads.
 Each core has a private 32KB L1 cache and 256KB L2 cache (shared between HTs on a core).
 All cores on a socket share a 30MB L3 cache.
@@ -36,7 +36,7 @@ for POWER8 which experiences severe negative scaling when threads are saturated 
 This is because all threads on a core share resources, including the L1 and L2 cache, a single branch execution pipeline, 
 and only two load-store pipelines.
 
-\paragraph{Hybrid TM implementations}
+\subsection{Hybrid TM implementations}
 For TL2, we used the implementation published by its authors.
 We implemented the other algorithms in C++.
 Each hybrid TM algorithm first attempts to execute a transaction on the fast-path, and will continue to execute on the fast-path until the transaction has experienced 20 aborts, at which point it will fall back to the slow-path.
@@ -52,7 +52,7 @@ We chose \textit{not} to compile the hybrid TMs as separate libraries, since inv
 Instead, we compiled each hybrid TM directly into the code that uses it.
 %Thus, any observed performance overheads are due to the algorithms, themselves.
 
-\paragraph{Experimental methodology}
+\subsection{Experimental methodology}
 We used a simple unbalanced binary search tree (BST) microbenchmark as a vehicle to study the performance of our implementations.
 The BST implements a dictionary, which contains a set of keys, each with an associated value.
 For each TM algorithm %$A$ %\in \{$TL2, TLE, Algorithm~1, Algorithm~2, Hybrid NOrec$\}$,
@@ -137,7 +137,7 @@ The y-axis represents operations per microsecond.}
 \label{fig-exp-bst}
 \end{figure}
 
-\paragraph{Results}
+\subsection{Results}
 We first discuss the results for the Intel machine.
 We first discuss the 0\% updates graph for workload type W1.
 In this graph, essentially all operations committed in hardware.

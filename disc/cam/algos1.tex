@@ -1,6 +1,6 @@
 %!TEX root = htm.tex
 %\vspace{1mm}
-\paragraph{Instrumentation-optimal progressive HyTM}
+\subsection{Instrumentation-optimal progressive HyTM}
 We describe a HyTM algorithm that is a tight bound for Theorem~\ref{th:impossibility} and the instrumentation 
 cost on the fast-path transactions established in \cite{hytm14disc}.
 Pseudocode appears in Algorithm~\ref{alg:inswrite}.
@@ -39,13 +39,12 @@ the t-objects in shared memory, releases the locks and returns $C_k$; else $p_i$
 \vspace{1mm}\noindent\textit{Direct accesses inside fast-path:}
 Note that opacity is not violated even if the sequence lock accesses during t-read may be performed directly without incurring tracking set aborts.
 
-\paragraph{Instrumentation-optimal HyTM that is progressive only for slow-path reading transactions}
+\subsection{Instrumentation-optimal HyTM that is progressive only for slow-path reading transactions}
 Algorithm~\ref{alg:inswrite2} does not incur the linear instrumentation cost
 on the fast-path reading transactions (inherent to Algorithm~\ref{alg:inswrite}), but provides progressiveness only
 for slow-path reading transactions. 
 The instrumentation cost on fast-path t-reads is avoided by using a global lock that serializes all updating slow-path transactions
-during the $\TryC_k$ procedure. Fast-path transactions simply check if this lock is held without acquiring it (similar to TLE~\cite{tle}). While the per-read instrumentation overhead
-is avoided, Algorithm~\ref{alg:inswrite2} still incurs the per-write instrumentation cost.
+during the $\TryC_k$ procedure. Fast-path transactions simply check if this lock is held without acquiring it (similar to TLE~\cite{tle}). While per-read instrumentation is avoided, Algorithm~\ref{alg:inswrite2} still has per-write instrumentation.
 
 \vspace{1mm}\noindent\textbf{Sacrificing progressiveness and minimizing contention window.}
 Observe that the lower bound in Theorem~\ref{th:impossibility} assumes progressiveness for both slow-path and fast-path transactions

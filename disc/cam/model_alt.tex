@@ -56,7 +56,7 @@ ends with $A_k$ or $C_k$; otherwise, $T_k$ is \emph{t-incomplete}.
 We consider the dynamic programming model: the \emph{read set} (resp., the \emph{write set}) of a transaction $T_k$ in an execution $E$,
 denoted $\Rset_E(T_k)$ (resp., $\Wset_E(T_k)$), is the set of t-objects that $T_k$ attempts to read (and resp. write) 
 by issuing a t-read (resp., t-write) invocation in $E$ (for brevity, we sometimes 
-omit the subscript $E$ from the notation).
+omit the subscript $E$).
 
 We assume that base objects are accessed with \emph{read-modify-write} (rmw) primitives. 
 A rmw primitive event on a base object is \emph{trivial} if, in any configuration, its application

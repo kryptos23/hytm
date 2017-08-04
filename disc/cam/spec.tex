@@ -55,7 +55,7 @@ while executing the $i^{th}$ t-read in such an execution.
 \end{proofsketch}
 %
 
-\paragraph{How STM implementations mitigate the quadratic lower bound step complexity}
+\subsection{How STM implementations mitigate the quadratic lower bound step complexity}
 NOrec~\cite{norec} is a progressive opaque STM that minimizes the average step-complexity resulting from incremental 
 validation of t-reads. Transactions read a global versioned lock at the start, and perform value-based validation
 during t-read operations \emph{iff} the global version has changed.
@@ -67,7 +67,7 @@ NOrec and algorithms in this paper provide a stronger definition of progressiven
 only if there is a prefix in which it conflicts with another transaction and both are t-incomplete. TL2 on the other hand allows
 a transaction to abort due to a concurrent conflicting transaction.
 
-\paragraph{Implications for disjoint-access parallelism in HyTM}
+\subsection{Implications for disjoint-access parallelism in HyTM}
 The property of disjoint-access parallelism (DAP), in its \emph{weakest} form, ensures that two transactions %$T_1$ and $T_2$
 concurrently contend on the same base object 
 %(both access the base object and at least one updates it) 
