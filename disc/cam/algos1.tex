@@ -46,7 +46,7 @@ for slow-path reading transactions.
 The instrumentation cost on fast-path t-reads is avoided by using a global lock that serializes all updating slow-path transactions
 during the $\TryC_k$ procedure. Fast-path transactions simply check if this lock is held without acquiring it (similar to TLE~\cite{tle}). While per-read instrumentation is avoided, Algorithm~\ref{alg:inswrite2} still has per-write instrumentation.
 
-\vspace{1mm}\noindent\textbf{Sacrificing progressiveness and minimizing contention window.}
+\paragraph{Sacrificing progressiveness and minimizing contention window}
 Observe that the lower bound in Theorem~\ref{th:impossibility} assumes progressiveness for both slow-path and fast-path transactions
 along with opacity and invisible reads. Note that Algorithm~\ref{alg:inswrite2} retains the validation step complexity cost since it provides progressiveness for slow-path readers.
 
