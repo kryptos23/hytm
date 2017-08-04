@@ -50,7 +50,6 @@ Note that the exact same approach was taken by the authors of TL2.
 
 We chose \textit{not} to compile the hybrid TMs as separate libraries, since invoking library functions for each read and write can cause algorithms to incur enormous overhead.
 Instead, we compiled each hybrid TM directly into the code that uses it.
-%Thus, any observed performance overheads are due to the algorithms, themselves.
 
 \subsection{Experimental methodology}
 We used a simple unbalanced binary search tree (BST) microbenchmark as a vehicle to study the performance of our implementations.

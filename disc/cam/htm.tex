@@ -41,12 +41,7 @@
 \usepackage{float}
 \floatstyle{boxed} 
 \restylefloat{figure}
-%\usepackage{subfig}
-%\expandafter\def\csname ver@subfig.sty\endcsname{}
 \usepackage{tikz}
-% \usepackage{cleveref}
-% \crefname{section}{\S}{\S\S}
-%\usepackage{hyperref}
 \usepackage{macros}
 \usepackage[ruled]{algorithm}
 \usepackage{algpseudocode}
@@ -59,9 +54,6 @@
 
 \usepackage{listings}
 \lstset{numbers=left,numberblanklines=false}
-
-%\newcommand\Small{\fontsize{7.6}{7.6}\selectfont}
-%\newcommand*\LSTfont{\Small\ttfamily\SetTracking{encoding=*}{-60}\lsstyle}
 
 \lstdefinestyle{customc}{
     belowcaptionskip=1\baselineskip,
@@ -175,27 +167,9 @@
 % 
 \subjclass{D.1.3 Concurrent Programming [Parallel programming]}% mandatory: Please choose ACM 1998 classifications from http://www.acm.org/about/class/ccs98-html . E.g., cite as "F.1.1 Models of Computation". 
 \keywords{Transactional memory, Lower bounds, Opacity}% mandatory: Please provide 1-5 keywords
-% % Author macros::end %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 
-% %Editor-only macros:: begin (do not touch as author)%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \EventEditors{John Q. Open and Joan R. Acces}
-% \EventNoEds{2}
-% \EventLongTitle{42nd Conference on Very Important Topics (CVIT 2016)}
-% \EventShortTitle{CVIT 2016}
-% \EventAcronym{CVIT}
-% \EventYear{2016}
-% \EventDate{December 24--27, 2016}
-% \EventLocation{Little Whinging, United Kingdom}
-% \EventLogo{}
-% \SeriesVolume{42}
-% \ArticleNo{23}
-% Editor-only macros::end %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \usepackage{xcolor}
 \definecolor{pdfbgcolor}{RGB}{180,180,180}
 \definecolor{trevcolor}{RGB}{0,80,200}
-% conditionally set the pdf background color only on trevor's computer
-%\IfFileExists{trbotpc.txt}{\pagecolor{pdfbgcolor}}{}
 
 \begin{document}
 
@@ -245,9 +219,4 @@ Trevor Brown received funding for this work from the Natural Sciences and Engine
 This work was performed while Trevor Brown was a student at the University of Toronto.
 
 \bibliography{refs}
-% \newpage
-% \appendix
-% \input{appendix-proof}
-% \input{mproof}
-
 \end{document}
