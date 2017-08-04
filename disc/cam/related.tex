@@ -2,7 +2,7 @@
 \section{Related work and discussion}
 \label{sec:rel}
 %
-\subsection{HyTM implementations and complexity}
+\paragraph*{HyTM implementations and complexity.}
 Early HyTMs like the ones described in \cite{damronhytm, kumarhytm} provided progressiveness, but
 subsequent HyTM proposals like PhTM~\cite{phasedtm} and HybridNOrec~\cite{hybridnorec} sacrificed progressiveness for lesser instrumentation overheads.
 However, the clear trade-off in terms of concurrency vs. instrumentation for these HyTMs have not been studied in the context of currently available HTM
@@ -15,7 +15,7 @@ Proof of Theorem~\ref{th:impossibility} is based on the analogous proof for step
 Our implementation of Hybrid NOrec follows \cite{hynorecriegel}, which additionally proposed the use of direct accesses
 in fast-path transactions to reduce instrumentation overhead in the AMD Advanced Synchronization Facility (ASF) architecture.
 
-\subsection{Beyond the two path HyTM approach}
+\paragraph*{Beyond the two path HyTM approach.}
 \vspace{1mm}\noindent\textit{Employing an uninstrumented fast fast-path.}
 We now describe how every transaction may first be executed in a ``fast'' fast-path with almost no instrumentation
 and if unsuccessful, may be re-attempted in the fast-path and subsequently in slow-path.
@@ -26,7 +26,7 @@ and if not, aborts the transaction; otherwise the transaction is continued as an
 The code for the fast-path and the slow-path is identical to $\mathcal{M}$.
 %Assuming the hardware transactions do not perform any direct accesses, opacity is immediate~\cite{brownfaster15}.
 
-\subsection{Other approaches}
+%\paragraph*{Other approaches.}
 Recent work has investigated fallback to \emph{reduced} hardware transactions~\cite{MS13}
 in which an all-software slow-path is augmented using a slightly faster slow-path 
 that is optimistically used to avoid running some transactions on the true software-only slow-path.
