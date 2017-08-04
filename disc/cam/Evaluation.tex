@@ -6,7 +6,7 @@ We now study the performance characteristics of Algorithms~\ref{alg:inswrite} an
 Our experimental goals are: (G1) to study the performance impact of instrumentation on the fast-path and validation on the slow-path, 
 %(G2) to understand how Algorithms~\ref{alg:inswrite} and \ref{alg:inswrite2} perform relative to the other algorithms,
 (G2) to understand how HyTM algorithm design affects performance with Intel and IBM POWER8 HTMs, and 
-(G3) to determine whether direct accesses can be used to obtain performance improvements on IBM POWER8 using the supported suspend/resume instruction to escape from a hardware transaction.
+(G3) to determine whether direct accesses can be used to obtain performance improvements on IBM POWER8 using suspend/resume instructions to escape from a hardware transaction.
 
 \subsection{Experimental system}
 The experimental Intel system is a 2-socket Intel E7-4830 v3 with 12 cores per socket and 2 hyperthreads (HTs) per core, for a total of 48 threads.
@@ -160,6 +160,7 @@ if the lock was last held by another thread on the same socket,
 then $p$ can fill the cache miss by loading it from the shared L3 cache.
 However, if the lock was last held by a thread on a different socket, 
 then $p$ must read the lock state from main memory, which is significantly more expensive.)
+
 On the other hand, in each graph in the W2 workloads, the performance of each HyTM (and TL2) is similar to its performance in the corresponding W1 workload graph.
 For Algorithm~\ref{alg:inswrite} (and TL2), this is because of progressiveness.
 Although Algorithm~\ref{alg:inswrite2} is not truly progressive, fast-path transactions will abort only if they are concurrent with the commit procedure of a slow-path transaction.
@@ -192,11 +193,12 @@ collect several metadata accesses and perform them together to amortize the cost
 in Algorithm~\ref{alg:inswrite}, one might try to update the locks for all of the transactional writes at once, when the transaction commits. 
 Typically one would accomplish this by logging all writes so that a process can remember which addresses it must lock at commit time. 
 However, logging the writes inside the transaction would be at least as costly as just performing them.
+
 Observe that Hybrid NOrec does far worse with updates in POWER8 than on the Intel machine.
 This is due to the fact that fetch-increment on a single location experiences severe negative scaling on the POWER8 processor: e.g., in one second, a single
 thread can perform 37 fetch-add operations while 6 threads perform a total of 9 million and 24 threads perform only 4 million fetch-add operations.
-In contrast, the Intel machine performs 32 million operations with 6 threads and 45 million with 24 threads. This is likely because this Intel processor provides 
-fetch-add instructions while it must be emulated on the POWER8 processor.
+In contrast, the Intel machine performs 32 million operations with 6 threads and 45 million with 24 threads. This is likely because this Intel processor provides fetch-add instructions while it must be emulated on POWER8.
+
 In Hybrid NOrec\textsuperscript{$\ast$}, the non-speculative increment of gsl actually makes performance worse. Recall that in Hybrid NOrec, 
 if a fast-path transaction $T_1$ increments gsl, and then a software transaction $T_2$ reads gsl (as part of validation) before $T_1$ commits, then $T_1$ will abort, 
 and $T_2$ will not see $T_1$'s change to gsl. 
