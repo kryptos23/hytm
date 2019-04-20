@@ -1,0 +1,210 @@
+\documentclass[a4paper,UKenglish]{lipics-v2016}
+\EventEditors{Andr\'ea Richa}
+
+\EventNoEds{1}
+
+\EventLongTitle{31st International Symposium on Distributed Computing (DISC 2017)}
+
+\EventShortTitle{DISC 2017}
+
+\EventAcronym{DISC}
+
+\EventYear{2017}
+
+\EventDate{October 16--20, 2017}
+
+\EventLocation{Vienna, Austria}
+
+\EventLogo{}
+
+\SeriesVolume{91}
+
+\ArticleNo{9} % Your paper number (=<article-no>) goes here!
+\bibliographystyle{plainurl}% the recommended bibstyle
+\usepackage{multicol}
+\usepackage{amsmath}
+\usepackage{framed}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{float}
+\floatstyle{boxed} 
+\restylefloat{figure}
+\usepackage{tikz}
+\usepackage{macros}
+\usepackage[ruled]{algorithm}
+\usepackage{algpseudocode}
+\usepackage{ioa_code}
+
+\newcommand{\comnospace}{$\triangleright$}
+\newcommand{\com}{\comnospace\ }
+\usepackage{tabto}
+\newcommand{\medcom}[1]{\tabto{5cm} \com \mbox{#1}}
+
+\usepackage{listings}
+\lstset{numbers=left,numberblanklines=false}
+
+\lstdefinestyle{customc}{
+    belowcaptionskip=1\baselineskip,
+    breaklines=true,
+    frame=L,	
+    xleftmargin=\parindent,
+    language=C,
+    showstringspaces=false,
+    escapeinside={//}{\^^M},
+%    basicstyle=\LSTfont,
+    basicstyle=\scriptsize\ttfamily,
+    keywordstyle=\bfseries\color{green!40!black},
+    commentstyle=\itshape\color{gray!60!black},
+    identifierstyle=\color{blue!50!black},
+    stringstyle=\color{orange},
+    numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+    numbersep=4pt,                   % how far the line-numbers are from the code
+    numberstyle=\tiny\color{black},  % the style that is used for the line-numbers
+    otherkeywords={then,word,process_local,type,xbegin,xabort,xend}
+}
+
+\def\P{\ensuremath{\mathcal{P}}}
+\def\DP{\ensuremath{\Diamond\mathcal{P}}}
+\def\DS{\ensuremath{\Diamond\mathcal{S}}}
+%\def\T{\ensuremath{\mathcal{T}}}
+\def\Time{\mathbb{T}}
+\def\S{\ensuremath{\mathcal{S}}}
+\def\D{\ensuremath{\mathcal{D}}}
+\def\W{\ensuremath{\mathcal{W}}}
+\def\A{\ensuremath{\mathcal{A}}}
+\def\B{\ensuremath{\mathcal{B}}}
+\def\F{\ensuremath{\mathcal{F}}}
+\def\R{\ensuremath{\mathcal{R}}}
+\def\N{\ensuremath{\mathcal{N}}}
+\def\I{\ensuremath{\mathcal{I}}}
+\def\O{\ensuremath{\mathcal{O}}}
+\def\Q{\ensuremath{\mathcal{Q}}}
+\def\K{\ensuremath{\mathcal{K}}}
+\def\L{\ensuremath{\mathcal{L}}}
+\def\M{\ensuremath{\mathcal{M}}}
+\def\V{\ensuremath{\mathcal{V}}}
+\def\E{\ensuremath{\mathcal{E}}}
+\def\C{\ensuremath{\mathcal{C}}}
+\def\T{\ensuremath{\mathcal{T}}}
+\def\X{\ensuremath{\mathcal{X}}}
+\def\Y{\ensuremath{\mathcal{Y}}}
+\def\Nat{\ensuremath{\mathbb{N}}}
+\def\Om{\ensuremath{\Omega}}
+\def\ve{\varepsilon}
+\def\fd{failure detector}
+\def\cfd{\ensuremath{?\P+\DS}}
+\def\afd{timeless}
+\def\env{\ensuremath{\mathcal{E}}}
+%\def\faulty{unreliable}
+\def\bounded{one-shot}
+\def\cons{\textit{cons}}
+\def\val{\textit{val}}
+\def\code{\textit{code}}
+
+\def\HSS{\mathit{h}}
+\def\argmin{\mathit{argmin}}
+\def\proper{\mathit{proper}}
+\def\content{\mathit{content}}
+\def\Level{\mathit{L}}
+\def\Blocked{\mathit{Blocked}}
+\def\Set{\mathit{Set}}
+\def\TS{\mathit{TS}}
+\def\shared{\mathit{shared}}
+\def\exclusive{\mathit{exclusive}}
+
+\newcommand{\correct}{\mathit{correct}}
+\newcommand{\RNum}[1]{\uppercase\expandafter{\romannumeral #1\relax}}
+\newcommand	{\faulty}{\mathit{faulty}}
+\newcommand{\infi}{\mathit{inf}}
+\newcommand{\live}{\mathit{live}}
+\newcommand{\true}{\mathit{true}}
+\newcommand{\false}{\mathit{false}}
+\newcommand{\stable}{\mathit{Stable}}
+\newcommand{\setcon}{\mathit{setcon}}
+\newcommand{\remove}[1]{}
+
+\newcommand{\Wset}{\textit{Wset}}
+\newcommand{\Rset}{\textit{Rset}}
+\newcommand{\Dset}{\textit{Dset}}
+
+%\newcommand{\parts}{\textit{parts}}
+\newcommand{\txns}{\textit{txns}}
+
+\newcommand{\Read}{\textit{read}}
+\newcommand{\Write}{\textit{write}}
+\newcommand{\TryC}{\textit{tryC}}
+\newcommand{\TryA}{\textit{tryA}}
+\newcommand{\ok}{\textit{ok}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newenvironment{proofsketch}[1][Proof sketch]{\noindent\textbf{#1.} }{\hfill $\Box$\\[2mm]}
+\newtheorem{claim}[theorem]{Claim}
+% Author macros::begin %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\title{Cost of Concurrency in Hybrid Transactional Memory}
+%% Please provide for each author the \author and \affil macro, even when authors have the same affiliation, i.e. for each author there needs to be the  \author and \affil macros
+\author[1]{Trevor Brown}
+\author[2]{Srivatsan Ravi}
+\affil[1]{Technion, Israel Institute of Technology\\
+  \texttt{me@tbrown.pro}}
+\affil[2]{University of Southern California\\
+  \texttt{srivatsr@usc.edu}}
+%\authorrunning{J.\,Q. Open and J.\,R. Access} %mandatory. First: Use abbreviated first/middle names. Second (only in severe cases): Use first author plus 'et. al.'
+
+% \Copyright{John Q. Open and Joan R. Access}%mandatory, please use full first names. LIPIcs license is "CC-BY";  http://creativecommons.org/licenses/by/3.0/
+% 
+\subjclass{D.1.3 Concurrent Programming [Parallel programming]}% mandatory: Please choose ACM 1998 classifications from http://www.acm.org/about/class/ccs98-html . E.g., cite as "F.1.1 Models of Computation". 
+\keywords{Transactional memory, Lower bounds, Opacity}% mandatory: Please provide 1-5 keywords
+\usepackage{xcolor}
+\definecolor{pdfbgcolor}{RGB}{180,180,180}
+\definecolor{trevcolor}{RGB}{0,80,200}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+State-of-the-art \emph{software transactional memory (STM)} implementations achieve 
+good performance by carefully avoiding the overhead of \emph{incremental validation}
+(i.e., re-reading previously read data items to avoid inconsistency) while
+still providing \emph{progressiveness} (allowing transactional aborts only due to \emph{data conflicts}).
+Hardware transactional memory (HTM) implementations promise even better performance, 
+but offer no progress guarantees.
+Thus, they must be combined with STMs, leading to \emph{hybrid} TMs (HyTMs)
+in which hardware transactions must be \emph{instrumented} (i.e., access metadata) 
+to detect contention with software transactions.
+
+We show that, unlike in progressive STMs, software transactions in progressive HyTMs
+cannot avoid incremental validation.
+In fact, this result holds even if hardware transactions can \emph{read} metadata 
+\emph{non-speculatively}. 
+We then present \emph{opaque} HyTM algorithms providing \emph{progressiveness for a subset of transactions} 
+that are  optimal in terms of hardware instrumentation. 
+We explore the concurrency vs. hardware instrumentation vs. software validation
+trade-offs for these algorithms.
+Our experiments with Intel and IBM POWER8 HTMs   
+seem to suggest that (i) the \emph{cost of concurrency} also exists in practice, 
+(ii) it is important to implement HyTMs that provide progressiveness for a maximal set of transactions without incurring high hardware instrumentation overhead or
+using global contending bottlenecks and (iii) 
+there is no easy way to derive more efficient HyTMs by taking advantage of non-speculative accesses within hardware.
+
+\end{abstract}
+
+\input{intro}
+\input{model_alt}
+\input{spec}
+\input{algos}
+%
+\input{Evaluation}
+%
+\input{related}
+
+\section*{Acknowledgements}
+Computations were performed on the SOSCIP Consortium’s Agile computing platform. 
+SOSCIP is funded by the Federal Economic Development Agency of Southern Ontario, the Province of Ontario, IBM Canada Ltd., 
+Ontario Centres of Excellence, Mitacs and 15 Ontario academic member institutions. 
+Trevor Brown received funding for this work from the Natural Sciences and Engineering Research Council of Canada.
+This work was performed while Trevor Brown was a student at the University of Toronto.
+
+\bibliography{refs}
+\end{document}

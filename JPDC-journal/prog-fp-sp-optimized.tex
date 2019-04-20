@@ -1,0 +1,151 @@
+\begin{algorithm}[!h]
+\caption{Progressive fast-path and slow-path opaque HyTM implementation that provides invisible reads; code for transaction $T_k$}
+\label{alg:inswrite}
+\begin{algorithmic}[1]
+  	\begin{multicols}{2}
+  	{
+  	\footnotesize
+	\Part{Shared objects}{
+		\State $v_j \in \mathbb{D}$, for each t-object $X_j$ 
+		\Statex ~~~~~allows reads, writes and cas
+		%\State $L[i]$, a multi-trylock object for transaction $T_i$ 
+		\State $r_{j} \in \mathbb{M}$, for each t-object $X_j$
+		\Statex ~~~~~allows reads, writes and cas
+		%\State implemented from reads and writes
+		%\State $L$, multi-trylock
+	}\EndPart	
+	\Statex
+	\Part{Local objects}{
+		\State $\ms{Lset}(T_k) \subseteq \Wset(T_k)$, initially empty
+		\State $\ms{Oset}(T_k) \subseteq \Wset(T_k)$, initially empty
+		\State Integer counter for ABA, $k\in \mathbb{N}$, initially $0$
+		\Statex ~~~~~increment at start of transaction
+	}\EndPart
+	\Statex
+	\textbf{Code for slow-path transactions}
+	\Statex
+	\Part{\Read$_k(X_j)$}\quad\Comment{slow-path}{
+		\If{$X_j \not\in \Rset_k$}
+		  \State $[\textit{ov}_j,k_j] := \Read(v_j)$ 
+		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,[\textit{ov}_j,k_j]\}$ 
+		  \If{$r_j\neq 0$} 
+		    \Return $A_k$ \EndReturn
+		  \EndIf
+		  \If{$\exists X_j \in Rset(T_k)$:$(\textit{ov}_j,k_j)\neq \Read(v_j)$} 
+			\Return $A_k$ \EndReturn
+		  \EndIf
+
+		  \Return $\textit{ov}_j$ \EndReturn
+		\Else
+		    
+		  \State $\textit{ov}_j :=\Rset(T_k).\lit{locate}(X_j)$
+		  \Return $\textit{ov}_j$ \EndReturn
+		\EndIf
+   	 }\EndPart
+	\Statex
+	\Part{\Write$_k(X_j,v)$}\quad\Comment{slow-path}{
+		
+			\State $(\textit{ov}_j,k_j) := \Read(v_j)$
+			\State $\textit{nv}_j := v$
+			\State $\Wset(T_k) := \Wset(T_k)\cup\{X_j,[\textit{ov}_j,k]\}$
+			\Return $\ok$ \EndReturn
+		
+   	}\EndPart
+	\Statex
+	
+	%\Statex	
+	\Part{\TryC$_k$()}\quad\Comment{slow-path}{
+		\If{$\Wset(T_k)= \emptyset$}
+			\Return $C_k$ \EndReturn 
+		\EndIf
+		\State locked := $\lit{acquire}(\Wset(T_k))$
+		\If{$\neg$ locked}  
+	 		\Return $A_k$ \EndReturn
+	 	\EndIf
+		\If{$\lit{isAbortable}()$} 
+			\State $\lit{release}( \ms{Lset}(T_k))$ 
+			\Return $A_k$ \EndReturn
+		\EndIf
+		\ForAll{$X_j \in \Wset(T_k)$}
+	 		\State  $v_j.\lit{write}([\textit{nv}_j,k])$
+			 
+	 	\EndFor		
+		\State $\lit{release}(\Wset(T_k))$   
+   		\Return $C_k$ \EndReturn
+   	 }\EndPart		
+	 
+ 	\newpage
+ 	\Part{Function: $\lit{acquire}(Q$)}{
+   		\ForAll{$X_j \in Q$}	
+			\If{$r_j.\lit{cas}(0,1)$} 
+			  \State $\ms{Lset}(T_k) := \ms{Lset}(T_k)\cup \{X_j\}$
+			\Else
+			  \State $\lit{release}(\ms{Lset}(T_k))$
+			  \Return $\false$ \EndReturn
+			\EndIf
+			
+		\EndFor
+		
+		\Return $\true$ \EndReturn 
+	}\EndPart		
+	 \Statex
+	 \Part{Function: $\lit{release}(Q)$}{
+  		\ForAll{$X_j \in Q$}	
+ 			\State $r_j.\Write(0)$ 
+		\EndFor
+		%\State $Rset_k:=Wset_k:=\emptyset$
+		\Return $ok$ \EndReturn
+	}\EndPart
+	
+	\Statex
+	
+	\Part{Function: $\lit{undo}(\ms{Oset}(T_k))$}{
+		\ForAll{$X_j \in \ms{Oset}(T_k)$}
+		    \State $v_j.\lit{cas}([nv_j,k],[ov_j,k_j])$
+		 \EndFor
+		\State $\lit{release}( \ms{Wset}(T_k))$ 
+		\Return $A_k$ \EndReturn
+	 }\EndPart
+	
+	\Statex
+	 \Part{Function: $\lit{isAbortable()}$ }{
+		\If{$\exists X_j \in \Rset(T_k)$: $X_j\not\in \Wset(T_k)\wedge \Read(r_{j}) \neq 0$}
+			\Return $\true$ \EndReturn
+		\EndIf
+		\If{$\exists X_j \in Rset(T_k)$:$[\textit{ov}_j,k_j]\neq \Read(v_j)$} 
+			\Return $\true$ \EndReturn
+		\EndIf
+		\Return $\false$ \EndReturn
+	}\EndPart
+	\Statex
+	\textbf{Code for fast-path transactions}
+	\Part{$\textit{read}_k(X_j)$}\quad\Comment{fast-path}{
+		\State $\textit{ov}_j := \Read(v_j)$ \Comment{uncached read} 
+		
+		\If{$r_{j}\neq 0$}  \Comment{Cached}		
+			\Return $A_k$ \EndReturn
+		\EndIf
+		
+		\Return $\textit{ov}_j$ \EndReturn
+		
+   	 }\EndPart
+	\Statex
+	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
+		\If{$r_{j}\neq 0$}  \Comment{Cached}		
+			\Return $A_k$ \EndReturn
+		\EndIf
+		\State $\Write(v_j,\textit{nv}_j)$ \Comment{uncached write} 
+		%\State $\ms{Increment}(c_j)$ \Comment{Uncached write}
+		\Return $\ok$ \EndReturn
+		
+   	}\EndPart
+	\Statex
+	
+	\Part{$\textit{tryC}_k$()}{\quad\Comment{fast-path}
+		\State $\ms{commit-cache}_i$ 
+  	 }\EndPart		
+% 	
+	}
+	\end{multicols}
+  \end{algorithmic}
+\end{algorithm}

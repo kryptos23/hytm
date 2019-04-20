@@ -1,0 +1,45 @@
+\begin{algorithm*}[ht]
+\caption{Versioned lock}
+\label{alg:vlock}
+  \begin{algorithmic}[1]
+  	\begin{multicols}{2}
+  	{\size
+	
+	\Part{Private field}{
+		\State $r$, an integer initially $0$
+	}\EndPart
+
+	\Statex
+
+	
+% ------------- getVersion ---------------
+	\Part{$\lit{getVersion}()$}{ \Comment {only return even value}
+		\State {\bf return} $\ms{r}.\lit{read}()$ $\mathrel{\&}1111...1110$
+	}\EndPart
+
+	\Statex
+	\Part{$\lit{isLocked}()$}{ \Comment {only return even value}
+		\State {\bf return} $\ms{r}.\lit{read}()$ $\mathrel{\&}0000...0001$
+	}\EndPart
+	\Statex
+
+% ------------- lockAtCurrentVersion ---------------
+	\Part{Function: $\lit{setV}()$}{ \Comment{spin lock on the latest version}
+		\State $\ms{success} \gets \lit{false}$
+		
+		\While{($\neg \ms{success}$)} \Comment {spin until we get the lock}
+		\State $\ms{val} \gets$ $r.\Read()$ $\mathrel{\&}1111...1110$
+		\State $\ms{success} \gets r$.CAS($val$, $val+1$)
+		\EndWhile
+	}\EndPart
+
+% ------------- unlockAndIncrementVersion ---------------
+	\Part{$\lit{unsetV}()$}{ \Comment{assuming already locked (odd value)}
+		\State $\ms{val} \gets \ms{r}.\lit{read}()$
+		\State $\ms{r}$.CAS($val$, $val+1$) 
+	}\EndPart
+
+	}
+	\end{multicols}
+  \end{algorithmic}
+\end{algorithm*}
