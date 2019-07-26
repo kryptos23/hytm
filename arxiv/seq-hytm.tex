@@ -1,0 +1,96 @@
+\begin{algorithm}[!h]
+\caption{Opaque HyTM implementation with progressive slow-path and sequential fast-path TM-progress; code for $T_k$ by process $p_i$}
+\label{alg:inswrite2}
+\begin{algorithmic}[1]
+  	\begin{multicols}{2}
+  	{
+  	\footnotesize
+	\Part{Shared objects}{
+		\State $v_j \in \mathbb{D}$, for each t-object $X_j$ 
+		\State ~~~~~allows reads, writes and cas
+		%\State $L[i]$, a multi-trylock object for transaction $T_i$ 
+		\State $r_{j} \in \mathbb{M}$, for each t-object $X_j$
+		\State ~~~~~allows reads, writes and cas
+		\State $\ms{fa}$, fetch-and-add object 
+		%\State ~~~~~allows isEmpty, insert and remove
+		%\State implemented from reads and writes
+		%\State $L$, multi-trylock
+	}\EndPart	
+	
+	\Statex	
+	\textbf{Code for slow-path transactions}
+	\Part{\TryC$_k$()}{\quad\Comment{slow-path}
+		\If{$\Wset(T_k)= \emptyset$}
+			\Return $C_k$  \EndReturn
+		\EndIf
+				
+		\State locked := $\lit{acquire}(\Wset(T_k))$ 
+		\If{$\neg$ locked} 
+	 		\Return $A_k$ \EndReturn
+	 	\EndIf
+	 	\State $\ms{fa}.\lit{add}(1)$ 
+		\If{$\lit{isAbortable}()$} 
+			\State $\lit{release}( \ms{Lset}(T_k))$ 
+			\Return $A_k$ \EndReturn
+		\EndIf
+		\ForAll{$X_j \in \Wset(T_k)$}
+	 		 \If{ $v_j.\lit{cas}((ov_j, k_j),(\textit{nv}_j,k))$} 
+			      \State $\ms{Oset}(T_k):=\ms{Oset}(T_k)\cup \{X_j\}$
+			 \Else
+			      \Return $\lit{undo}(\ms{Oset}(T_k))$ \EndReturn
+			 \EndIf
+			 
+	 	\EndFor		
+		\State $\lit{release}(\Wset(T_k))$ \label{line:rel2}
+   		\Return $C_k$ \EndReturn
+   	 }\EndPart		
+	 
+ 	\newpage
+ 	
+	 \Part{Function: $\lit{release}(Q)$}{
+  		\ForAll{$X_j \in Q$}	
+ 			\State $r_j.\Write(0)$
+		\EndFor
+		\State $\ms{fa}.\lit{add}(-1)$ \label{line:dec}
+		%\State $Rset_k:=Wset_k:=\emptyset$
+		\Return \ok \EndReturn
+	}\EndPart
+	\Statex
+	\Statex
+
+	\textbf{Code for fast-path transactions}	
+	
+	\Part{$\textit{read}_k(X_j)$}{\quad\Comment{fast-path}
+		\If{$Rset(T_k) = \emptyset$}
+			\State $l \gets \Read(\ms{fa})$ \Comment{cached read} \label{line:fread}
+		
+			\If{$\ms{l}\neq 0$}
+			    \Return $A_k$ \EndReturn
+			\EndIf
+		\EndIf
+		\State $(\textit{ov}_j,k_j) := v_j.\Read()$ \Comment{cached read}
+		
+		\Return $\textit{ov}_j$ \EndReturn
+		
+   	 }\EndPart
+	\Statex
+	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
+		\State $v_j.\Write(\textit{nv}_j,k)$ \Comment{cached write} 
+		\Return $\ok$ \EndReturn
+		
+   	}\EndPart
+	\Statex
+	
+	%\Statex	
+	\Part{$\textit{tryC}_k$()}{\quad\Comment{fast-path}
+		%\Return $C_k$ \EndReturn
+		\State $\ms{commit-cache}_i$ \Comment{returns $C_k$}
+		
+   		
+   	 }\EndPart		
+	
+% 	
+	}
+	\end{multicols}
+  \end{algorithmic}
+\end{algorithm}

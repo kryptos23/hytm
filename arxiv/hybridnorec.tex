@@ -1,0 +1,225 @@
+\begin{algorithm*}[!h]
+\caption{HybridNorec HyTM implementation; code for $T_k$ by process $p_i$}
+\label{alg:inswrite3}
+\vspace{-1mm}
+\noindent\lstset{style=customc}
+\begin{minipage}{0.49\textwidth}
+\begin{lstlisting}[frame=none,firstnumber=1,mathescape=true]
+//\textbf{Shared objects}
+    L, global single-bit lock
+
+//\textbf{Code for fast-path transactions}
+start$_k$()
+    if esl==1
+	return A$_k$
+
+read$_k$(X$_j$)
+    ov$_j$ := v$_j$ //\medcom cached read
+    return ov$_j$
+
+write$_k$(X$_j$, v)
+    v$_j$ := v //\medcom cached write
+    return OK
+
+try$C_k$()
+    if $\Wset(T_k)= \emptyset$ then
+	return C$_k$
+    l:= gsl
+    if l $\mathrel{\&} 1$ then
+	return A_$k$
+    gsl:=l+2
+    return commitCache$_i$() //\medcom returns $C_k$ or $A_k$
+
+Function: $\lit{validate}()$}
+    currGSL:=gsl
+    if sl == currGSL then
+	return true
+    while true
+        while currGSL $\mathrel{\&} 1$
+	    currGSL:=gsl
+	if $\exists$ X$_j$ $\in$ Rset(T$_k$):ov$_j$ $\neq$ X$_j$ then
+	    return false
+    	if gsl == currGSL then
+	    sl:=currGSL
+	    return true
+
+\end{lstlisting}
+\end{minipage}
+\begin{minipage}{0.49\textwidth}
+\begin{lstlisting}[frame=none,firstnumber=last,mathescape=true]
+//\textbf{Code for slow-path transactions}
+start$_k$()
+    while sl $\mathrel{\&} 1$
+	sl:= gsl
+
+read$_k$(X$_j$)
+    if X$_j$ $\in \Wset(T_k)$ then
+	return $\Wset(T_k).\lit{locate}(X_j)$ 
+    ov$_j$ := v$_j$ //\medcom cached read
+    Rset(T$_k$) := Rset(T$_k$)$\cup${X$_j$,or$_j$} //\label{line:rset}
+    if $\neg$ validate() then 
+	return A$_k$
+    return ov$_j$
+
+write$_k$(X$_j$, v)
+    v$_j$ := v //\medcom cached write
+    return OK
+
+tryC$_k$()
+    if Wset(T$_k$) = $\emptyset$ then return $C_k$
+    while sl $\mathrel{\&} 1$ or $\neg\ms{gsl}$.CAS($sl$, $sl+1$)  
+          sl:= gsl
+    esl:=1
+    if validate() then
+        esl:=0
+        gsl:=gsl+1
+        return $A_k$
+    for each X$_j \in$ Wset(T$_k$) do v$_j$ := nv$_j$
+    esl:=0
+    gsl:=gsl+1
+    return $C_k$
+\end{lstlisting}
+\end{minipage}
+\vspace{-1mm}
+\end{algorithm*}
+
+% \begin{algorithmic}[1]
+%   	\begin{multicols}{2}
+%   	{
+%   	\footnotesize
+% 	\Part{Shared objects}{
+% 		\State $\ms{gsl}$, global sequence lock 
+% 		%\Statex ~~~~~allows reads, writes
+% 		\State $\ms{esl}$, extra sequence lock-bit
+% 		
+% 	}\EndPart	
+%  	\Statex
+%  	\Part{Process local objects}{
+%  		\State $\ms{sl}_i$, process $p_i$'s local sequence lock
+%  		
+%  	}\EndPart
+% 	\Statex
+% 	\textbf{Code for fast-path transactions}	
+% 	\Statex
+% 	\Part{$\textit{start}_k()$}{
+% %		\State $ \ms{l}   \gets \Read(\ms{esl})$
+% 		\If {$\Read(\ms{esl})$}
+% 		  \Return $A_k$ \EndReturn
+% 		\EndIf
+% 		
+% 	}\EndPart
+% 	\Statex
+% 	%\Comment{In general, would it better to buffer writes in tryC?}
+% 	\Part{$\textit{read}_k(X_j)$}{\quad\Comment{fast-path}
+% 		
+% 		\State $\textit{ov}_j := v_j.\Read()$ \Comment{cached read} 
+% 		
+% 		\Return $\textit{ov}_j$ \EndReturn
+% 		
+%    	 }\EndPart
+% 	\Statex
+% 	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast-path}
+% 	
+% 	\State $v_j.\Write(v)$ \Comment{cached write}
+% 	\Return $\ok$ \EndReturn
+% 		
+%    	}\EndPart
+% 	\Statex
+% 	
+% 	%\Statex	
+% 	\Part{$\textit{tryC}_k$()}{\quad\Comment{fast-path}
+% 		%\Return $C_k$ \EndReturn
+% 		\If{$\Wset(T_k)= \emptyset$}
+% 			\Return $C_k$ \EndReturn 
+% 		\EndIf
+% 		\State $ \ms{l}   \gets \Read(\ms{gsl})$
+% 		\If {$\ms{l} \mathrel{\&} 1$}
+% 		  \Return $A_k$ \EndReturn
+% 		\EndIf
+% 		\State $\ms{gsl}.\lit{write}(l+2)$
+% 		\State $\ms{commit-cache}_i$ \Comment{returns $C_k$}
+% 		
+%    		
+%    	 }\EndPart		
+%    	 \Statex
+% 	\Statex
+% 	\textbf{Code for slow-path transactions}
+% 	\Statex
+% 	\Part{$\textit{start}_k()$}{
+% 		\While {$\ms{sl} \mathrel{\&} 1$}
+% 		  \State $ \ms{sl}   \gets \Read(\ms{gsl})$
+% 		\EndWhile
+% 		
+% 	}\EndPart
+% 	\Statex
+% 	\Part{\Read$_k(X_j)$}\quad\Comment{slow-path}{
+% 		  \If{$X_j\in \Wset(T_k)$}
+% 		    \Return $\Wset(T_k).\lit{locate}(X_j)$ \EndReturn
+% 		  \EndIf
+% 		  \State $\textit{ov}_j := \Read(v_j)$ 
+% 		  
+% 		  \State $\Rset(T_k) := \Rset(T_k)\cup\{X_j,or_j\}$
+% 		  \If{$\neg \lit{validate}()$}
+% 			
+% 			\Return $A_k$ \EndReturn
+% 		  \EndIf
+% 		  \Return $\textit{ov}_j$ \EndReturn
+% 	
+%    	 }\EndPart
+%    	\newpage
+% 	\Part{\Write$_k(X_j,v)$}\quad\Comment{slow-path}{
+% 		
+% 			\State $\textit{nv}_j := v$
+% 			\State $\Wset(T_k) := \Wset(T_k)\cup\{X_j,nv_j\}$
+% 			\Return $\ok$ \EndReturn
+% 		
+%    	}\EndPart
+% 	\Statex
+% 	
+% 	%\Statex	
+% 	\Part{\TryC$_k$()}\quad\Comment{slow-path}{
+% 		\If{$\Wset(T_k)= \emptyset$}
+% 			\Return $C_k$ \EndReturn 
+% 		\EndIf
+% 		
+% 		\While{$\ms{sl} \mathrel{\&} 1 \mbox{ \textbf{or} } \neg\ms{gsl}$.CAS($sl$, $sl+1$)} \Comment{Lock gsl} 
+%           \State $\ms{sl} \gets \Read(\ms{gsl})$
+% 		\EndWhile
+% 		\State $\ms{esl}.\lit{write}(1)$
+% 		\If{$\neg\lit{validate}()$}
+%     		\State $\ms{esl}.\lit{write}(0)$
+% 			\State $\ms{gsl}.\lit{write}(\lit{read}(\ms{gsl})+1)$
+% 			\Return $A_k$ \EndReturn
+% 		\EndIf
+% 		\ForAll{$X_j \in \Wset(T_k)$}
+% 	 		 \State  $v_j.\lit{write}(\textit{nv}_j)$
+% 		\EndFor
+% 		\State $\ms{esl}.\lit{write}(0)$
+% 		\State $\ms{gsl}.\lit{write}(\lit{read}(\ms{gsl})+1)$
+%   		\Return $C_k$ \EndReturn
+%    	 }\EndPart		
+% 	\Statex
+% 	\Part{Function: $\lit{validate}()$}{
+%         \State $\ms{currGSL} \gets \Read(\ms{gsl})$
+% 		\If{$\ms{sl} = \ms{currGSL}$}
+%             \Return $\true$ \EndReturn
+%         \EndIf
+%         \While{$true$}
+%             \While{$\ms{currGSL} \mathrel{\&} 1$}
+%                 \State $\ms{currGSL} \gets \Read(\ms{gsl})$
+%             \EndWhile
+%     		\If{$\exists X_j \in Rset(T_k)$:$(\textit{ov}_j \neq \Read(X_j))$}
+%     			\Return $\false$ \EndReturn
+%     		\EndIf
+%             \If{$\Read(gsl) = \ms{currGSL}$}
+%                 \State $\ms{sl} \gets \ms{currGSL}$
+%         		\Return $\true$ \EndReturn
+%             \EndIf
+%         \EndWhile
+% 	}\EndPart
+% 	
+% % 	
+% 	}
+% 	\end{multicols}
+%   \end{algorithmic}
+% \end{algorithm*}
