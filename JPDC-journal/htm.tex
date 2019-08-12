@@ -4,6 +4,128 @@
 \modulolinenumbers[5]
 
 \journal{Journal of \LaTeX\ Templates}
+\usepackage{multicol}
+%\usepackage{amsmath}
+\usepackage{framed}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{float}
+\floatstyle{boxed} 
+\restylefloat{figure}
+\usepackage{tikz}
+\usepackage{macros}
+\usepackage[ruled]{algorithm}
+\usepackage{algpseudocode}
+\usepackage{ioa_code}
+
+\newcommand{\comnospace}{$\triangleright$}
+\newcommand{\com}{\comnospace\ }
+\usepackage{tabto}
+\newcommand{\medcom}[1]{\tabto{5cm} \com \mbox{#1}}
+
+\usepackage{listings}
+\lstset{numbers=left,numberblanklines=false}
+
+\lstdefinestyle{customc}{
+	belowcaptionskip=1\baselineskip,
+	breaklines=true,
+	frame=L,	
+	xleftmargin=\parindent,
+	language=C,
+	showstringspaces=false,
+	escapeinside={//}{\^^M},
+	%    basicstyle=\LSTfont,
+	basicstyle=\scriptsize\ttfamily,
+	keywordstyle=\bfseries\color{green!40!black},
+	commentstyle=\itshape\color{gray!60!black},
+	identifierstyle=\color{blue!50!black},
+	stringstyle=\color{orange},
+	numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+	numbersep=4pt,                   % how far the line-numbers are from the code
+	numberstyle=\tiny\color{black},  % the style that is used for the line-numbers
+	otherkeywords={then,word,process_local,type,xbegin,xabort,xend}
+}
+
+\def\P{\ensuremath{\mathcal{P}}}
+\def\DP{\ensuremath{\Diamond\mathcal{P}}}
+\def\DS{\ensuremath{\Diamond\mathcal{S}}}
+%\def\T{\ensuremath{\mathcal{T}}}
+\def\Time{\mathbb{T}}
+\def\S{\ensuremath{\mathcal{S}}}
+\def\D{\ensuremath{\mathcal{D}}}
+\def\W{\ensuremath{\mathcal{W}}}
+\def\A{\ensuremath{\mathcal{A}}}
+\def\B{\ensuremath{\mathcal{B}}}
+\def\F{\ensuremath{\mathcal{F}}}
+\def\R{\ensuremath{\mathcal{R}}}
+\def\N{\ensuremath{\mathcal{N}}}
+\def\I{\ensuremath{\mathcal{I}}}
+\def\O{\ensuremath{\mathcal{O}}}
+\def\Q{\ensuremath{\mathcal{Q}}}
+\def\K{\ensuremath{\mathcal{K}}}
+\def\L{\ensuremath{\mathcal{L}}}
+\def\M{\ensuremath{\mathcal{M}}}
+\def\V{\ensuremath{\mathcal{V}}}
+\def\E{\ensuremath{\mathcal{E}}}
+\def\C{\ensuremath{\mathcal{C}}}
+\def\T{\ensuremath{\mathcal{T}}}
+\def\X{\ensuremath{\mathcal{X}}}
+\def\Y{\ensuremath{\mathcal{Y}}}
+\def\Nat{\ensuremath{\mathbb{N}}}
+\def\Om{\ensuremath{\Omega}}
+\def\ve{\varepsilon}
+\def\fd{failure detector}
+\def\cfd{\ensuremath{?\P+\DS}}
+\def\afd{timeless}
+\def\env{\ensuremath{\mathcal{E}}}
+%\def\faulty{unreliable}
+\def\bounded{one-shot}
+\def\cons{\textit{cons}}
+\def\val{\textit{val}}
+\def\code{\textit{code}}
+
+\def\HSS{\mathit{h}}
+\def\argmin{\mathit{argmin}}
+\def\proper{\mathit{proper}}
+\def\content{\mathit{content}}
+\def\Level{\mathit{L}}
+\def\Blocked{\mathit{Blocked}}
+\def\Set{\mathit{Set}}
+\def\TS{\mathit{TS}}
+\def\shared{\mathit{shared}}
+\def\exclusive{\mathit{exclusive}}
+
+\newcommand{\correct}{\mathit{correct}}
+\newcommand{\RNum}[1]{\uppercase\expandafter{\romannumeral #1\relax}}
+\newcommand	{\faulty}{\mathit{faulty}}
+\newcommand{\infi}{\mathit{inf}}
+\newcommand{\live}{\mathit{live}}
+\newcommand{\true}{\mathit{true}}
+\newcommand{\false}{\mathit{false}}
+\newcommand{\stable}{\mathit{Stable}}
+\newcommand{\setcon}{\mathit{setcon}}
+\newcommand{\remove}[1]{}
+
+\newcommand{\Wset}{\textit{Wset}}
+\newcommand{\Rset}{\textit{Rset}}
+\newcommand{\Dset}{\textit{Dset}}
+
+%\newcommand{\parts}{\textit{parts}}
+\newcommand{\txns}{\textit{txns}}
+
+\newcommand{\Read}{\textit{read}}
+\newcommand{\Write}{\textit{write}}
+\newcommand{\TryC}{\textit{tryC}}
+\newcommand{\TryA}{\textit{tryA}}
+\newcommand{\ok}{\textit{ok}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newenvironment{proofsketch}[1][Proof sketch]{\noindent\textbf{#1.} }{\hfill $\Box$\\[2mm]}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{claim}[theorem]{Claim}
 
 %%%%%%%%%%%%%%%%%%%%%%%
 %% Elsevier bibliography styles
@@ -95,7 +217,7 @@ there is no easy way to derive more efficient HyTMs by taking advantage of non-s
 \linenumbers
 
 \input{intro}
-%\input{model_alt}
+\input{model_alt}
 %\input{spec}
 %\input{algos}
 %
