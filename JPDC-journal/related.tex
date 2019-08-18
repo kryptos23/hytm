@@ -15,15 +15,7 @@ Proof of Theorem~\ref{th:impossibility} is based on the analogous proof for step
 Our implementation of Hybrid NOrec follows \cite{hynorecriegel}, which additionally proposed the use of direct accesses
 in fast-path transactions to reduce instrumentation overhead in the AMD Advanced Synchronization Facility (ASF) architecture.
 
-\paragraph*{Beyond the two path HyTM approach.}
-\vspace{1mm}\noindent\textit{Employing an uninstrumented fast fast-path.}
-We now describe how every transaction may first be executed in a ``fast'' fast-path with almost no instrumentation
-and if unsuccessful, may be re-attempted in the fast-path and subsequently in slow-path.
-Specifically, we transform an opaque HyTM $\mathcal{M}$ to an opaque
-HyTM $\mathcal{M}'$ using a shared \emph{fetch-and-add} metadata base object $F$ that slow-path updating transactions
-increment (and resp. decrement) at the start (and resp. end). In $\mathcal{M}'$, a ``fast'' fast-path transaction checks first if $F$ is $0$
-and if not, aborts the transaction; otherwise the transaction is continued as an uninstrumented hardware transaction.
-The code for the fast-path and the slow-path is identical to $\mathcal{M}$.
+\paragraph*{Other HyTM models.}
 %Assuming the hardware transactions do not perform any direct accesses, opacity is immediate~\cite{brownfaster15}.
 
 %\paragraph*{Other approaches.}

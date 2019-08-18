@@ -67,12 +67,25 @@ Then, at the end of the fast path transaction's commit procedure,
 it increments gsl twice (quickly locking and releasing it and immediately commits in hardware).
 Although the window for fast path transactions to contend on gsl is small, our experiments have shown that contention on gsl has a significant impact on performance.
 
+\subsection{Three-path Opaque HyTM}
+We now describe how every transaction may first be executed in a ``fast'' fast-path with almost no instrumentation
+and if unsuccessful, may be re-attempted in the fast-path and subsequently in slow-path.
+Specifically, we transform an opaque HyTM $\mathcal{M}$ to an opaque
+HyTM $\mathcal{M}'$ using a shared \emph{fetch-and-add} metadata base object $F$ that slow-path updating transactions
+increment (and resp. decrement) at the start (and resp. end). In $\mathcal{M}'$, a ``fast'' fast-path transaction checks first if $F$ is $0$
+and if not, aborts the transaction; otherwise the transaction is continued as an uninstrumented hardware transaction.
+The code for the fast-path and the slow-path is identical to $\mathcal{M}$.
+
 % Figure~\ref{fig:main} summarizes the complexity costs
 % associated with the HyTM algorithms considered in this paper.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \input{prog-fp-sp}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{hybridnorec.tex}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \input{prog-fp}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{middle}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{appendix-proof.tex}

@@ -5,19 +5,23 @@
 
 \journal{Journal of \LaTeX\ Templates}
 \usepackage{multicol}
-%\usepackage{amsmath}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
 \usepackage{framed}
-\usepackage{subcaption}
+%\usepackage{subfigure}
+%\usepackage{subcaption}
 \usepackage{graphicx}
 \usepackage{float}
 \floatstyle{boxed} 
 \restylefloat{figure}
 \usepackage{tikz}
+\usepackage{subfig}
 \usepackage{macros}
 \usepackage[ruled]{algorithm}
 \usepackage{algpseudocode}
 \usepackage{ioa_code}
-
+\usepackage{tabularx}
 \newcommand{\comnospace}{$\triangleright$}
 \newcommand{\com}{\comnospace\ }
 \usepackage{tabto}
@@ -119,7 +123,7 @@
 \newcommand{\TryA}{\textit{tryA}}
 \newcommand{\ok}{\textit{ok}}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newenvironment{proofsketch}[1][Proof sketch]{\noindent\textbf{#1.} }{\hfill $\Box$\\[2mm]}
+%\newenvironment{proofsketch}[1][Proof sketch]{\noindent\textbf{#1.} }{\hfill $\Box$\\[1mm]}
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}[theorem]{Lemma}
 \newtheorem{corollary}[theorem]{Corollary}
@@ -165,20 +169,12 @@
 
 \title{Cost of Concurrency in Hybrid Transactional Memory}
 
-\author{Elsevier\fnref{myfootnote}}
-\address{Radarweg 29, Amsterdam}
-\fntext[myfootnote]{Since 1880.}
+\author{Trevor Brown}
+\address{University of Waterloo}
 
-%% or include affiliations in footnotes:
-\author[mymainaddress,mysecondaryaddress]{Elsevier Inc}
-\ead[url]{www.elsevier.com}
+\author{Srivatsan Ravi}
+\address{University of Southern California}
 
-\author[mysecondaryaddress]{Global Customer Service\corref{mycorrespondingauthor}}
-\cortext[mycorrespondingauthor]{Corresponding author}
-\ead{support@elsevier.com}
-
-\address[mymainaddress]{1600 John F Kennedy Boulevard, Philadelphia}
-\address[mysecondaryaddress]{360 Park Avenue South, New York}
 
 \begin{abstract}
 State-of-the-art \emph{software transactional memory (STM)} implementations achieve 
@@ -218,12 +214,12 @@ there is no easy way to derive more efficient HyTMs by taking advantage of non-s
 
 \input{intro}
 \input{model_alt}
-%\input{spec}
-%\input{algos}
+\input{spec}
+\input{algos}
 %
-%\input{Evaluation}
+\input{Evaluation}
 %
-%\input{related}
+\input{related}
 
 \section*{Acknowledgements}
 Computations were performed on the SOSCIP Consortium’s Agile computing platform. 

@@ -1,0 +1,56 @@
+\begin{proofsketch}
+We construct an execution of a read-only slow-path transaction $T_{\phi}$ that performs $m \in \mathbb{N}$
+distinct t-reads of t-objects $X_1,\ldots , X_m$. We show inductively that for each 
+$i\in \{1,\ldots , m\}$; $m \in \mathbb{N}$, the $i^{\ms{th}}$ t-read must access $i-1$ distinct base objects
+during its execution. The (partial) steps in our execution are depicted in Figure~\ref{fig:indis}.
+
+For each $i\in \{1,\ldots , m\}$, $\mathcal{M}$ has an execution of the form depicted in Figure~\ref{sfig:inv-2}.
+Start with the complete step contention-free execution of slow-path read-only transaction $T_{\phi}$ that performs
+$(i-1)$ t-reads: $\Read_{\phi}(X_1)\cdots \Read_{\phi}(X_{i-1})$, followed by the t-complete step contention-free execution of a fast-path transaction $T_{i}$
+that writes $nv_i\neq v_i$ to $X_i$ and commits and then the complete step contention-free execution fragment of $T_{\phi}$ that performs its $i^{th}$ t-read:
+$\Read_{\phi}(X_i) \rightarrow nv_i$. Indeed, by progressiveness, $T_i$ cannot incur tracking set aborts and since it accesses only a single t-object, it cannot incur capacity aborts.
+Moreover, in this execution, the t-read of $X_i$ by slow-path transaction $T_{\phi}$ must return the value $nv$ written by fast-path transaction $T_i$ since this execution is indistinguishable
+to $T_{\phi}$ from the execution in Figure~\ref{sfig:inv-1}. 
+
+We now construct $(i-1)$ different executions of the form depicted in Figure~\ref{sfig:inv-3}: for each $\ell \leq (i-1)$, 
+a fast-path transaction $T_{\ell}$ (preceding $T_i$ in real-time ordering, but invoked following the $(i-1)$ t-reads by $T_{\phi}$) writes $nv_{\ell}\neq v$ to $X_{\ell}$ and commits, followed by
+the t-read of $X_i$ by $T_{\phi}$. Observe that, $T_{\ell}$ and $T_i$ which access mutually disjoint data sets cannot contend on each other since if they did, they would concurrently contend
+on some base object and incur a tracking set abort, thus violating progressiveness.
+Indeed, by the TM-liveness property we assumed (cf. Section~\ref{sec:hytm}) and invisible reads for $T_{\phi}$, each of these $(i-1)$ executions exist. 
+
+In each of these $(i-1)$ executions, the final t-read of $X_i$ cannot return the new value $nv$:
+the only possible serialization for transactions is $T_{\ell}$, $T_i$, $T_{\phi}$; but the $\Read_{\phi}(X_{\ell})$
+performed by $T_k$ that returns the initial value $v$ is not legal in this serialization---contradiction to the assumption of opacity.
+In other words, slow-path transaction $T_{\phi}$ is forced to verify the validity of t-objects in $\Rset(T_{\phi})$.
+Finally, we note that, for all $\ell, \ell' \leq (i-1)$;$\ell' \neq \ell$, 
+fast-path transactions $T_{\ell}$ and $T_{\ell'}$ access mutually disjoint sets of base objects thus forcing the t-read of $X_i$ to access least $i-1$ different base objects
+in the worst case.
+Consequently, for all $i \in \{2,\ldots, m\}$, slow-path transaction $T_{\phi}$ must perform at least $i-1$ steps 
+while executing the $i^{th}$ t-read in such an execution.
+\end{proofsketch}
+
+\begin{figure*}[!t]
+	\begin{center}
+		\begin{subfigure}{\linewidth}{\scalebox{0.6}[0.6]{\input{dap}}}
+			\caption{Slow-path transaction $T_{\phi}$ performs $i-1$ distinct t-reads (each returning the initial value) followed by the t-read of $X_i$ that returns value $nv$ 
+				written by fast-path transaction $T_i$}\label{sfig:inv-1}
+		\end{subfigure}
+		\\
+		\vspace{2mm}
+		\begin{subfigure}{\linewidth}{\scalebox{0.6}[0.6]{\input{dap2}}}
+			\caption{Fast-path transaction $T_i$ does not contend with any of the $i-1$ t-reads performed by $T_{\phi}$ and must be committed in this execution since it cannot incur a tracking set or capacity abort.
+				The t-read of $X_i$ must return $nv$ because this execution is indistinguishable to $T_{\phi}$ from \ref{sfig:inv-1}}
+			\label{sfig:inv-2} 
+		\end{subfigure}
+		\\
+		\vspace{2mm}
+		\begin{subfigure}{\linewidth}{\scalebox{0.6}[0.6]{\input{dap3}}}
+			\caption{In each of these each $i-1$ executions, fast-path transactions cannot incur a tracking set or capacity abort. By opacity, the t-read of $X_i$ by $T_{\phi}$ cannot return new value $nv$.
+				Therefore, to distinguish the $i-1$ different executions, t-read of $X_i$ by slow-path transaction $T_{\phi}$ is forced
+				to access $i-1$ different base objects}
+			\label{sfig:inv-3}
+		\end{subfigure}
+		\caption{Proof steps for Theorem~\ref{th:impossibility}
+			\label{fig:indis}} 
+	\end{center}
+\end{figure*}

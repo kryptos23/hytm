@@ -20,8 +20,8 @@ We pin threads so that the first socket is saturated before we place any threads
 Thus, thread counts 1-24 run on a single socket.
 Furthermore, hyperthreading is engaged on the first socket for thread counts 13-24, and on the second socket for thread counts 37-48.
 Consequently, our graphs clearly show the effects of NUMA and hyperthreading.
-%Thread support was provided by the POSIX Threads library.
-%We used the default glibc allocator.
+Thread support was provided by the POSIX Threads library.
+We used the default glibc allocator.
 
 The experimental POWER8 system is a IBM S822L with 2x 12-core 3.02GHz processor cards, 128GB of RAM, running Ubuntu 16.04 LTS.
 All code was compiled using G++ 5.3.1.
@@ -72,13 +72,13 @@ Note that a \textit{RangeIncrement} is more likely to experience data
 conflicts and capacity aborts than BST updates, which only modify a single node.
 
 We consider two types of workloads: (W1) all $n$ threads perform \textit{Insert}, \textit{Delete} and \textit{Search}, and (W2) $n-1$ threads perform \textit{Insert}, \textit{Delete} and \textit{Search} and one thread performs only \textit{RangeIncrement} operations.
-%In W2, one can think of the thread $p$ that performs \textit{RangeIncrement} operations as a tunable knob that controls the fraction of time in the execution that the slow-path is being executed.
-%Increasing the size of the range $[low, hi]$ passed to \textit{RangeIncrement} will cause $p$ to spend more time on the slow-path.
+In W2, one can think of the thread $p$ that performs \textit{RangeIncrement} operations as a tunable knob that controls the fraction of time in the execution that the slow-path is being executed.
+Increasing the size of the range $[low, hi]$ passed to \textit{RangeIncrement} will cause $p$ to spend more time on the slow-path.
 Figure~\ref{fig-exp-bst} shows the results for both types of workloads.
 
-%As a way of validating correctness in each trial, each thread maintains a \textit{checksum}.
-%Each time a thread inserts (resp., deletes) a key, it adds the key to (resp., subtracts from) its checksum.
-%At the end of the trial, the sum of all thread checksums must be equal to the sum of keys in the tree.
+As a way of validating correctness in each trial, each thread maintains a \textit{checksum}.
+Each time a thread inserts (resp., deletes) a key, it adds the key to (resp., subtracts from) its checksum.
+At the end of the trial, the sum of all thread checksums must be equal to the sum of keys in the tree.
 
 \begin{figure}
     \centering
