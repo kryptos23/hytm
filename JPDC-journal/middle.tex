@@ -1,0 +1,108 @@
+\begin{algorithm*}[!h]
+\caption{Transformation for opaque HyTM $\mathcal{M}$ to include a fast fast-path; code for $T_k$ by process $p_i$}
+\label{alg:middle}
+\vspace{-1mm}
+\noindent\lstset{style=customc}
+\begin{minipage}{0.49\textwidth}
+\begin{lstlisting}[frame=none,firstnumber=1,mathescape=true]
+//\textbf{Shared objects}
+    F, fetch-and-increment object
+    
+//\textbf{Code for slow-path transactions}
+tryC$_k$()
+    if $\Wset(T_k)= \emptyset$ then
+	return C$_k$  
+    $F.\lit{fetch-add}(1)$
+    //\textbf{Invoke updating slow-path tryC$_k$(); let $r_k$ be the response}
+    $F.\lit{fetch-add}(-1)$
+    return r$_k$ 
+\end{lstlisting}
+\end{minipage}
+\begin{minipage}{0.49\textwidth}
+\begin{lstlisting}[frame=none,firstnumber=last,mathescape=true]
+//\textbf{Code for fast fast-path transactions}
+start$_k$()
+    if F $\neq 0$ then //\medcom cached read
+	return A$_k$
+
+read$_k$(X$_j$)
+    ov$_j$ := v$_j$ //\medcom cached read 
+    return ov$_j$
+		
+write$_k$(X$_j$,v)
+    v$_j$:=v  //\medcom cached write
+    return ok
+
+tryC$_k$()
+    commit-cache$_i$ //\medcom returns C$_k$ or A$_k$
+\end{lstlisting}
+\end{minipage}
+\end{algorithm*}
+
+
+
+% \begin{algorithmic}[1]
+%   	\begin{multicols}{2}
+%   	{
+%   	\footnotesize
+% 	\Part{Shared objects}{
+% 		%\State $v_j$, for each t-object $X_j$ 
+% 		\State $F$, fetch-and-increment object
+% 		
+% 	}\EndPart	
+%  	\Statex
+%  	\Statex
+%  	\textbf{Code for slow-path transactions}
+% 	\Statex
+% 	\Part{$\textit{tryC}_k$()}{\quad\Comment{slow-path}
+% 		\If{$\Wset(T_k)= \emptyset$}
+% 			\Return $C_k$ \EndReturn 
+% 		\EndIf
+% 		\State $F.\lit{fetch-add}(1)$
+% 		\State \textbf{Invoke updating slow-path $\TryC_k()$; let $r_k$ be the response}
+% 		
+% 		\State $F.\lit{fetch-add}(-1)$
+% 		\Return $r_k$ \EndReturn
+%    		
+%    	 }\EndPart		
+% 	\newpage
+% 	\textbf{Code for fast fast-path transactions}	
+% 	\Statex
+% 	\Part{$\textit{start}_k()$}{
+% 		
+% 		\If{$\Read(\ms{F}) \neq 0$} \Comment{cached read}
+% 		  \Return $A_k$ \EndReturn
+% 		\EndIf
+% 		
+% 	}\EndPart
+% 	\Statex
+% 	%\Comment{In general, would it better to buffer writes in tryC?}
+% 	\Part{$\textit{read}_k(X_j)$}{\quad\Comment{fast fast-path}
+% 		
+% 		\State $\textit{ov}_j := v_j.\Read()$ \Comment{cached read} 
+% 		
+% 		\Return $\textit{ov}_j$ \EndReturn
+% 		
+%    	 }\EndPart
+% 	\Statex
+% 	\Part{$\textit{write}_k(X_j,v)$}{\quad\Comment{fast fast-path}
+% 	
+% 	\State $v_j.\Write(v)$ \Comment{cached write}
+% 	\Return $\ok$ \EndReturn
+% 		
+%    	}\EndPart
+% 	\Statex
+% 	
+% 	%\Statex	
+% 	\Part{$\textit{tryC}_k$()}{\quad\Comment{fast fast-path}
+% 		%\Return $C_k$ \EndReturn
+% 		\State $\ms{commit-cache}_i$ \Comment{returns $C_k$ or $A_k$}
+% 		
+%    		
+%    	 }\EndPart		
+%    	   	
+% 	
+% 	}
+% 	\end{multicols}
+%   \end{algorithmic}
+% \end{algorithm*}

@@ -1,0 +1,40 @@
+%!TEX root = htm.tex
+\section{Related work and discussion}
+\label{sec:rel}
+%
+\vspace{1mm}\noindent\textbf{HyTM implementations and complexity.}
+Early HyTMs like the ones described in \cite{damronhytm, kumarhytm} provided progressiveness, but
+subsequent HyTM proposals like PhTM~\cite{phasedtm} and HybridNOrec~\cite{hybridnorec} sacrificed progressiveness for lesser instrumentation overheads.
+However, the clear trade-off in terms of concurrency vs. instrumentation for these HyTMs have not been studied in the context of currently available HTM
+architectures. This instrumentation cost on the fast-path was precisely characterized in \cite{hytm14disc}.
+In this paper, we proved the inherent cost of concurrency on the slow-path thus establishing a surprising, 
+but intuitive complexity separation between progressive STMs and HyTMs.
+Moreover, to the best of our knowledge, this is the first work to consider the theoretical foundations of the cost of concurrency in 
+HyTMs in theory and practice (on currently available HTM architectures).
+Proof of Theorem~\ref{th:impossibility} is based on the analogous proof for step complexity of STMs that are \emph{disjoint-access parallel}~\cite{prog15-pact, tm-book}.
+Our implementation of Hybrid NOrec follows \cite{hynorecriegel}, which additionally proposed the use of direct accesses
+in fast-path transactions to reduce instrumentation overhead in the AMD Advanced Synchronization Facility (ASF) architecture.
+
+\vspace{1mm}\noindent\textbf{Beyond the two path HyTM approach.}
+\vspace{1mm}\noindent\textit{Employing an uninstrumented fast fast-path.}
+We now describe how every transaction may first be executed in a ``fast'' fast-path with almost no instrumentation
+and if unsuccessful, may be re-attempted in the fast-path and subsequently in slow-path.
+Specifically, we transform any opaque HyTM $\mathcal{M}$ to an opaque
+HyTM $\mathcal{M}'$ in which a shared \emph{fetch-and-add} metadata base object $F$ that slow-path updating transactions
+increment (and resp. decrement) at the start (and resp. end). In $\mathcal{M}'$, a ``fast'' fast-path transaction checks first if $F$ is $0$
+and if not, aborts the transaction; otherwise the transaction is continued as an uninstrumented hardware transaction.
+The code for the fast-path and the slow-path is identical to $\mathcal{M}$.
+%Assuming the hardware transactions do not perform any direct accesses, opacity is immediate~\cite{brownfaster15}.
+
+\vspace{1mm}\noindent\textit{Other approaches.}
+Recent work has investigated fallback to \emph{reduced} hardware transactions~\cite{MS13}
+in which an all-software slow-path is augmented using a slightly faster slow-path 
+that is optimistically used to avoid running some transactions on the true software-only slow-path.
+Amalgamated lock elision (ALE) was proposed in \cite{ale15} which improves over TLE
+by executing the slow-path as a series of segments, each of which is a dynamic length hardware transaction.
+Invyswell~\cite{Calciu14} is a HyTM design with multiple hardware and software modes of execution that gives flexibility to avoid instrumentation overhead in uncontended executions.
+
+We remark that such multi-path approaches may be easily applied to each of the Algorithms proposed in this paper. However, 
+in the search for an efficient HyTM, it is important to strike the fine balance between concurrency, hardware instrumentation and software validation cost.
+Our lower bound, experimental methodology and evaluation of HyTMs provides the first clear characterization of these trade-offs in both Intel and POWER8 architectures. 
+%

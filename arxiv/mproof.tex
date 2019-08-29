@@ -1,0 +1,195 @@
+\section{Proof of Theorem~\ref{th:impossibility}}
+\label{app:lm}
+%
+The proof of the lemma below is a simple extension of the analogous lemma from \cite{hytm14disc}
+allowing direct trivial accesses inside fast-path transactions which in turn is inspired by an analogous result concerning \emph{disjoint-access parallel} STMs~\cite{AHM09}. 
+Intuitively, the proof follows follows from the fact that
+the tracking set of a process executing a fast-path transaction is invalidated due to contention on a base
+object with another transaction (cf. Remark~\ref{re:traborts}).
+%
+\begin{lemma}
+\label{lm:hytm}
+%
+Let $\mathcal{M}$ be any progressive HyTM implementation in which fast-path transactions may perform trivial
+direct accesses.
+Let $E_1 \cdot E_2$ be an execution of $\mathcal{M}$ where
+$E_1$ (and resp. $E_2$) is the step contention-free
+execution fragment of transaction $T_1$ (and resp. $T_2$) executed by process $p_1$ (and resp. $p_2$),
+$T_1$ and $T_2$ do not conflict in $E_1 \cdot E_2$, and
+at least one of $T_1$ or $T_2$ is a fast-path transaction. 
+Then, $T_1$ and $T_2$ do not contend on any base object in $E_1 \cdot E_2$.
+\end{lemma}
+\begin{proof}
+Suppose, by contradiction that $T_1$ and $T_2$ 
+contend on the same base object in $E_1\cdot E_2$.
+%Let $p_1$ (and resp. $p_2$) be the process executing transaction $T_1$ (and resp. $T_2$).
+
+If in $E_1$, $T_1$ performs a nontrivial event on a base object on which they contend, let $e_1$ be the last
+event in $E_1$ in which $T_1$ performs such an event to some base object $b$ and $e_2$, the first event
+in $E_2$ that accesses $b$ (note that by assumption, $e_1$ is a direct access).
+Otherwise, $T_i$ only performs trivial events in $E_1$ to base objects (some of which may be direct) on which it contends with $T_{2}$ in $E_1\cdot E_2$:
+let $e_2$ be the first event in $E_2$ in which $E_2$ performs a nontrivial event to some base object $b$
+on which they contend and $e_1$, the last event of $E_1$ in $T_1$ that accesses $b$.
+
+Let $E_1'$ (and resp. $E_2'$) be the longest prefix of $E_1$ (and resp. $E_2$) that does not include
+$e_1$ (and resp. $e_2$).
+Since before accessing $b$, the execution is step contention-free for $T_1$, $E \cdot
+E_1'\cdot E_2'$ is an execution of $\mathcal{M}$.
+By assumption of lemma, $T_1$ and $T_2$ do not conflict in $E_1'\cdot E_2'$.
+By construction, $E_1 \cdot E_2'$ is indistinguishable to $T_2$ from $E_1' \cdot E_2'$.
+Hence, $T_1$ and $T_{2}$ are poised to apply contending events $e_1$ and $e_2$ on $b$ in the execution
+$\tilde E=E_1' \cdot E_2'$.
+
+We now consider two cases:
+\begin{enumerate}
+\item 
+($e_1$ is a nontrivial event)
+After $\tilde E\cdot e_1$, $b$ is contained in the tracking set of process
+$p_1$ in exclusive mode and in the extension $\tilde E\cdot e_1 \cdot e_2$, we have that
+$\tau_1$ is invalidated. Thus, by Remark~\ref{re:traborts}, transaction $T_1$ must return $A_1$ 
+in any extension of $E\cdot e_1\cdot e_2$---a contradiction
+to the assumption that $\mathcal{M}$ is progressive.   
+\item
+($e_1$ is a trivial event)
+Recall that $e_1$ may be potentially an event involving a direct access.
+Consider the execution $\tilde E\cdot e_2$ following which $b$ is contained in the tracking set of process
+$p_{2}$ in exclusive mode. Clearly, we have an extension $\tilde E\cdot e_2 \cdot e_1$ in which
+$\tau_{2}$ is invalidated. Thus transaction $T_{2}$ must return $A_{2}$ in any extension of $E\cdot e_2\cdot e_1$---a contradiction
+to the assumption that $\mathcal{M}$ is progressive.   
+\end{enumerate}
+%
+\end{proof}
+%
+%\setcounter{0}
+\begin{theorem}
+%\label{th:impossibility}
+Let $\mathcal{M}$ be any progressive opaque HyTM implementation providing invisible reads.
+There exists an execution $E$ of $\mathcal{M}$ and some slow-path read-only transaction $T_k \in \ms{txns}(E)$
+that incurs a time complexity of $\Omega (m^2)$; $m=|\Rset(T_k)|$.
+\end{theorem}
+%
+\begin{proof}
+For all $i\in \{1,\ldots , m\}$; $m \in \mathbb{N}$, let 
+$v$ be the initial value of t-object $X_i$.
+Let $\pi^{m}$ denote the complete step contention-free execution of a slow-path transaction
+$T_{\phi}$ that performs ${m}$ t-reads: $\Read_{\phi}(X_1)\cdots \Read_{\phi}(X_{m})$
+such that for all $i\in \{1,\ldots , m \}$, $\Read_{\phi}(X_i) \rightarrow v$.
+%
+\begin{claim}
+\label{cl:readdap}
+For all $i\in \mathbb{N}$, $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \rho^i\cdot \alpha^i$ where,
+%
+\begin{itemize}
+\item
+$\pi^{i-1}$ is the complete step contention-free execution of slow-path read-only transaction $T_{\phi}$ that performs
+$(i-1)$ t-reads: $\Read_{\phi}(X_1)\cdots \Read_{\phi}(X_{i-1})$,
+\item
+$\rho^i$ is the t-complete step contention-free execution of a fast-path transaction $T_{i}$
+that writes $nv_i\neq v_i$ to $X_i$ and commits,
+\item
+$\alpha^i$ is the complete step contention-free execution fragment of $T_{\phi}$ that performs its $i^{th}$ t-read:
+$\Read_{\phi}(X_i) \rightarrow nv_i$.
+\end{itemize}
+%
+\end{claim}
+%
+\begin{proof}
+%
+$\mathcal{M}$ has an execution of the form $\rho^i\cdot \pi^{i-1}$.
+Since $\Dset(T_k) \cap \Dset(T_{i}) =\emptyset$ in $\rho^i\cdot \pi^{i-1}$,
+by Lemma~\ref{lm:hytm}, transactions $T_{\phi}$ and $T_i$ do not contend
+on any base object in execution $\rho^i\cdot \pi^{i-1}$.
+Moreover, since they each access a single t-object, fast-path transaction $T_i$ cannot incur a capacity abort.
+Thus, $\rho^i\cdot \pi^{i-1}$ is also an execution of $\mathcal{M}$.
+
+By opacity, $\rho^i\cdot \pi^{i-1} \cdot \alpha^i$ (Figure~\ref{sfig:inv-1}) is an execution
+of $\mathcal{M}$ in which the t-read of $X_i$ performed by $T_{\phi}$ must return $nv_i$.
+But $\rho^i \cdot \pi^{i-1} \cdot \alpha^i$ is indistinguishable to $T_{\phi}$ from
+$\pi^{i-1}\cdot \rho^i \cdot \alpha^i$.
+Thus, $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \rho^i \cdot \alpha^i$ (Figure~\ref{sfig:inv-2}).
+\end{proof}
+%
+For each $i\in \{2,\ldots, m\}$, $j\in \{1,2\}$ and $\ell \leq (i-1)$, 
+we now define an execution of the form  $\mathbb{E}_{j\ell}^{i}=\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$
+as follows:
+%
+\begin{itemize}
+\item
+%$\rho^m$ is defined as above;
+$\beta^{\ell}$ is the t-complete step contention-free execution fragment of a fast-path transaction $T_{\ell}$
+that writes $nv_{\ell}\neq v$ to $X_{\ell}$ and commits
+\item
+$\alpha_1^i$ (and resp. $\alpha_2^i$) is the complete step contention-free execution fragment of 
+$\Read_{\phi}(X_i) \rightarrow v$ (and resp. $\Read_{\phi}(X_i) \rightarrow A_{\phi}$).
+\end{itemize}
+%
+Note that in the execution so defined above, we assume that each fast-path transactions $T_i$ and $T_{\ell}$;$\ell \leq (i-1)$ are executed by distinct processes.
+%
+\begin{claim}
+\label{cl:ic2}
+For all $i\in \{2,\ldots, m\}$ and $\ell \leq (i-1)$, $\mathcal{M}$ has an execution of the form $\mathbb{E}_{1\ell}^{i}$ or 
+$\mathbb{E}_{2\ell}^{i}$.
+\end{claim}
+%
+%The proof of the above claim is immediate.
+\begin{proof}
+%
+Note that by our assumption on capacity aborts, fast-path transactions $T_i$ and $T_{\ell}$ cannot incur capacity aborts in the defined execution.
+
+For all $i \in \{2,\ldots, m\}$, $\pi^{i-1}$
+is an execution of $\mathcal{M}$.
+By assumption of invisible reads, $T_{{\ell}}$ must be committed in $\pi^{i-1}\cdot \rho^{\ell}$
+and $\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \beta^{\ell}$.
+By the same reasoning, since $T_i$ and $T_{\ell}$ do not have conflicting data sets,
+$\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$.
+
+Since the configuration after $\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ is quiescent,
+$\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ extended with $\Read_{\phi}(X_i)$
+must return a matching response.
+If $\Read_{\phi}(X_i) \rightarrow v_i$, then clearly $\mathbb{E}_{1}^{i}$
+is an execution of $M$ with $T_{\phi}, T_{i-1}, T_i$ being a valid serialization
+of transactions.
+If $\Read_{\phi}(X_i) \rightarrow A_{\phi}$, the same serialization
+justifies an opaque execution.
+
+Suppose by contradiction that there exists an execution of $\mathcal{M}$ such that
+$\pi^{i-1}\cdot\beta^{\ell}\cdot \rho^i$ is extended with the complete execution
+of $\Read_{\phi}(X_i) \rightarrow r$; $r \not\in \{A_{\phi},v\}$. 
+The only plausible case to analyse is when $r=nv$.
+Since $\Read_{\phi}(X_i)$ returns the value of $X_i$ updated by $T_i$, 
+the only possible serialization for transactions is $T_{\ell}$, $T_i$, $T_{\phi}$; but $\Read_{\phi}(X_{\ell})$
+performed by $T_k$ that returns the initial value $v$
+is not legal in this serialization---contradiction.
+\end{proof}
+%
+\begin{claim}
+%
+For all $i\in \{2,\ldots, m\}$, $j\in \{1,2\}$ and $\ell \leq (i-1)$, slow-path transaction $T_{\phi}$ must access
+$(i-1)$ different base objects during the execution of $\Read_{\phi}(X_i)$ in the execution
+$\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \alpha_j^i$.
+\end{claim}
+\begin{proof}
+Consider the $(i-1)$ different executions: 
+$\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot \rho^i$ (cf. Figure~\ref{sfig:inv-3}).
+For all $\ell, \ell' \leq (i-1)$;$\ell' \neq \ell$, 
+$\mathcal{M}$ has an execution of the form $\pi^{i-1}\cdot \beta^{\ell}\cdot \rho^i \cdot \beta^{\ell'}$
+in which fast-path transactions $T_{\ell}$ (executed by process $p_{\ell}$) and $T_{\ell'}$ (executed by process $p_{\ell'}$) access mutually disjoint data sets.
+By invisible reads and Lemma~\ref{lm:hytm}, the pairs of transactions $T_{\ell'}$, $T_{i}$ and $T_{\ell'}$, $T_{\ell}$
+do not contend on any base object in this execution.
+This implies that $\pi^{i-1}\cdot \beta^{\ell} \cdot \beta^{\ell'} \cdot \rho^i$ is an execution of $\mathcal{M}$ in which
+transactions $T_{\ell}$ and $T_{\ell'}$ each apply nontrivial primitives
+to mutually disjoint sets of base objects in the execution fragments $\beta^{\ell}$ and $\beta^{\ell'}$ respectively.
+
+This implies that for any $j\in \{1,2\}$, $\ell \leq (i-1)$, the configuration $C^i$ after $E^i$ differs from the configurations
+after $\mathbb{E}_{j\ell}^{i}$ only in the states of the base objects that are accessed in the fragment $\beta^{\ell}$.
+Consequently, slow-path transaction $T_{\phi}$ must access at least $i-1$ different base objects
+in the execution fragment $\pi_j^i$
+to distinguish configuration $C^i$ from the configurations
+that result after the $(i-1)$ different executions 
+$\pi^{i-1}\cdot\beta^{1}\cdot \rho^i$, $\ldots$, $\pi^{i-1}\cdot\beta^{i-1}\cdot \rho^i$ respectively.
+\end{proof}
+%
+Thus, for all $i \in \{2,\ldots, m\}$, slow-path transaction $T_{\phi}$ must perform at least $i-1$ steps 
+while executing the $i^{th}$ t-read in the execution fragment $\pi_{j}^i$. 
+Inductively, this gives the $\sum\limits_{i=1}^{m-1} i=\frac{m(m-1)}{2}$ step complexity for $T_{\phi}$ thus completing the proof.
+\end{proof}
