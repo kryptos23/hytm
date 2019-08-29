@@ -14,3 +14,5 @@ data/dsbench/graphs_dsbench2/
 *.out
 disc/folder/trbotpc.txt
 trbotpc.txt
+
+code/stamp/dsbench/nbproject/
