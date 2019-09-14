@@ -10,8 +10,16 @@
 #TARGETS="seqtm tle tl2 hytm1 hytm2 hytm3 hybridnorec"
 #TARGETS="tl2 hytm1 hytm2 hytm3 hybridnorec"
 #TARGETS="hytm1 hytm2 hytm3 hybridnorec"
-TARGETS="tl2 hytm1 hytm2 hytm3 hybridnorec"
+
+
+
+
+#TARGETS="tl2 hytm1 hytm2 hytm3 hybridnorec"
+TARGETS="hytm2_3path"
 PROGS="dsbench"
+
+
+
 
 #TARGETS="hytm3 hytm2"
 #TARGETS="tl2"
@@ -22,7 +30,7 @@ PROGS="dsbench"
 #xflags2=-DNDEBUG
 
 echo "Precompilation work..."
-mkdir bin
+mkdir bin 2>/dev/null
 
 g++ sum.cpp -o bin/sum -O3 -std=c++11
 if [ "$?" -ne "0" ]; then
@@ -80,7 +88,7 @@ do
                 echo "ERROR: failed to compile benchmark $p for TM library $t"
                 exit 1
             fi
-            mv ${p}_${t} ../bin/
+            mv *.${p}_${t} ../bin/
             echo "Success. Moved ''./${p}_${t}'' to ''../bin/''."
         else
             echo "WARNING: no file ''$mfile'' to compile for target $t (may simply indicate an invalid pairing of stm library and benchmark that was left in the FOR loops for convenience)"

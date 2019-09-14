@@ -86,6 +86,13 @@
 #include "../hytm2/hytm2.h"
 #include "../hytm2/hytm2.cpp"
 #warning Using hytm2
+#elif defined hytm2_3path
+#include "../hytm2_3path/stm.h"
+#include "../hytm2_3path/tmalloc.h"
+#include "../hytm2_3path/tmalloc.c"
+#include "../hytm2_3path/hytm2_3path.h"
+#include "../hytm2_3path/hytm2_3path.cpp"
+#warning Using hytm2_3path
 #elif defined hytm2sw
 #error hytm2sw is not supported
 #elif defined hytm3
