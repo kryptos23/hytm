@@ -288,6 +288,7 @@ std::ostream& operator<<(std::ostream& out, const vLock& obj) {
  * Consider 4M alignment for LockTab so we can use large-page support.
  * Alternately, we could mmap() the region with anonymous DZF pages.
  */
+static volatile char padding0[64];
 #define _TABSZ  (1<<20) /*(1<<3)*/
 #define STACK_SPACE_LOCKTAB
 #ifdef STACK_SPACE_LOCKTAB
@@ -298,6 +299,9 @@ struct vLockSpace {
 };
 static vLockSpace *LockTab;
 #endif
+static volatile char padding1[64];
+volatile int fallbackCount;
+static volatile char padding2[64];
 
 /*
  * With PS the versioned lock words (the LockTab array) are table stable and
@@ -1129,6 +1133,7 @@ int TxCommit(void* _Self) {
         DEBUG2 aout("thread "<<Self->UniqID<<" committed -> release locks");
         releaseWriteSet(Self);
         ++Self->CommitsSW;
+        __sync_fetch_and_add(&fallbackCount, -1); // for 3path alg
         TM_COUNTER_INC(htmCommit[PATH_FALLBACK], Self->UniqID);
         TM_TIMER_END(Self->UniqID);
         
@@ -1136,6 +1141,7 @@ int TxCommit(void* _Self) {
     } else {
         XEND();
         ++Self->CommitsHW;
+        /* TODO: undesirable: this can't distinguish between fast and slow paths */
         TM_COUNTER_INC(htmCommit[PATH_FAST_HTM], Self->UniqID);
     }
     
@@ -1220,15 +1226,7 @@ intptr_t TxLoad_stm(void* _Self, volatile intptr_t* addr) {
 
 intptr_t TxLoad_htm(void* _Self, volatile intptr_t* addr) {
 #ifdef USE_SUSPEND_RESUME
-    XSUSPEND();
-    // abort if addr is locked
-    vLock* lock = PSLOCK(addr);
-    uint64_t locksnap = lock->getSnapshot();
-    if (locksnap & 1) {
-        XRESUME();
-        XABORT(1); // jumps to abort handler
-    }
-    XRESUME();
+#error "this tm system does not support tsuspend"
 #else
     // abort if addr is locked
     vLock* lock = PSLOCK(addr);
@@ -1274,7 +1272,13 @@ void TxStore_htm(void* _Self, volatile intptr_t* addr, intptr_t value) {
     *addr = value;
 }
 
+void TxStore_fasthtm(void* _Self, volatile intptr_t* addr, intptr_t value) {
+    *addr = value;
+}
 
+intptr_t TxLoad_fasthtm(void* _Self, volatile intptr_t* addr) {
+    return *addr;
+}
 
 
 
@@ -1301,6 +1305,7 @@ void TxOnce() {
 #else
     LockTab = (vLockSpace*) malloc(_TABSZ*sizeof(vLockSpace));
     memset(LockTab, 0, _TABSZ*sizeof(vLockSpace));
+    fallbackCount = 0;
 #endif
 }
 

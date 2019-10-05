@@ -22,7 +22,8 @@ pinning=IDENTITY
 
 GPP = g++
 
-all: hybridnorec hytm2_3path hytm3
+all: hytm2_3path
+#all: hybridnorec hytm2_3path hytm3
 ##tl2 hytm1 hytm2 hytm3 hybridnorec hytm2_nonspec hybridnorec_nonspec
 
 .PHONY : all clean hytm2_3path tl2 hytm1 hytm2 hytm3 hybridnorec hytm2_nonspec hybridnorec_nonspec

@@ -1,11 +1,10 @@
-#ifndef HYTM2_H
-#define HYTM2_H 1
+#pragma once
 
 //#ifdef __cplusplus
 //extern "C" {
 //#endif
 
-#define TM_NAME "HyTM2_3path"
+#define TM_NAME "HyTM2_3path!"
 //#define HTM_ATTEMPT_THRESH 0
 #ifndef HTM_ATTEMPT_THRESH
     #define HTM_ATTEMPT_THRESH 5
@@ -50,6 +49,7 @@
 
 // just for debugging
 extern volatile int globallock;
+extern volatile int fallbackCount;
 
 #define BIG_CONSTANT(x) (x##LLU)
 
@@ -80,9 +80,11 @@ int      TxCommit      (void*);
 void     TxAbort       (void*);
 
 intptr_t TxLoad(void* Self, volatile intptr_t* addr);
+intptr_t TxLoad_fasthtm(void* Self, volatile intptr_t* addr);
 intptr_t TxLoad_htm(void* Self, volatile intptr_t* addr);
 intptr_t TxLoad_stm(void* Self, volatile intptr_t* addr);
 void TxStore(void* Self, volatile intptr_t* addr, intptr_t value);
+void TxStore_fasthtm(void* Self, volatile intptr_t* addr, intptr_t value);
 void TxStore_htm(void* Self, volatile intptr_t* addr, intptr_t value);
 void TxStore_stm(void* Self, volatile intptr_t* addr, intptr_t value);
 
@@ -97,4 +99,3 @@ void     TxFree        (void*, void*);
 //}
 //#endif
 
-#endif
