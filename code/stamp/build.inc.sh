@@ -15,7 +15,7 @@
 
 
 #TARGETS="tl2 hytm1 hytm2 hytm3 hybridnorec"
-TARGETS="hytm2_3path"
+TARGETS="hybridnorec hytm2_3path hytm3"
 PROGS="dsbench"
 
 

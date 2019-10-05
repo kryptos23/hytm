@@ -5,7 +5,7 @@
 //extern "C" {
 //#endif
 
-#define TM_NAME "HyTM2"
+#define TM_NAME "HyTM2_3path"
 //#define HTM_ATTEMPT_THRESH 0
 #ifndef HTM_ATTEMPT_THRESH
     #define HTM_ATTEMPT_THRESH 5

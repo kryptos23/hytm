@@ -154,9 +154,9 @@ namespace hashset_namespace {
         int tableSize;
         K** keys;
         int __size;
-        inline long hash(K * const key) {
+        inline uint64_t long hash(K * const key) {
             // MurmurHash3's integer finalizer
-            long long k = (long long) key;
+            uint64_t k = (uint64_t) key;
             k ^= k >> 33;
             k *= 0xff51afd7ed558ccd;
             k ^= k >> 33;
