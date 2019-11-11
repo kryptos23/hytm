@@ -73,6 +73,8 @@ typedef struct Thread_void {
 __thread intptr_t (*sharedReadFunPtr)(void* Self, volatile intptr_t* addr);
 __thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t val);
 
+// TODO: need more data about why hytm2_3path is slower. current data about path utilization is garbage. also... papi? perf stat/record?
+
 #  define STM_BEGIN(isReadOnly) \
     do { \
         SOFTWARE_BARRIER; \
@@ -99,10 +101,11 @@ __thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t
             } else { /* if we aborted */ \
                 TM_REGISTER_ABORT(PATH_FAST_HTM, ___xarg, ___Self->UniqID); \
                 ++___Self->AbortsHW; /* slightly undesirable: can't distinguish between fast and slow htm aborts */ \
-                if (fallbackCount) { /* GOTO SLOW HTM PATH */ \
+                if (X_ABORT_STATUS_IS_USER(___xarg)) { /* GOTO SLOW HTM PATH */ \
                     sharedReadFunPtr = &TxLoad_htm; \
                     sharedWriteFunPtr = &TxStore_htm; \
                     ___fasthtmattempts = HTM_ATTEMPT_THRESH; \
+                    assert(fallbackCount <= MAX_TID_POW2); \
                 } \
             } \
         } \
@@ -120,19 +123,21 @@ __thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t
         /*printf("exited loop\n");*/ \
         if (___slowhtmattempts < HTM_ATTEMPT_THRESH) break; \
         /* STM attempt */ \
+        \
+        __sync_fetch_and_add(&fallbackCount, 1); \
+        \
         /*DEBUG2 aout("thread "<<___Self->UniqID<<" started s/w tx attempt "<<(___Self->AbortsSW+___Self->CommitsSW)<<"; s/w commits so far="<<___Self->CommitsSW);*/ \
         /*DEBUG1 if ((___Self->CommitsSW % 50000) == 0) aout("thread "<<___Self->UniqID<<" has committed "<<___Self->CommitsSW<<" s/w txns");*/ \
         DEBUG2 printf("thread %ld started s/w tx; attempts so far=%ld, s/w commits so far=%ld\n", ___Self->UniqID, (___Self->AbortsSW+___Self->CommitsSW), ___Self->CommitsSW); \
         DEBUG1 if ((___Self->CommitsSW % 25000) == 0) printf("thread %ld has committed %ld s/w txns (over all threads so far=%ld)\n", ___Self->UniqID, ___Self->CommitsSW, CommitTallySW); \
         if (sigsetjmp(STM_JMPBUF, 1)) { \
             TxClearRWSets(STM_SELF); \
+            TM_REGISTER_ABORT(PATH_FALLBACK, 0, ___Self->UniqID); \
         } \
         SOFTWARE_BARRIER; \
         sharedReadFunPtr = &TxLoad_stm; \
         sharedWriteFunPtr = &TxStore_stm; \
         SOFTWARE_BARRIER; \
-        \
-        __sync_fetch_and_add(&fallbackCount, 1); \
         \
         ___Self->isFallback = 1; \
         ___Self->IsRO = 1; \
@@ -142,7 +147,19 @@ __thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t
 
 #define STM_BEGIN_RD()                  STM_BEGIN(1)
 #define STM_BEGIN_WR()                  STM_BEGIN(0)
-#define STM_END()                       SOFTWARE_BARRIER; TxCommit(STM_SELF)
+#define STM_END() \
+    SOFTWARE_BARRIER; \
+    TxCommit(STM_SELF); \
+    if (((Thread_void*) STM_SELF)->isFallback) { \
+        __sync_fetch_and_add(&fallbackCount, -1); \
+        TM_REGISTER_COMMIT(PATH_FALLBACK, ((Thread_void*) STM_SELF)->UniqID); \
+    } else { \
+        if (sharedReadFunPtr == TxLoad_htm) { \
+            TM_REGISTER_COMMIT(PATH_SLOW_HTM, ((Thread_void*) STM_SELF)->UniqID); \
+        } else { \
+            TM_REGISTER_COMMIT(PATH_FAST_HTM, ((Thread_void*) STM_SELF)->UniqID); \
+        } \
+    }
 
 
 typedef volatile intptr_t               vintp;

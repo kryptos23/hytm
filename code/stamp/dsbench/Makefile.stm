@@ -4,11 +4,12 @@ EXTRAFLAGS := $(EXTRAFLAGS1) $(EXTRAFLAGS2) $(EXTRAFLAGS3) $(EXTRAFLAGS4)
 #LIB := ../lib
 
 FLAGS = -std=c++0x
+FLAGS += -fopenmp
 #FLAGS += -DSTM -I$(STM) -I$(LIB)
 FLAGS += -g
 FLAGS += $(EXTRAFLAGS)
 FLAGS += -DPHYSICAL_PROCESSORS=192
-#FLAGS += -DRECORD_ABORTS
+FLAGS += -DRECORD_ABORTS
 #FLAGS += -DNDEBUG
 FLAGS += -DDS_DEBUG=if\(0\) -DDS_DEBUG1=if\(0\) -DDS_DEBUG2=if\(0\) -DVERBOSE=if\(0\)
 
@@ -22,9 +23,9 @@ pinning=IDENTITY
 
 GPP = g++
 
-all: hytm2_3path
-#all: hybridnorec hytm2_3path hytm3
-##tl2 hytm1 hytm2 hytm3 hybridnorec hytm2_nonspec hybridnorec_nonspec
+#all: hytm2_3path hytm2
+all: tl2 hytm1 hytm2 hytm3 hybridnorec
+##hybridnorec hytm2_nonspec hybridnorec_nonspec
 
 .PHONY : all clean hytm2_3path tl2 hytm1 hytm2 hytm3 hybridnorec hytm2_nonspec hybridnorec_nonspec
 

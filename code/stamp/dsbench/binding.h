@@ -39,6 +39,8 @@ const int NEELAM_SOCKET1_THEN_SOCKET2 = 3; // specific to oracle x5-2
 const int POMELA6_SCATTER = 4;
 const int TAPUZ40_SCATTER = 5;
 const int TAPUZ40_CLUSTER = 6;
+const int ZYRA_SCATTER = 7;
+const int ZYRA_CLUSTER = 8;
 const int SOSCIP_CLUSTER = 100;
 const int SOSCIP_CLUSTER48 = 101;
 const int SOSCIP_SCATTER = 102;
@@ -237,6 +239,30 @@ void binding_configurePolicy(const int nprocessors) {
                     break;
                 case TAPUZ40_CLUSTER:
                     j = (i<12?i:(i<24?i+12:(i<36?i-12:i)));
+                    break;
+                case ZYRA_SCATTER:
+                    // lscpu:
+                    //  NUMA node0 CPU(s):   0-17,72-89
+                    //  NUMA node1 CPU(s):   18-35,90-107
+                    //  NUMA node2 CPU(s):   36-53,108-125
+                    //  NUMA node3 CPU(s):   54-71,126-143
+                    //
+                    // command to visualize:
+                    //  lscpu | grep "NUMA node[0-9]" ; for i in {0..143} ; do if (( (i%4) == 0 )) ; then echo ; fi ; echo -n $(( (i%4)*18 + i/4 + (i/(18*4))*(18*(4-1)) )) "" ; done ; echo
+                    //
+                    j = (i%4)*18 + i/4 + (i/(18*4))*(18*(4-1));
+                    break;
+                case ZYRA_CLUSTER:
+                    // lscpu:
+                    //  NUMA node0 CPU(s):   0-17,72-89
+                    //  NUMA node1 CPU(s):   18-35,90-107
+                    //  NUMA node2 CPU(s):   36-53,108-125
+                    //  NUMA node3 CPU(s):   54-71,126-143
+                    //
+                    // command to visualize:
+                    //  lscpu | grep "NUMA node[0-9]" ; for i in {0..143} ; do if (( (i%18) == 0 )) ; then echo ; fi ; echo -n $(( ((i%36)>=18)*(144/2) + i%18 + (i/36)*18 )) "" ; done ; echo
+                    //
+                    j = ((i%36)>=18)*(144 / 2/*HTs*/) + i%18 + (i/36)*18;
                     break;
                 case SOSCIP_CLUSTER:
     #define SOSCIP_CLUSTER_coresPerSocket 12

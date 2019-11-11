@@ -37,6 +37,16 @@ elif [ "$machine" == "tapuz40" ]; then
     pin_cluster="TAPUZ40_CLUSTER"
     pin_none="NONE"
     cmdprefix=""
+elif [ "$machine" == "zyra" ]; then
+    xargs1="-mx32"
+    maxthreadcount="144"
+    overthreadcount1="144"
+    overthreadcount2="144"
+    threadcounts="1 3 6 9 12 15 18 21 24 27 30 33 36 54 72 90 108 126 144"
+    pin_scatter="ZYRA_SCATTER"
+    pin_cluster="ZYRA_CLUSTER"
+    pin_none="NONE"
+    cmdprefix=""
 elif [ "$machine" == "theoryhtm" ]; then
     xargs1="-mx32"
     maxthreadcount="8"

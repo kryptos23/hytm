@@ -22,6 +22,7 @@ using namespace std;
 #define TM_COUNTER_ADD(name, val, tid) counterAdd(__tm_counters->name, (tid), (val))
 #define TM_COUNTER_TOTAL(name, nthreads) counterGetTotal(__tm_counters->name)
 #define TM_REGISTER_ABORT(path, xarg, tid) registerHTMAbort(__tm_counters, (tid), (xarg), (path))
+#define TM_REGISTER_COMMIT(path, tid) TM_COUNTER_ADD(htmCommit[(path)], 1, (tid))
 #define TM_TIMER_START(tid) countersProbStartTime(__tm_counters, (tid), 0.)
 #define TM_TIMER_END(tid) countersProbEndTime(__tm_counters, (tid), __tm_counters->timingOnFallback)
 #define TM_CLEAR_COUNTERS() countersClear(__tm_counters)
@@ -83,6 +84,7 @@ void countersPrint(struct c_debugCounters *cs) {
     for (int path=0;path<NUMBER_OF_PATHS;++path) {
         switch (path) {
             case PATH_FAST_HTM: cout<<"[" << PATH_NAMES[path] << "]" << endl; break;
+            case PATH_SLOW_HTM: cout<<"[" << PATH_NAMES[path] << "]" << endl; break;
             case PATH_FALLBACK: cout<<"[" << PATH_NAMES[path] << "]" << endl; break;
         }
         if (counterGetTotal(cs->htmCommit[path])) {

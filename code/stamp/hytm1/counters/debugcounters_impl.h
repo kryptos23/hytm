@@ -128,8 +128,8 @@ void countersClear(struct c_debugCounters *cs) {
     int j=0;
     for (;j<NUMBER_OF_PATHS;++j) {
 #ifdef RECORD_ABORTS
-        int i=0;
-        for (;i<MAX_ABORT_STATUS;++i) {
+        #pragma omp parallel for
+        for (int i=0;i<MAX_ABORT_STATUS;++i) {
             counterClear(cs->htmAbort[j*MAX_ABORT_STATUS+i]);
         }
 #endif
@@ -145,8 +145,8 @@ void countersInit(struct c_debugCounters *cs, const int numProcesses) {
     int j=0;
     for (;j<NUMBER_OF_PATHS;++j) {
 #ifdef RECORD_ABORTS
-        int i=0;
-        for (;i<MAX_ABORT_STATUS;++i) {
+        #pragma omp parallel for
+        for (int i=0;i<MAX_ABORT_STATUS;++i) {
             cs->htmAbort[j*MAX_ABORT_STATUS+i] = (struct c_debugCounter *) malloc(sizeof(struct c_debugCounter));
             counterInit(cs->htmAbort[j*MAX_ABORT_STATUS+i], cs->NUM_PROCESSES);
         }

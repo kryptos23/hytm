@@ -1130,7 +1130,6 @@ int TxCommit(void* _Self) {
         releaseWriteSet(Self);
         ++Self->CommitsSW;
         TM_COUNTER_INC(htmCommit[PATH_FALLBACK], Self->UniqID);
-        TM_TIMER_END(Self->UniqID);
         
     // hardware path
     } else {
@@ -1170,7 +1169,6 @@ void TxAbort(void* _Self) {
             exit(-1);
         }
         TM_REGISTER_ABORT(PATH_FALLBACK, 0, Self->UniqID);
-        TM_TIMER_END(Self->UniqID);
         
 #ifdef TXNL_MEM_RECLAMATION
         // "abort" speculative allocations and speculative frees

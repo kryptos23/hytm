@@ -1132,17 +1132,10 @@ int TxCommit(void* _Self) {
         // release all locks
         DEBUG2 aout("thread "<<Self->UniqID<<" committed -> release locks");
         releaseWriteSet(Self);
-        ++Self->CommitsSW;
-        __sync_fetch_and_add(&fallbackCount, -1); // for 3path alg
-        TM_COUNTER_INC(htmCommit[PATH_FALLBACK], Self->UniqID);
-        TM_TIMER_END(Self->UniqID);
         
     // hardware path
     } else {
         XEND();
-        ++Self->CommitsHW;
-        /* TODO: undesirable: this can't distinguish between fast and slow paths */
-        TM_COUNTER_INC(htmCommit[PATH_FAST_HTM], Self->UniqID);
     }
     
 success:
@@ -1162,7 +1155,6 @@ void TxAbort(void* _Self) {
         SOFTWARE_BARRIER; // prevent compiler reordering of speculative execution before isFallback check in htm (for power)
 
         ++Self->Retries;
-        ++Self->AbortsSW;
         if (Self->Retries > MAX_RETRIES) {
             aout("TOO MANY ABORTS. QUITTING.");
             aout("BEGIN DEBUG ADDRESS MAPPING:");
@@ -1175,8 +1167,6 @@ void TxAbort(void* _Self) {
             aout("END DEBUG ADDRESS MAPPING.");
             exit(-1);
         }
-        TM_REGISTER_ABORT(PATH_FALLBACK, 0, Self->UniqID);
-        TM_TIMER_END(Self->UniqID);
         
 #ifdef TXNL_MEM_RECLAMATION
         // "abort" speculative allocations and speculative frees
