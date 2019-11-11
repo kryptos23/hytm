@@ -25,14 +25,9 @@ cd $datadir
 cat $outfile
 
 ## print csv contents
-cnt1=0
+cnt1=`ls *.data | wc -l`
 cnt2=0
-for counting in 1 0 ; do
-for x in `ls *.data` ; do
-	if [ $counting -eq 1 ]; then
-		cnt1=`expr $cnt1 + 1`
-		continue
-	fi
+for x in *.data ; do
 	cnt2=`expr $cnt2 + 1`
 
 	cmd=`cat $x | head -1`
@@ -82,7 +77,6 @@ for x in `ls *.data` ; do
 	# debug output
 	echo -n "$cnt2 / $cnt1: "
 	cat $outfile | tail -1
-done
 done
 
 cat $errfile

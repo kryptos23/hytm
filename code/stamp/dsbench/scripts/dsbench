@@ -17,14 +17,13 @@ fi
 keyranges="10000 100000"
 insdel_pcnts="0 1 5 20"
 
-ntrials=20
+ntrials=10
 t=1000
 timeoutsec=`expr $t / 1000`
 timeoutsec=`expr $timeoutsec + 3`
 p=-p
 ma=new
-pinnings="${pin_scatter}"
-#bindingarg="-bind 0,8,16,24,32,40,48,56,64,72,80,88,96,104,112,120,128,136,144,152,160,168,176,184,1,9,17,25,33,41,49,57,65,73,81,89,97,105,113,121,129,137,145,153,161,169,177,185,2,10,18,26,34,42,50,58,66,74,82,90,98,106,114,122,130,138,146,154,162,170,178,186,3,11,19,27,35,43,51,59,67,75,83,91,99,107,115,123,131,139,147,155,163,171,179,187"
+pinnings="${pin_cluster} ${pin_scatter}"
 
 if [ "$#" -ne "0" ]; then
 	echo "RUNNING IN TEST MODE"
@@ -72,17 +71,17 @@ echo "--------------------- END VARIABLES ---------------------" >> $logfile
 
 cat $logfile
 
-### COMPILE ALL ALGORITHMS
-#echo "!!!!!!!!!!!! pinnings=$pinnings"
-bash -c "cd scripts ; ./compile_x64.sh \"$pinnings\""
-#make -f Makefile.stm -j machine=`hostname` EXTRAFLAGS3=-DHTM_ATTEMPT_THRESH=20 pinning=$pinnings
-
 #problems=""
 
 cnt1=0
 cnt2=0
 for counting in 1 0; do
 for pinning in $pinnings; do
+	### COMPILE ALL ALGORITHMS
+	#echo "!!!!!!!!!!!! pinnings=$pinnings"
+	bash -c "cd scripts ; ./compile_x64.sh \"$pinning\""
+	#make -f Makefile.stm -j machine=`hostname` EXTRAFLAGS3=-DHTM_ATTEMPT_THRESH=20 pinning=$pinnings
+
     #makecmd="make -f Makefile.stm -j machine=$machine EXTRAFLAGS1=$xargs1 EXTRAFLAGS3=-DHTM_ATTEMPT_THRESH=20 pinning=$pinning"
     for k in $keyranges; do
     for alg_reclaimer_pool in $algs_reclaimers_pools; do
