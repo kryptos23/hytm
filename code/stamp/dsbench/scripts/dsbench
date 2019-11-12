@@ -73,14 +73,18 @@ cat $logfile
 
 #problems=""
 
+echo > $compilinglogfile
+
 cnt1=0
 cnt2=0
 for counting in 1 0; do
 for pinning in $pinnings; do
-	### COMPILE ALL ALGORITHMS
-	#echo "!!!!!!!!!!!! pinnings=$pinnings"
-	bash -c "cd scripts ; ./compile_x64.sh \"$pinning\""
-	#make -f Makefile.stm -j machine=`hostname` EXTRAFLAGS3=-DHTM_ATTEMPT_THRESH=20 pinning=$pinnings
+    if [ "$counting" -eq "0" ]; then
+        ### COMPILE ALL ALGORITHMS (for this pinning option)
+	cd scripts
+        ./compile_x64.sh "$pinning" | tee -a ../$compilinglogfile || (echo ERROR COMPILING && exit 1)
+        cd ..
+    fi
 
     #makecmd="make -f Makefile.stm -j machine=$machine EXTRAFLAGS1=$xargs1 EXTRAFLAGS3=-DHTM_ATTEMPT_THRESH=20 pinning=$pinning"
     for k in $keyranges; do
@@ -88,19 +92,9 @@ for pinning in $pinnings; do
         alg=`echo $alg_reclaimer_pool | cut -d"~" -f1`
         mr=`echo $alg_reclaimer_pool | cut -d"~" -f2`
         mp=`echo $alg_reclaimer_pool | cut -d"~" -f3`
-#            if [ $counting -eq 0 ]; then
-#                target=`echo $alg | cut -d"_" -f2`
-#                makecmd="make -f Makefile.stm -j TARGET=$target machine=$machine EXTRAFLAGS1=$xargs1 EXTRAFLAGS3=-DHTM_ATTEMPT_THRESH=20 pinning=$pinning"
-#                echo $makecmd
-#                $makecmd >> $compilinglogfile
-#                if [ "$?" -ne 0 ]; then
-#                    cat $compilinglogfile
-#                    echo "ERROR COMPILING"
-#                    exit 1
-#                fi
-#            else
-                echo "counting trials for alg $alg, mr $mr, mp $mp and k $k"
-#            fi
+            if [ "$counting" -eq "1" ]; then
+                echo "counting trials for pinning $pinning, alg $alg, mr $mr, mp $mp and k $k"
+            fi
 
             for insdel_pcnt in $insdel_pcnts; do
             for nthreads in $threadcounts; do
@@ -113,27 +107,25 @@ for pinning in $pinnings; do
                 for nworkandrq in $workandrqcounts; do
                     nwork=`echo $nworkandrq | cut -d"~" -f1`
                     nrq=`echo $nworkandrq | cut -d"~" -f2`
-                    for ((trial=0;trial<$ntrials;++trial)); do
-                        if [ $counting -eq 1 ]; then
-                            cnt1=`expr $cnt1 + 1`
-                            continue
-                        fi
 
+                    if [ $counting -eq 1 ]; then
+                        cnt1=$(( cnt1 + ntrials ))
+                        continue
+                    fi
+                    for ((trial=0;trial<$ntrials;++trial)); do
                         cnt2=`expr $cnt2 + 1`
                         echo -n "trial $cnt2 / $cnt1: "
 
                         args="-t $t -mr $mr -ma $ma -mp $mp $p -k $k -i $insdel_pcnt -d $insdel_pcnt -rq 0 -rqsize 256 -nwork $nwork -nrq $nrq"
                         cmd="$machine.$alg $args"
                         fname=`echo $cmd | tr " " "."`
-                        fname="step$cnt2.${fname}.-seqwidth.$seqwidth.-trial.$trial"
+                        fname="step$cnt2.${fname}.-seqwidth.$seqwidth.-trial.$trial.-pinning.${pinning}"
                         fname="$outdir/$fname.data"
-                        ############# ADD BINDING ARGUMENT TO COMMAND AFTER CREATING THE FILENAME
-                        #cmd="$cmd $bindingarg"
-                        echo "$envcmd ${malloc_conf} timeout $timeoutsec $cmdprefix $bindir/$cmd >> $fname 2>>$stderrfile"
-                        echo "$envcmd ${malloc_conf} timeout $timeoutsec $cmdprefix $bindir/$cmd >> $fname 2>>$stderrfile" > $fname
-                        eval "$envcmd ${malloc_conf} timeout $timeoutsec $cmdprefix $bindir/$cmd >> $fname 2>>$stderrfile"
+                        echo "$envcmd ${malloc_conf} time timeout $timeoutsec $cmdprefix $bindir/$cmd >> $fname 2>>$stderrfile"
+                        echo "$envcmd ${malloc_conf} time timeout $timeoutsec $cmdprefix $bindir/$cmd >> $fname 2>>$stderrfile" > $fname
+                        eval "$envcmd ${malloc_conf} time timeout $timeoutsec $cmdprefix $bindir/$cmd >> $fname 2>>$stderrfile"
                         if [ "$?" -ne "0" ]; then
-                            #problems="${problems}ERROR: nonzero status after executing cmd ``$envcmd ${malloc_conf} timeout $timeoutsec $cmdprefix $bindir/$cmd >> $fname 2>>$stderrfile\n''"
+                            #problems="${problems}ERROR: nonzero status after executing cmd ``$envcmd ${malloc_conf} time timeout $timeoutsec $cmdprefix $bindir/$cmd >> $fname 2>>$stderrfile\n''"
                             echo "ERROR: nonzero status after executing preceding command"
                             #cat $stderrfile
                             #exit

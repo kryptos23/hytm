@@ -30,6 +30,7 @@ typedef long test_type; // really want compile-time assert that this is the same
 #include "recordmgr/machineconstants.h"
 #include "binding.h"
 //#include "../hytm1/platform_impl.h" // for SYNC_RMW primitive
+#include "common/papi/papi_util_impl.h"
 
 #ifndef EXPERIMENT_FN
 #define EXPERIMENT_FN trial
@@ -238,6 +239,8 @@ void thread_timed(void *unused) {
     __sync_synchronize();
     TM_THREAD_ENTER();
     PRCU_REGISTER(tid);
+    papi_create_eventset(tid);
+
     Random *rng = &rngs[tid*PREFETCH_SIZE_WORDS];
     DS_DECLARATION * tree = (DS_DECLARATION *) __tree;
 
@@ -253,6 +256,8 @@ void thread_timed(void *unused) {
     __sync_synchronize();
 //    while (!start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<endl); } // wait to start
     int cnt = 0;
+    
+    papi_start_counters(tid);
     
     if (tid >= WORK_THREADS) {
         VERBOSE COUTATOMICTID("identifying as an rq thread"<<endl);
@@ -335,6 +340,8 @@ void thread_timed(void *unused) {
             }
         }
     }
+
+    papi_stop_counters(tid);
     
     running.fetch_add(-1);
     SYNC_RMW;
@@ -352,6 +359,8 @@ void trial() {
 #else
 #error "Failed to define a data structure"
 #endif
+    
+    papi_init_program(TOTAL_THREADS);
     
     // get random number generator seeded with time
     // we use this rng to seed per-thread rng's that use a different algorithm
@@ -379,6 +388,7 @@ void trial() {
     thread_shutdown();
     TM_SHUTDOWN();
     SYNC_RMW;
+    papi_deinit_program();
 }
 
 #ifdef BST
@@ -489,6 +499,11 @@ void printOutput() {
     COUTATOMIC("elapsed milliseconds          : "<<MILLIS_TO_RUN<<endl);
     COUTATOMIC(endl);
 
+    COUTATOMIC(endl);
+    
+    COUTATOMIC("PAPI performance counters:"<<endl);
+    papi_print_counters(totalSuccAll);
+    
     COUTATOMIC(endl);
    
 #if defined(BST)
@@ -655,7 +670,7 @@ int main(int argc, char** argv) {
         cout<<"ERROR: thread binding maps more than one thread to a single logical processor"<<endl;
         exit(-1);
     }
-        
+    
     performExperiment();
     
     return 0;

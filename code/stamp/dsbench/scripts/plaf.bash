@@ -46,7 +46,7 @@ elif [ "$machine" == "zyra" ]; then
     pin_scatter="ZYRA_SCATTER"
     pin_cluster="ZYRA_CLUSTER"
     pin_none="NONE"
-    cmdprefix=""
+    cmdprefix="numactl --interleave=all"
 elif [ "$machine" == "theoryhtm" ]; then
     xargs1="-mx32"
     maxthreadcount="8"
