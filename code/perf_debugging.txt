@@ -1,0 +1,22 @@
+hytm perf debugging
+
+seems like huge false sharing on hybrid norec... it gets 33% slower when we disable papi... seemingly random layout changes... on gsl?
+
+why is hybrid norec faster with RQs than without? (most approaches have this property...)
+    where are hybridnorec's l3 cache misses coming from?
+    
+    WITH RQ:
+    25% ebr         -- 12% announcement checking, more on checked[], more on epoch... false sharing?
+    16% counters    -- false sharing?
+    7% txload       -- mostly gsl... false sharing?
+    20% kernel   (WHERE IS THIS COMING FROM???)
+
+    WITHOUT RQ (more l3 miss -- more cycles, same instr, negligible rq throughput):
+    47% ebr         -- epoch, then checked, then announcement
+    11% counters
+    8% rng          -- false sharing?
+    5% txload       -- half gsl
+    15% kernel
+    
+    really seems like huge false sharing issues!!!
+    
