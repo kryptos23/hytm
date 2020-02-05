@@ -35,6 +35,7 @@ int getCompressedStatusExplicitAbortCode(const int compressedStatus);
 #define MAX_ABORT_STATUS 4096
 
 struct c_debugCounters {
+    volatile char padding0[PREFETCH_SIZE_BYTES];
     int NUM_PROCESSES;
 #ifdef RECORD_ABORTS
     struct c_debugCounter * htmAbort[NUMBER_OF_PATHS*MAX_ABORT_STATUS]; // one third of these are useless
@@ -45,6 +46,7 @@ struct c_debugCounters {
     struct c_debugCounter * garbage;
     struct c_debugCounter * timingTemp; // per process timestamps: 0 if not currently timing, o/w > 0
     struct c_debugCounter * timingOnFallback; // per process total DURATIONS over execution (scaled down by the probability of timing on a countersProbStartTime call)
+    volatile char padding1[PREFETCH_SIZE_BYTES];
 };
 
 void registerHTMAbort(struct c_debugCounters *cs, const int tid, const XBEGIN_ARG_T arg, const int path);

@@ -38,15 +38,20 @@ protected:
     
 #define MINIMUM_OPERATIONS_BEFORE_NEW_EPOCH 100
 #define NUMBER_OF_EPOCH_BAGS 3
+
+
     // for epoch based reclamation
+    PAD;
     volatile long epoch;
-    atomic_long *announcedEpoch;        // announcedEpoch[tid*PREFETCH_SIZE_WORDS] // todo: figure out if volatile here would help processes notice changes more quickly.
-    long *checked;                      // checked[tid*PREFETCH_SIZE_WORDS] = how far we've come in checking the announced epochs of other threads
-    blockbag<T> **epochbags;            // epochbags[NUMBER_OF_EPOCH_BAGS*tid+0..NUMBER_OF_EPOCH_BAGS*tid+(NUMBER_OF_EPOCH_BAGS-1)] are epoch bags for thread tid.
-    blockbag<T> **currentBag;           // pointer to current epoch bag for each process
-    long *index;                        // index of currentBag in epochbags for each process
+    PAD;
+    atomic_long * announcedEpoch;       // announcedEpoch[tid*PREFETCH_SIZE_WORDS]
+    long * checked;                     // checked[tid*PREFETCH_SIZE_WORDS] = how far we've come in checking the announced epochs of other threads
+    blockbag<T> ** epochbags;           // epochbags[NUMBER_OF_EPOCH_BAGS*tid+0..NUMBER_OF_EPOCH_BAGS*tid+(NUMBER_OF_EPOCH_BAGS-1)] are epoch bags for thread tid.
+    blockbag<T> ** currentBag;          // pointer to current epoch bag for each process
+    long * index;                       // index of currentBag in epochbags for each process
+    PAD;
     // note: oldest bag is number (index+1)%NUMBER_OF_EPOCH_BAGS
-    
+
 public:
     template<typename _Tp1>
     struct rebind {
@@ -162,11 +167,11 @@ public:
             : reclaimer_interface<T, Pool>(numProcesses, _pool, _debug, _recoveryMgr) {
         VERBOSE cout<<"constructor reclaimer_debra helping="<<this->shouldHelp()<<endl;// scanThreshold="<<scanThreshold<<endl;
         epoch = 0;
-        epochbags = new blockbag<T>*[NUMBER_OF_EPOCH_BAGS*numProcesses];
-        currentBag = new blockbag<T>*[numProcesses*PREFETCH_SIZE_WORDS];
-        index = new long[numProcesses*PREFETCH_SIZE_WORDS];
-        announcedEpoch = new atomic_long[numProcesses*PREFETCH_SIZE_WORDS];
-        checked = new long[numProcesses*PREFETCH_SIZE_WORDS];
+        epochbags = new blockbag<T>*[NUMBER_OF_EPOCH_BAGS*numProcesses + PREFETCH_SIZE_WORDS*2] + PREFETCH_SIZE_WORDS; // shift to pad
+        currentBag = new blockbag<T>*[(2+numProcesses)*PREFETCH_SIZE_WORDS] + PREFETCH_SIZE_WORDS;      /* shift to pad */
+        index = new long[(2+numProcesses)*PREFETCH_SIZE_WORDS] + PREFETCH_SIZE_WORDS;                   /* shift to pad */
+        announcedEpoch = new atomic_long[(2+numProcesses)*PREFETCH_SIZE_WORDS] + PREFETCH_SIZE_WORDS;   /* shift to pad */
+        checked = new long[(2+numProcesses)*PREFETCH_SIZE_WORDS] + PREFETCH_SIZE_WORDS;                 /* shift to pad */
         for (int tid=0;tid<numProcesses;++tid) {
             for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
                 epochbags[NUMBER_OF_EPOCH_BAGS*tid+i] = new blockbag<T>(this->pool->blockpools[tid]);
@@ -186,11 +191,11 @@ public:
                 delete epochbags[NUMBER_OF_EPOCH_BAGS*tid+i];
             }
         }
-        delete[] epochbags;
-        delete[] index;
-        delete[] currentBag;
-        delete[] announcedEpoch;
-        delete[] checked;
+        delete[] (epochbags - PREFETCH_SIZE_WORDS);         /* unshift to remove padding */
+        delete[] (index - PREFETCH_SIZE_WORDS);             /* unshift to remove padding */
+        delete[] (currentBag - PREFETCH_SIZE_WORDS);        /* unshift to remove padding */
+        delete[] (announcedEpoch - PREFETCH_SIZE_WORDS);    /* unshift to remove padding */
+        delete[] (checked - PREFETCH_SIZE_WORDS);           /* unshift to remove padding */
     }
 
 };

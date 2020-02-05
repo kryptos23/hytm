@@ -11,8 +11,10 @@
 #include "../../dsbench/recordmgr/machineconstants.h"
 
 struct c_debugCounter {
+    PAD;
     volatile long long * data; // data[tid*PREFETCH_SIZE_WORDS] = count for thread tid (padded to avoid false sharing)
     int NUM_PROCESSES;
+    PAD;
 };
 
 void counterAdd(struct c_debugCounter *c, const int tid, const long long val);

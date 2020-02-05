@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 #include "debugcounter.h"
-    
+
 void counterAdd(struct c_debugCounter *c, const int tid, const long long val) {
     c->data[tid*PREFETCH_SIZE_WORDS] += val;
 }
@@ -42,11 +42,11 @@ void counterClear(struct c_debugCounter *c) {
 }
 void counterInit(struct c_debugCounter *c, const int numProcesses) {
     c->NUM_PROCESSES = numProcesses;
-    c->data = (volatile long long *) malloc(numProcesses*PREFETCH_SIZE_BYTES);
+    c->data = (volatile long long *) (((char *) malloc((2+numProcesses)*PREFETCH_SIZE_BYTES)) + PREFETCH_SIZE_BYTES); // shift to add padding of PREFETCH_SIZE_BYTES at beginning (and end)
     counterClear(c);
 }
 void counterDestroy(struct c_debugCounter *c) {
-    free((void*) c->data);
+    free((void*) (((char *) c->data) - PREFETCH_SIZE_BYTES)); // shift back so free() recognizes the address as something it allocated
 }
 
 #ifdef	__cplusplus

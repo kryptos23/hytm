@@ -20,13 +20,16 @@
 #include "hytm3.h"
 #include "../hytm1/platform_impl.h"
 #include "stm.h"
-#include "tmalloc.h"
+#include "tmalloc.h" // TODO: padding in tmalloc.h/c?
 #include "util.h"
 #include "../murmurhash/MurmurHash3_impl.h"
 #include <iostream>
 #include <execinfo.h>
 #include <stdint.h>
 using namespace std;
+
+#define MALLOC_PADDED(sz) ((void *) (((char *) malloc((sz) + 2*PREFETCH_SIZE_BYTES)) + PREFETCH_SIZE_BYTES))
+#define FREE_PADDED(x) free((void *) (((char *) (x)) - PREFETCH_SIZE_BYTES))
 
 #ifndef PREFETCH_SIZE_BYTES
 #define PREFETCH_SIZE_BYTES 192
@@ -38,6 +41,7 @@ using namespace std;
 #define HASHTABLE_CLEAR_FROM_LIST
 
 // just for debugging
+volatile char padding2[PREFETCH_SIZE_BYTES];
 volatile int globallock = 0;
 
 volatile char padding0[PREFETCH_SIZE_BYTES];
@@ -209,10 +213,13 @@ public:
 };
 
 #include <map>
+volatile char padding5[PREFETCH_SIZE_BYTES];
 map<const void*, unsigned> addrToIx;
 map<unsigned, const void*> ixToAddr;
 volatile unsigned rename_ix = 0;
+volatile char padding6[PREFETCH_SIZE_BYTES];
 #include <sstream>
+
 string stringifyIndex(unsigned ix) {
 #if 1
     const unsigned NCHARS = 36;
@@ -276,7 +283,9 @@ std::ostream& operator<<(std::ostream& out, const vLock& obj) {
  * Alternately, we could mmap() the region with anonymous DZF pages.
  */
 #define _TABSZ  (1<<20)
+volatile char padding7[PREFETCH_SIZE_BYTES];
 static vLock LockTab[_TABSZ];
+volatile char padding8[PREFETCH_SIZE_BYTES];
 
 /*
  * With PS the versioned lock words (the LockTab array) are table stable and
@@ -324,6 +333,7 @@ class List;
 
 class Thread {
 public:
+    volatile char padding0[PREFETCH_SIZE_BYTES];
     long UniqID;
     volatile long Retries;
 //    int* ROFlag; // not used by stamp
@@ -344,6 +354,7 @@ public:
     List* rdSet;
     List* wrSet;
     sigjmp_buf* envPtr;
+    volatile char padding1[PREFETCH_SIZE_BYTES];
     
     Thread(long id);
     void destroy();
@@ -388,7 +399,7 @@ public:
     {}
     
     void validateInvariants() {}
-};
+} __attribute__((aligned(64)));
 
 std::ostream& operator<<(std::ostream& out, const AVPair& obj) {
     return out<<"[addr="<<renamePointer((void*) obj.addr)
@@ -412,9 +423,11 @@ enum hytm_config {
 #ifdef USE_FULL_HASHTABLE
     class HashTable {
     public:
+        volatile char padding0[PREFETCH_SIZE_BYTES];
         AVPair** data;
         long sz;        // number of elements in the hash table
         long cap;       // capacity of the hash table
+        volatile char padding1[PREFETCH_SIZE_BYTES];
     private:
         void validateInvariants() {
             // hash table capacity is a power of 2
@@ -449,26 +462,27 @@ enum hytm_config {
             DEBUG3 aout("hash table "<<renamePointer(this)<<" init");
             sz = 0;
             cap = 2 * _sz;
-            data = (AVPair**) malloc(sizeof(AVPair*) * cap);
+            data = (AVPair**) MALLOC_PADDED(sizeof(AVPair*) * cap);
             memset(data, 0, sizeof(AVPair*) * cap);
             VALIDATE_INV(this);
         }
 
         __INLINE__ void destroy() {
             DEBUG3 aout("hash table "<<renamePointer(this)<<" destroy");
-            free(data);
+            FREE_PADDED(data);
         }
 
         __INLINE__ int32_t hash(volatile intptr_t* addr) {
-            intptr_t p = (intptr_t) addr;
             // assert: htabcap is a power of 2
     #ifdef __LP64__
+            int64_t p = (int64_t) addr;
             p ^= p >> 33;
             p *= BIG_CONSTANT(0xff51afd7ed558ccd);
             p ^= p >> 33;
             p *= BIG_CONSTANT(0xc4ceb9fe1a85ec53);
             p ^= p >> 33;
     #else
+            int32_t p = (int32_t) addr;
             p ^= p >> 16;
             p *= 0x85ebca6b;
             p ^= p >> 13;
@@ -476,7 +490,7 @@ enum hytm_config {
             p ^= p >> 16;
     #endif
             assert(0 <= (p & (cap-1)) && (p & (cap-1)) < INT32_MAX);
-            return p & (cap-1);
+            return (int32_t) (p & (cap-1));
         }
 
         __INLINE__ int32_t findIx(volatile intptr_t* addr) {
@@ -523,7 +537,7 @@ enum hytm_config {
         __INLINE__ void expandAndClear() {
             AVPair** olddata = data;
             init(cap); // note: cap will be doubled by init
-            free(olddata);
+            FREE_PADDED(olddata);
         }
 
     public:
@@ -569,7 +583,9 @@ enum hytm_config {
     #define BLOOM_FILTER_WORDS (BLOOM_FILTER_BITS/sizeof(bloom_filter_data_t))
     class HashTable {
     public:
+        volatile char padding0[PREFETCH_SIZE_BYTES];
         bloom_filter_data_t filter[BLOOM_FILTER_WORDS]; // bloom filter data
+        volatile char padding1[PREFETCH_SIZE_BYTES];
     private:
         void validateInvariants() {
 
@@ -588,14 +604,15 @@ enum hytm_config {
         }
 
         __INLINE__ unsigned hash(volatile intptr_t* key) {
-            intptr_t p = (intptr_t) key;
     #ifdef __LP64__
+            int64_t p = (int64_t) key;
             p ^= p >> 33;
             p *= BIG_CONSTANT(0xff51afd7ed558ccd);
             p ^= p >> 33;
             p *= BIG_CONSTANT(0xc4ceb9fe1a85ec53);
             p ^= p >> 33;
     #else
+            int32_t p = (int32_t) key;
             p ^= p >> 16;
             p *= 0x85ebca6b;
             p ^= p >> 13;
@@ -629,6 +646,7 @@ enum hytm_config {
 class List {
 public:
     // linked list (for iteration)
+    volatile char padding0[PREFETCH_SIZE_BYTES];
     AVPair* head;
     AVPair* put;    /* Insert position - cursor */
     AVPair* tail;   /* CCM: Pointer to last valid entry */
@@ -638,6 +656,7 @@ public:
     long currsz;
     
     HashTable tab;
+    volatile char padding1[PREFETCH_SIZE_BYTES];
     
 private:
     __INLINE__ AVPair* extendList() {
@@ -689,7 +708,7 @@ public:
 
         // Allocate the primary list as a large chunk so we can guarantee ascending &
         // adjacent addresses through the list. This improves D$ and DTLB behavior.
-        head = (AVPair*) malloc((sizeof (AVPair) * _initcap) + CACHE_LINE_SIZE);
+        head = (AVPair*) MALLOC_PADDED(sizeof(AVPair) * _initcap);
         assert(head);
         memset(head, 0, sizeof(AVPair) * _initcap);
         AVPair* curr = head;
@@ -725,7 +744,7 @@ public:
             }
         }
         /* Free contiguous beginning */
-        free(head);
+        FREE_PADDED(head);
 #if defined(USE_FULL_HASHTABLE) || defined(USE_BLOOM_FILTER)
         tab.destroy();
 #endif
@@ -983,11 +1002,13 @@ __INLINE__ intptr_t AtomicAdd(volatile intptr_t* addr, intptr_t dx) {
  * 
  */
 
+volatile char padding3[PREFETCH_SIZE_BYTES];
 volatile long StartTally = 0;
 volatile long AbortTallyHW = 0;
 volatile long AbortTallySW = 0;
 volatile long CommitTallyHW = 0;
 volatile long CommitTallySW = 0;
+volatile char padding4[PREFETCH_SIZE_BYTES];
 
 Thread::Thread(long id) {
     DEBUG1 aout("new thread with id "<<id);

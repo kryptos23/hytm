@@ -45,12 +45,16 @@ const int SOSCIP_CLUSTER = 100;
 const int SOSCIP_CLUSTER48 = 101;
 const int SOSCIP_SCATTER = 102;
 
+PAD;
+
 // cpu sets for binding threads to cores
 static cpu_set_t *cpusets[PHYSICAL_PROCESSORS];
 
 static int customBinding[PHYSICAL_PROCESSORS];
 static int numCustomBindings = 0;
 //static vector<int> customBinding;
+
+PAD;
 
 static unsigned digits(unsigned x) {
     int d = 1;

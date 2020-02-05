@@ -35,19 +35,25 @@ using namespace std;
 template <class K, class V, class Compare, class RecManager>
 class bst {
 private:
+    PAD;
     RecManager * const shmem;
+    PAD;
     volatile int lock; // used for TLE
+    PAD;
 
     Node<K,V> *root;        // actually const
     Compare cmp;
+    PAD;
     
     // similarly, allocatedNodes[tid*PREFETCH_SIZE_WORDS+i] = an allocated node for i = 0..MAX_NODES-2
     Node<K,V> **allocatedNodes;
+    PAD;
     #define GET_ALLOCATED_NODE_PTR(tid, i) allocatedNodes[tid*(PREFETCH_SIZE_WORDS+MAX_NODES)+i]
     #define REPLACE_ALLOCATED_NODE(tid, i) { GET_ALLOCATED_NODE_PTR(tid, i) = allocateNode(tid); /*GET_ALLOCATED_NODE_PTR(tid, i)->left.store((uintptr_t) NULL, memory_order_relaxed);*/ }
     
     // debug info
-    debugCounters<PHYSICAL_PROCESSORS> counters __attribute__((aligned(PREFETCH_SIZE_BYTES)));
+    debugCounters<PHYSICAL_PROCESSORS> counters __attribute__((aligned(BYTES_IN_CACHE_LINE)));
+    PAD;
     
     #define IS_SENTINEL(node, parent) ((node)->key == NO_KEY || (parent)->key == NO_KEY)
     inline Node<K,V>* allocateNode(const int tid);
@@ -61,6 +67,8 @@ public:
     const K& NO_KEY;
     const V& NO_VALUE;
     const V& RETRY;
+    PAD;
+
     bst(const K& _NO_KEY,
                 const V& _NO_VALUE,
                 const V& _RETRY,
@@ -75,7 +83,7 @@ public:
         Node<K,V> *rootleft = initializeNode(tid, allocateNode(tid), NO_KEY, NO_VALUE, NULL, NULL);
         root = initializeNode(tid, allocateNode(tid), NO_KEY, NO_VALUE, rootleft, NULL);
         cmp = Compare();
-        allocatedNodes = new Node<K,V>*[numProcesses*(PREFETCH_SIZE_WORDS+MAX_NODES)];
+        allocatedNodes = new Node<K,V> * [numProcesses*(PREFETCH_SIZE_WORDS+MAX_NODES) + 2*PREFETCH_SIZE_WORDS /* for padding via shifting */] + PREFETCH_SIZE_WORDS /* shift to pad */;
         for (int tid=0;tid<numProcesses;++tid) {
             GET_ALLOCATED_NODE_PTR(tid, 0) = NULL; // set up initial conditions for initThread(tid)
         }
@@ -117,6 +125,7 @@ public:
             }
         }
         delete shmem;
+        delete[] (allocatedNodes - PREFETCH_SIZE_WORDS); // unshift before free (since array is shifted upon alloc)
     }
 
     Node<K,V> *getRoot(void) { return root; }

@@ -37,7 +37,10 @@ typedef long test_type; // really want compile-time assert that this is the same
 #endif
 
 #define DEFAULT_SUSPECTED_SIGNAL SIGQUIT
-static Random rngs[MAX_TID_POW2*PREFETCH_SIZE_WORDS]; // create per-thread random number generators (padded to avoid false sharing)
+PAD;
+static Random __rngs[2+MAX_TID_POW2]; // create per-thread random number generators (padded to avoid false sharing)
+static Random * rngs = &__rngs[1]; // shifted for padding
+PAD;
 
 #if defined(BST)
 #include "bst/bst_impl.h"
@@ -49,12 +52,18 @@ static Random rngs[MAX_TID_POW2*PREFETCH_SIZE_WORDS]; // create per-thread rando
 using namespace std;
 
 // variables used in the concurrent test
+PAD;
 chrono::time_point<chrono::high_resolution_clock> startTime;
 chrono::time_point<chrono::high_resolution_clock> endTime;
+PAD;
 long elapsedMillis;
+PAD;
 bool start = false;
+PAD;
 bool done = false;
+PAD;
 atomic_int running; // number of threads that are running
+PAD;
 // note: tree->debugGetCounters()[tid].keysum contains the key sum hash for thread tid (including for prefilling)
 
 const int OPS_BETWEEN_TIME_CHECKS = 500;
@@ -67,10 +76,12 @@ const long long PREFILL_INTERVAL_MILLIS = 200;
 const test_type NO_KEY = -1;
 const test_type NO_VALUE = -1;
 const int RETRY = -2;
+PAD;
 void *__tree;
-
+PAD;
 const test_type NEG_INFTY = -1;
 const test_type POS_INFTY = 2000000000;
+PAD;
 
 #if defined(BST)
 #define DS_DECLARATION bst<test_type, test_type, less<test_type>, MemMgmt>
@@ -114,7 +125,7 @@ void thread_prefill(void *unused) {
     binding_bindThread(tid, PHYSICAL_PROCESSORS);
     TM_THREAD_ENTER();
     PRCU_REGISTER(tid);
-    Random *rng = &rngs[tid*PREFETCH_SIZE_WORDS];
+    Random * rng = &rngs[tid];
     DS_DECLARATION * tree = (DS_DECLARATION *) __tree;
 
     double insProbability = (INS > 0 ? 100*INS/(INS+DEL) : 50.);
@@ -241,7 +252,7 @@ void thread_timed(void *unused) {
     PRCU_REGISTER(tid);
     papi_create_eventset(tid);
 
-    Random *rng = &rngs[tid*PREFETCH_SIZE_WORDS];
+    Random * rng = &rngs[tid];
     DS_DECLARATION * tree = (DS_DECLARATION *) __tree;
 
 #if defined(BST)
@@ -365,8 +376,8 @@ void trial() {
     // get random number generator seeded with time
     // we use this rng to seed per-thread rng's that use a different algorithm
     srand(time(NULL));
-    for (int i=0;i<PHYSICAL_PROCESSORS /*TOTAL_THREADS*/;++i) {
-        rngs[i*PREFETCH_SIZE_WORDS].setSeed(rand());
+    for (int i=0;i<MAX_TID_POW2;++i) {
+        rngs[i].setSeed(rand());
     }
     
     TM_STARTUP(TOTAL_THREADS);

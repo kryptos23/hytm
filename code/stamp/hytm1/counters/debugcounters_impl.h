@@ -17,9 +17,11 @@ extern "C" {
     
 #ifdef RECORD_ABORT_ADDRESSES
 #define MAX_ABORT_ADDR (1<<24)
+volatile char padding0[PREFETCH_SIZE_BYTES];
 int numAbortAddr = 0; // for thread 0
 int numAbortAddrExact = 0; // for thread 0
 long abortAddr[MAX_ABORT_ADDR];
+volatile char padding1[PREFETCH_SIZE_BYTES];
 #endif
 
 //int getCompressedStatus(const int status) {

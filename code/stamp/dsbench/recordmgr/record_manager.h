@@ -123,12 +123,14 @@ public:
 template <class Reclaim, class Alloc, class Pool, typename RecordTypesFirst, typename... RecordTypesRest>
 class record_manager {
 protected:
+    PAD;
     typedef record_manager<Reclaim,Alloc,Pool,RecordTypesFirst,RecordTypesRest...> SelfType;
     RecordManagerSet<Reclaim,Alloc,Pool,RecordTypesFirst,RecordTypesRest...> * rmset;
-    
+    PAD;
 public:
     const int NUM_PROCESSES;
     RecoveryMgr<SelfType> * const recoveryMgr;
+    PAD;
     
     record_manager(const int numProcesses, const int _neutralizeSignal)
             : NUM_PROCESSES(numProcesses)

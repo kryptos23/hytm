@@ -107,11 +107,13 @@ public:
     threadCounters() {
         clear();
     }
-} __attribute__((aligned(PREFETCH_SIZE_BYTES)));
+} __attribute__((aligned(BYTES_IN_CACHE_LINE)));
 
 template <int NUM_PROCESSES>
 class debugCounters {
+    char padding0[PREFETCH_SIZE_BYTES];
     threadCounters counters[NUM_PROCESSES];
+    char padding1[PREFETCH_SIZE_BYTES];
 public:
 //    threadCounters& operator[](int tid) {
 //        return counters[tid];

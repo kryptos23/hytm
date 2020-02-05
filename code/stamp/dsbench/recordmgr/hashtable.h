@@ -23,8 +23,12 @@ namespace hashset_namespace {
     template<typename K>
     class hashset {
         private:
+            PAD;
             bool cleared;
+            PAD;
             K* keys[TABLE_SIZE];
+            PAD;
+            
             inline int hash(K * const key) {
                 // MurmurHash3's integer finalizer
                 long long k = (long long) key;
@@ -151,9 +155,14 @@ namespace hashset_namespace {
     template<typename K>
     class hashset_new {
     private:
+        PAD;
         int tableSize;
+        PAD;
         K** keys;
+        PAD;
         int __size;
+        PAD;
+
         inline uint64_t long hash(K * const key) {
             // MurmurHash3's integer finalizer
             uint64_t k = (uint64_t) key;

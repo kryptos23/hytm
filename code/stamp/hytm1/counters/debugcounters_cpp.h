@@ -33,7 +33,9 @@ using namespace std;
 /**
  * static globals
  */
+volatile char ___padding247[PREFETCH_SIZE_BYTES];
 static c_debugCounters * __tm_counters;
+volatile char ___padding371[PREFETCH_SIZE_BYTES];
 
 string cpp_getAutomaticAbortNames(const int compressedStatus) {
     stringstream ss;
