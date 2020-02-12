@@ -20,8 +20,10 @@ using namespace std;
 template <typename T>
 class AtomicArrayList {
 private:
+    PAD;
     atomic_int __size;
     atomic_uintptr_t *data;
+    PAD;
 public:
     const int capacity;
     AtomicArrayList(const int _capacity) : capacity(_capacity) {
@@ -82,8 +84,10 @@ public:
 template <typename T>
 class ArrayList {
 private:
+    PAD;
     int __size;
     T **data;
+    PAD;
 public:
     const int capacity;
     ArrayList(const int _capacity) : capacity(_capacity) {

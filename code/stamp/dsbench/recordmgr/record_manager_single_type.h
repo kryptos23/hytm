@@ -40,6 +40,7 @@ using namespace std;
 template <typename Record, class Reclaim, class Alloc, class Pool>
 class record_manager_single_type {
 protected:
+    PAD;
     typedef Record* record_pointer;
 
     typedef typename Alloc::template    rebind<Record>::other              classAlloc;
@@ -52,8 +53,11 @@ public:
     classReclaim    *reclaim;
     
     const int NUM_PROCESSES;
+    PAD;
     debugInfo debugInfoRecord;
+    PAD;
     RecoveryMgr<void *> * const recoveryMgr;
+    PAD;
 
     record_manager_single_type(const int numProcesses, RecoveryMgr<void *> * const _recoveryMgr)
             : NUM_PROCESSES(numProcesses), debugInfoRecord(debugInfo(numProcesses)), recoveryMgr(_recoveryMgr) {

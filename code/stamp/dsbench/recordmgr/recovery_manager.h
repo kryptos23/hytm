@@ -14,6 +14,8 @@
 #include "globals.h"
 #include "debugcounter.h"
 
+PAD;
+
 // for crash recovery
 static pthread_key_t pthreadkey;
 static struct sigaction ___act;
@@ -26,6 +28,8 @@ static sigjmp_buf *setjmpbuffers;
 static debugCounter countInterrupted(MAX_TID_POW2);
 static debugCounter countLongjmp(MAX_TID_POW2);
 #define MAX_THREAD_ADDR 10000
+
+PAD;
 
 #ifdef CRASH_RECOVERY_USING_SETJMP
 #define CHECKPOINT_AND_RUN_UPDATE(tid, finishedbool) \
@@ -76,9 +80,11 @@ void crashhandler(int signum, siginfo_t *info, void *uctx) {
 template <class MasterRecordMgr>
 class RecoveryMgr {
 public:
+    PAD;
     const int NUM_PROCESSES;
     const int neutralizeSignal;
-    
+    PAD;
+
     inline int getTidInefficient(const pthread_t me) {
         int tid = -1;
         for (int i=0;i<NUM_PROCESSES;++i) {

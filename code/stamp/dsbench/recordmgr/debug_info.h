@@ -24,8 +24,11 @@ struct _memrecl_counters {
 
 class debugInfo {
 private:
+    PAD;
     const int NUM_PROCESSES;
+    PAD;
     _memrecl_counters * c;
+    PAD;
 public:
     void clear() {
         for (int tid=0;tid<NUM_PROCESSES;++tid) {

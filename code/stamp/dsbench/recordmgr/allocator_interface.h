@@ -16,9 +16,12 @@ using namespace std;
 template <typename T = void>
 class allocator_interface {
 public:
+    PAD;
+
     debugInfo * const __debug;
-    
     const int NUM_PROCESSES;
+
+    PAD;
     
     template<typename _Tp1>
     struct rebind {

@@ -9,6 +9,7 @@
 #include <iostream>
 #include <string>
 
+volatile char padding3717[192];
 int all_cpu_counters[] = {
 #ifdef USE_PAPI
 //    PAPI_L1_DCM,
@@ -33,11 +34,14 @@ std::string all_cpu_counters_strings[] = {
 };
 #ifdef USE_PAPI
 const int nall_cpu_counters = sizeof(all_cpu_counters) / sizeof(all_cpu_counters[0]);
+volatile char padding3718[192];
 #endif
 
 #ifdef USE_PAPI
 int event_sets[MAX_TID_POW2];
+volatile char padding3719[192];
 long long counter_values[nall_cpu_counters];
+volatile char padding3720[192];
 #endif
 
 char *cpu_counter(int c) {

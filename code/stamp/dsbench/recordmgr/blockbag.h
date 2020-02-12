@@ -25,11 +25,11 @@ class block;
 
 #include "lockfreeblockbag.h"
 
-// BLOCK_SIZE must be a power of two, or else the bitwise math is invalid.
-#define BLOCK_SIZE (1<<8)
+/* todo: use a 4kb page minus 3 cache lines ? */
+#define BLOCK_SIZE (247)
     
     template <typename T>
-    class block { // stack implemented as an array
+    class alignas(64) block { // stack implemented as an array
         private:
             T * data[BLOCK_SIZE];
             int size;
@@ -122,7 +122,7 @@ class block;
             void clearWithoutFreeingElements() {
                 size = 0;
             }
-    };
+    } __attribute__((aligned(64)));
     
     template <typename T>
     class blockbag_iterator {
@@ -191,11 +191,15 @@ class block;
     template <typename T>
     class blockbag {
     private:
+        PAD;
         long debugFreed;
         int sizeInBlocks;
         
         block<T> *head;
         block<T> *tail;
+        
+        blockpool<T> * const pool;
+        PAD;
         
         void validate() {
             // invariant: head and tail are never NULL
@@ -213,8 +217,6 @@ class block;
             // invariant: sizeInBlocks is correct
             assert(sizeInBlocks == computeSizeInBlocks());
         }
-        
-        blockpool<T> * const pool;
         
         void debugPrintBag() {
             cout<<"("<<computeSize()<<","<<computeSizeInBlocks()<<") =";

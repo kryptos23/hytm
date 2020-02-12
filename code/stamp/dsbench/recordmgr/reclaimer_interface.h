@@ -18,11 +18,13 @@ using namespace std;
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_interface {
 public:
+    PAD;
     RecoveryMgr<void *> * recoveryMgr;
     debugInfo * const __debug;
     
     const int NUM_PROCESSES;
     Pool *pool;
+    PAD;
 
     template<typename _Tp1>
     struct rebind {

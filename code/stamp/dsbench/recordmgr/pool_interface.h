@@ -18,11 +18,13 @@ using namespace std;
 template <typename T = void, class Alloc = allocator_interface<T> >
 class pool_interface {
 public:
+    PAD;
     debugInfo * const __debug;
     
     const int NUM_PROCESSES;
     blockpool<T> **blockpools; // allocated (or not) and freed by descendants
     Alloc *alloc;
+    PAD;
 
     template<typename _Tp1>
     struct rebind {

@@ -34,8 +34,10 @@ typedef CallbackReturn (*CallbackType)(CallbackArg);
 
 // set __trace to true if you want many paths through the code to be traced with cout<<"..." statements
 #ifndef TRACE_DEFINED
+volatile char padding1828[192];
 std::atomic_bool ___trace(0);
 std::atomic_bool ___validateops(0);
+volatile char padding9848[192];
 #define TRACE_DEFINED
 #endif
 

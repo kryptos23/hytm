@@ -20,12 +20,15 @@
 #ifndef STM_H
 #define STM_H 1
 
-#  include <setjmp.h>
+#include <setjmp.h>
 #include <stdio.h>
+
+#include "../dsbench/recordmgr/machineconstants.h"
 
 extern volatile long CommitTallySW;
 
 typedef struct Thread_void {
+    PAD;
     long UniqID;
     volatile long Retries;
 //    int* ROFlag; // not used by stamp
@@ -44,6 +47,7 @@ typedef struct Thread_void {
     void* wrSet;
 //    void* LocalUndo;
     sigjmp_buf* envPtr;
+    PAD;
 } Thread_void;
 
 #include "hytm3.h"

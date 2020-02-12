@@ -78,7 +78,9 @@ public:
 
 template <int NUM_PROCESSES>
 class tm_debugCounters {
+    // no padding needed -- implied by below
     tm_threadCounters counters[NUM_PROCESSES];
+    // no padding needed -- implied by above
 public:
     tm_threadCounters * operator[](int tid) {
         return counters+tid;

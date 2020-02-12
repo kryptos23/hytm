@@ -19,11 +19,14 @@ using namespace std;
 
 // set __trace to true if you want many paths through the code to be traced with cout<<"..." statements
 #ifndef TRACE_DEFINED
+PAD;
 std::atomic_bool ___trace(0);
 std::atomic_bool ___validateops(0);
+PAD;
 #define TRACE_DEFINED
 #endif
 
+PAD;
 double INS;
 double DEL;
 double RQ;
@@ -61,6 +64,7 @@ bool ALLOWABLE_PATH_CONCURRENCY[14][14] = {
     {0,0,0,0,0,0,1,0,0,0,1,1,1,0}, // 12
     {0,0,0,0,0,0,0,0,0,0,0,0,0,1}  // 13
 };
+PAD;
 
 #endif	/* GLOBALS_H */
 

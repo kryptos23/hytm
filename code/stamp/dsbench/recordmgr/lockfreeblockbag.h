@@ -26,11 +26,13 @@ using namespace std;
 template <typename T>
 class lockfreeblockbag {
 private:
+    PAD;
     struct tagged_ptr {
         block<T> *ptr;
         long tag;
     };
     std::atomic<tagged_ptr> head;
+    PAD;
 public:
     lockfreeblockbag() {
         VERBOSE DS_DEBUG cout<<"constructor lockfreeblockbag lockfree="<<head.is_lock_free()<<endl;
