@@ -54,5 +54,6 @@
         "types.h": "c",
         "thread.h": "c"
     },
-    "code-runner.customCommand": "cd dsbench/scripts && ./compile_x64.sh"
+    "code-runner.customCommand": "cd dsbench/scripts && ./compile_x64.sh",
+    "code-runner.ignoreSelection": true
 }
