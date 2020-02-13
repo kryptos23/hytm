@@ -74,8 +74,8 @@ typedef struct Thread_void {
 #define STM_INIT_THREAD(t, id)          TxInitThread(t, id)
 #define STM_FREE_THREAD(t)              TxFreeThread(t)
 
-__thread intptr_t (*sharedReadFunPtr)(void* Self, volatile intptr_t* addr);
-__thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t val);
+thread_local intptr_t (*sharedReadFunPtr)(void* Self, volatile intptr_t* addr);
+thread_local void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t val);
 
 
 #  define STM_BEGIN(isReadOnly)         do { \

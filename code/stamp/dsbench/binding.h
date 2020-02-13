@@ -41,6 +41,8 @@ const int TAPUZ40_SCATTER = 5;
 const int TAPUZ40_CLUSTER = 6;
 const int ZYRA_SCATTER = 7;
 const int ZYRA_CLUSTER = 8;
+const int JAX_SCATTER = 9;
+const int JAX_CLUSTER = 10;
 const int SOSCIP_CLUSTER = 100;
 const int SOSCIP_CLUSTER48 = 101;
 const int SOSCIP_SCATTER = 102;
@@ -267,6 +269,29 @@ void binding_configurePolicy(const int nprocessors) {
                     //  lscpu | grep "NUMA node[0-9]" ; for i in {0..143} ; do if (( (i%18) == 0 )) ; then echo ; fi ; echo -n $(( ((i%36)>=18)*(144/2) + i%18 + (i/36)*18 )) "" ; done ; echo
                     //
                     j = ((i%36)>=18)*(144 / 2/*HTs*/) + i%18 + (i/36)*18;
+                    break;
+                case JAX_SCATTER:
+                    // lscpu:
+                    // NUMA node0 CPU(s):   0-23,96-119
+                    // NUMA node1 CPU(s):   24-47,120-143
+                    // NUMA node2 CPU(s):   48-71,144-167
+                    // NUMA node3 CPU(s):   72-95,168-191
+                    // command to visualize:
+                    //  lscpu | grep "NUMA node[0-9]" ; for i in {0..191} ; do if (( (i%4) == 0 )) ; then echo ; fi ; echo -n $(( (i%4)*24 + i/4 + (i/(24*4))*(24*(4-1)) )) "" ; done ; echo
+                    //
+                    j = (i%4)*24 + i/4 + (i/(24*4))*(24*(4-1));
+                    break;
+                case JAX_CLUSTER:
+                    // lscpu:
+                    // NUMA node0 CPU(s):   0-23,96-119
+                    // NUMA node1 CPU(s):   24-47,120-143
+                    // NUMA node2 CPU(s):   48-71,144-167
+                    // NUMA node3 CPU(s):   72-95,168-191
+                    //
+                    // command to visualize:
+                    //  lscpu | grep "NUMA node[0-9]" ; for i in {0..191} ; do if (( (i%24) == 0 )) ; then echo ; fi ; echo -n $(( ((i%48)>=24)*(192/2) + i%24 + (i/48)*24 )) "" ; done ; echo
+                    //
+                    j = ((i%48)>=24)*(192 / 2/*HTs*/) + i%24 + (i/48)*24;
                     break;
                 case SOSCIP_CLUSTER:
     #define SOSCIP_CLUSTER_coresPerSocket 12
