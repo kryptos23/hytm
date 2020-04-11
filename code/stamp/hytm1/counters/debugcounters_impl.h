@@ -137,6 +137,7 @@ void countersClear(struct c_debugCounters *cs) {
 #endif
         counterClear(cs->htmCommit[j]);
     }
+//    counterClear(cs->jumpToSlow);
     counterClear(cs->garbage);
     counterClear(cs->timingTemp);
     counterClear(cs->timingOnFallback);
@@ -156,6 +157,8 @@ void countersInit(struct c_debugCounters *cs, const int numProcesses) {
         cs->htmCommit[j] = (struct c_debugCounter *) malloc(sizeof(struct c_debugCounter));
         counterInit(cs->htmCommit[j], cs->NUM_PROCESSES);
     }
+//    cs->jumpToSlow = (struct c_debugCounter *) malloc(sizeof(struct c_debugCounter));
+//    counterInit(cs->jumpToSlow, cs->NUM_PROCESSES);
     cs->garbage = (struct c_debugCounter *) malloc(sizeof(struct c_debugCounter));
     counterInit(cs->garbage, cs->NUM_PROCESSES);
     cs->timingTemp = (struct c_debugCounter *) malloc(sizeof(struct c_debugCounter));
@@ -179,6 +182,8 @@ void countersDestroy(struct c_debugCounters *cs) {
     }
     counterDestroy(cs->garbage);
     free(cs->garbage);
+//    counterDestroy(cs->jumpToSlow);
+//    free(cs->jumpToSlow);
     counterDestroy(cs->timingTemp);
     free(cs->timingTemp);
     counterDestroy(cs->timingOnFallback);

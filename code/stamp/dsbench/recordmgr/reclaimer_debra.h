@@ -96,6 +96,9 @@ public:
     // (and reclaimed any objects retired two epochs ago).
     // otherwise, the call returns false.
     inline bool leaveQuiescentState(const int tid, void * const * const reclaimers, const int numReclaimers) {
+        static thread_local int numCalls = 0;
+        ++numCalls;
+
         SOFTWARE_BARRIER; // prevent any bookkeeping from being moved after this point by the compiler.
         bool result = false;
         long readEpoch = epoch;
@@ -115,24 +118,27 @@ public:
         //       will set the state to non-quiescent and non-neutralized
 
         // incrementally scan the announced epochs of all threads
-        int otherTid = checked[tid*PREFETCH_SIZE_WORDS];
-        if (otherTid >= this->NUM_PROCESSES) {
-            const int c = ++checked[tid*PREFETCH_SIZE_WORDS];
-            if (c > MINIMUM_OPERATIONS_BEFORE_NEW_EPOCH) {
-                // note: __sync functions imply membars in gcc (for power)
-                __sync_bool_compare_and_swap(&epoch, readEpoch, readEpoch+EPOCH_INCREMENT);
-                // note: __sync functions imply membars in gcc (for power)
-            }
-        } else {
-            assert(otherTid >= 0);
-            long otherAnnounce = announcedEpoch[otherTid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
-            if (BITS_EPOCH(otherAnnounce) == readEpoch
-                    || QUIESCENT(otherAnnounce)) {
+        // (to avoid high NUMA-caused L3 miss costs only participate in this part of the alg once every X calls to this function)
+        if (0 == (++numCalls % 10)) {
+            int otherTid = checked[tid*PREFETCH_SIZE_WORDS];
+            if (otherTid >= this->NUM_PROCESSES) {
                 const int c = ++checked[tid*PREFETCH_SIZE_WORDS];
-                if (c >= this->NUM_PROCESSES && c > MINIMUM_OPERATIONS_BEFORE_NEW_EPOCH) {
+                if (c > MINIMUM_OPERATIONS_BEFORE_NEW_EPOCH) {
                     // note: __sync functions imply membars in gcc (for power)
                     __sync_bool_compare_and_swap(&epoch, readEpoch, readEpoch+EPOCH_INCREMENT);
                     // note: __sync functions imply membars in gcc (for power)
+                }
+            } else {
+                assert(otherTid >= 0);
+                long otherAnnounce = announcedEpoch[otherTid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
+                if (BITS_EPOCH(otherAnnounce) == readEpoch
+                        || QUIESCENT(otherAnnounce)) {
+                    const int c = ++checked[tid*PREFETCH_SIZE_WORDS];
+                    if (c >= this->NUM_PROCESSES && c > MINIMUM_OPERATIONS_BEFORE_NEW_EPOCH) {
+                        // note: __sync functions imply membars in gcc (for power)
+                        __sync_bool_compare_and_swap(&epoch, readEpoch, readEpoch+EPOCH_INCREMENT);
+                        // note: __sync functions imply membars in gcc (for power)
+                    }
                 }
             }
         }
@@ -184,6 +190,7 @@ public:
     }
     ~reclaimer_debra() {
         VERBOSE DS_DEBUG cout<<"destructor reclaimer_debra"<<endl;
+        cout<<"reclaimer_debra epoch="<<epoch<<endl;
         for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
             // move contents of all bags into pool
             for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {

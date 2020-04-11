@@ -105,6 +105,7 @@ __thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t
                 TM_REGISTER_ABORT(PATH_FAST_HTM, ___xarg, ___Self->UniqID); \
                 ++___Self->AbortsHW; /* slightly undesirable: can't distinguish between fast and slow htm aborts */ \
                 if (X_ABORT_STATUS_IS_USER(___xarg)) { /* GOTO SLOW HTM PATH */ \
+                    /*TM_COUNTER_INC(jumpToSlow, ___Self->UniqID);*/ \
                     sharedReadFunPtr = &TxLoad_htm; \
                     sharedWriteFunPtr = &TxStore_htm; \
                     ___fasthtmattempts = HTM_ATTEMPT_THRESH; \

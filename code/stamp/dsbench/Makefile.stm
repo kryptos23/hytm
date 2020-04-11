@@ -3,7 +3,7 @@ PROG := dsbench
 ##################################
 ## SET THESE APPROPRIATELY
 ##################################
-FLAGS += -DPHYSICAL_PROCESSORS=144
+FLAGS += -DPHYSICAL_PROCESSORS=512
 FLAGS += -DMAX_TID_POW2=512
 
 ### if you do not want PAPI to be used, invoke make with "has_libpapi=0"
@@ -34,7 +34,7 @@ pinning=IDENTITY
 GPP = g++
 
 #all: hytm2_3path hytm2
-all: tl2 hytm1 hytm2 hytm2_3path hytm3 hybridnorec
+all: tl2 hytm1 hytm2 hytm3 hybridnorec hytm2_3path
 ##hybridnorec hytm2_nonspec hybridnorec_nonspec
 
 .PHONY : all clean hytm2_3path tl2 hytm1 hytm2 hytm3 hybridnorec hytm2_nonspec hybridnorec_nonspec

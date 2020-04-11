@@ -64,6 +64,7 @@ public:
     tm_counter_t htmCommit[NUMBER_OF_PATHS];
     tm_counter_t timingTemp;            // per process timestamps: 0 if not currently timing, o/w > 0
     tm_counter_t timingOnFallback;      // per process total DURATIONS over execution (scaled down by the probability of timing on a countersProbStartTime call)
+//    tm_counter_t jumpToSlow;
     tm_counter_t garbage;
     char padding1[PREFETCH_SIZE_BYTES];
     
@@ -327,6 +328,7 @@ void countersPrint(tm_debugCounters<NUM_PROCESSES>& counters) {
         }
     }
     cout<<"seconds global lock is held   : "<<(__TM_COUNTER_TOTAL(timingOnFallback, NUM_PROCESSES)/1000000000.)<<endl;
+//    cout<<"jump to slow                  : "<<(__TM_COUNTER_TOTAL(cs->jumpToSlow, NUM_PROCESSES))<<endl;
 }
 
 

@@ -106,6 +106,7 @@ void countersPrint(struct c_debugCounters *cs) {
     }
 //    cout<<"scaled time on fallback (nanos over all processes) : "<<(counterGetTotal(cs->timingOnFallback))<<endl;
     cout<<"seconds global lock is held   : "<<(counterGetTotal(cs->timingOnFallback)/1000000000.)<<endl;
+//    cout<<"jump to slow                  : "<<(counterGetTotal(cs->jumpToSlow))<<endl;
 }
 
 #endif	/* DEBUGCOUNTERS_PRINT_H */

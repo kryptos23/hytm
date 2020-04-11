@@ -43,6 +43,7 @@ struct c_debugCounters {
     struct c_debugCounter ** htmAbort;
 #endif
     struct c_debugCounter * htmCommit[NUMBER_OF_PATHS];
+//    struct c_debugCounter * jumpToSlow;
     struct c_debugCounter * garbage;
     struct c_debugCounter * timingTemp; // per process timestamps: 0 if not currently timing, o/w > 0
     struct c_debugCounter * timingOnFallback; // per process total DURATIONS over execution (scaled down by the probability of timing on a countersProbStartTime call)
