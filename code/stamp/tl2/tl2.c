@@ -53,6 +53,7 @@
 
 
 
+
 static void txSterilize (void*, size_t);
 
 
@@ -135,9 +136,10 @@ typedef struct _AVPair {
 #endif /* TL2_EAGER */
     struct _Thread* Owner;
     long Ordinal;
-} AVPair;
+} AVPair __attribute__((aligned(64)));
 
 typedef struct _Log {
+PAD;
     AVPair* List;
     AVPair* put;        /* Insert position - cursor */
     AVPair* tail;       /* CCM: Pointer to last valid entry */
@@ -146,18 +148,22 @@ typedef struct _Log {
 #ifndef TL2_OPTIM_HASHLOG
     BitMap BloomFilter; /* Address exclusion fast-path test */
 #endif
+PAD;
 } Log;
 
 #ifdef TL2_OPTIM_HASHLOG
 typedef struct _HashLog {
+PAD;
     Log* logs;
     long numLog;
     long numEntry;
     BitMap BloomFilter; /* Address exclusion fast-path test */
+PAD;
 } HashLog;
 #endif
 
 struct _Thread {
+    PAD;
     long UniqID;
     volatile long Mode;
     volatile long HoldsLocks; /* passed start of update */
@@ -191,6 +197,7 @@ struct _Thread {
     long TxST;
     long TxLD;
 #endif /* TL2_STATS */
+    PAD;
 };
 
 
@@ -199,9 +206,11 @@ struct _Thread {
  * #############################################################################
  */
 
+PAD;
 static pthread_key_t    global_key_self;
 static struct sigaction global_act_oldsigbus;
 static struct sigaction global_act_oldsigsegv;
+PAD;
 
 /* CCM: misaligned address (0xFF bytes) to generate bus error / segfault */
 #define TL2_USE_AFTER_FREE_MARKER       (-1)
@@ -295,7 +304,9 @@ AtomicIncrement (volatile intptr_t* addr)
  * Alternately, we could mmap() the region with anonymous DZF pages.
  */
 #  define _TABSZ  (1<< 20)
+PAD;
 static volatile vwLock LockTab[_TABSZ];
+PAD;
 
 /*
  * We use GClock[32] as the global counter.  It must be the sole occupant
@@ -305,6 +316,7 @@ static volatile vwLock LockTab[_TABSZ];
  */
 static volatile vwLock GClock[TL2_CACHE_LINE_SIZE];
 #define _GCLOCK  GClock[32]
+PAD;
 
 
 /* =============================================================================
@@ -509,11 +521,13 @@ GVAbort (Thread* Self)
  * #############################################################################
  */
 
+PAD;
 volatile long StartTally         = 0;
 volatile long AbortTally         = 0;
 volatile long ReadOverflowTally  = 0;
 volatile long WriteOverflowTally = 0;
 volatile long LocalOverflowTally = 0;
+PAD;
 #define TL2_TALLY_MAX          (((unsigned long)(-1)) >> 1)
 
 #ifdef TL2_STATS
@@ -1034,7 +1048,7 @@ TxOnce ()
     printf("TL2 system ready: GV=%s\n", _GVFLAVOR);
 
 //    TM_CREATE_COUNTERS();
-    
+
     pthread_key_create(&global_key_self, NULL); /* CCM: do before we register handler */
     registerUseAfterFreeHandler();
     SYNC_RMW; // just to be safe
@@ -1067,7 +1081,7 @@ TxShutdown ()
     pthread_key_delete(global_key_self);
 
     restoreUseAfterFreeHandler();
-    
+
 //    TM_PRINT_COUNTERS();
 //    TM_DESTROY_COUNTERS();
 
@@ -1831,7 +1845,7 @@ TxStore (Thread* Self, volatile intptr_t* addr, intptr_t valu)
         cv = ((AVPair*)(cv ^ LOCKBIT))->rdv;
     } else {
 #    ifdef TL2_NOCM
-        /* wkbaek: in NOCM mode, no spinning */ 
+        /* wkbaek: in NOCM mode, no spinning */
         TxAbort(Self);
         ASSERT(0);
 #    else /* !TL2_NOCM */

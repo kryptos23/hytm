@@ -16,3 +16,7 @@ disc/folder/trbotpc.txt
 trbotpc.txt
 
 code/stamp/dsbench/nbproject/
+code/stamp/dsbench/perf.data*
+code/stamp/dsbench/temp.txt
+code/stamp/dsbench/*.dsbench_*
+step*.data

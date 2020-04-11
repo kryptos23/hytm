@@ -6,7 +6,7 @@ expname=dsbench
 
 seqwidth=48
 
-algs_reclaimers_pools="dsbench_tl2~debra~none dsbench_hytm1~debra~none dsbench_hytm2~debra~none dsbench_hytm3~debra~none dsbench_hybridnorec~debra~none"
+algs_reclaimers_pools="dsbench_hytm2_3path~debra~none dsbench_tl2~debra~none dsbench_hytm1~debra~none dsbench_hytm2~debra~none dsbench_hytm3~debra~none dsbench_hybridnorec~debra~none"
 #algs_reclaimers_pools="$algs_reclaimers_pools dsbench_tl2~none~none dsbench_hytm1~none~none dsbench_hytm2~none~none dsbench_hytm3~none~none dsbench_hybridnorec~none~none"
 
 if [ "$machine" == "cheshire-r07u03" ]; then
@@ -14,11 +14,11 @@ if [ "$machine" == "cheshire-r07u03" ]; then
     #algs_reclaimers_pools="$algs_reclaimers_pools dsbench_hytm2_nonspec~none~none dsbench_hybridnorec_nonspec~none~none"
 fi
 
-keyranges="10000 100000"
-insdel_pcnts="0 1 5 20"
+keyranges="100000 10000"
+insdel_pcnts="0 5 20"
 
-ntrials=10
-t=1000
+ntrials=3
+t=10000
 timeoutsec=`expr $t / 1000`
 timeoutsec=`expr $timeoutsec + 3`
 p=-p

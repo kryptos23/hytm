@@ -1,14 +1,14 @@
 /**
  * Code for HyTM is loosely based on the code for TL2
  * (in particular, the data structures)
- * 
+ *
  * This is essentially an implementation of TLE, but with an abort function
  * (including on the fallback path). To implement the abort function, we log
  * old values before writing.
- * 
+ *
  * [ note: we cannot distribute this without inserting the appropriate
  *         copyright notices as required by TL2 and STAMP ]
- * 
+ *
  * Authors: Trevor Brown (tabrown@cs.toronto.edu) and Srivatsan Ravi
  */
 
@@ -39,7 +39,11 @@ using namespace std;
 
 #define HASHTABLE_CLEAR_FROM_LIST
 
+#define MALLOC_PADDED(sz) ((void *) (((char *) malloc((sz) + 2*PREFETCH_SIZE_BYTES)) + PREFETCH_SIZE_BYTES))
+#define FREE_PADDED(x) free((void *) (((char *) (x)) - PREFETCH_SIZE_BYTES))
+
 // just for debugging
+PAD;
 volatile int globallock = 0; // for printf and cout
 
 volatile char padding0[PREFETCH_SIZE_BYTES];
@@ -67,7 +71,7 @@ void printStackTrace() {
     while(messages[i][p] != '(' && messages[i][p] != ' '
             && messages[i][p] != 0)
         ++p;
-    
+
     char syscom[256];
     sprintf(syscom,"echo \"    `addr2line %p -e %.*s`\"", trace[i], p, messages[i]);
         //last parameter is the file name of the symbol
@@ -124,15 +128,17 @@ __INLINE__ void releaseLock(volatile int *lock) {
 
 
 /**
- * 
+ *
  * TRY-LOCK IMPLEMENTATION AND LOCK TABLE
- * 
+ *
  */
 
+PAD;
 #include <map>
 map<const void*, unsigned> addrToIx;
 map<unsigned, const void*> ixToAddr;
 volatile unsigned rename_ix = 0;
+PAD;
 #include <sstream>
 string stringifyIndex(unsigned ix) {
 #if 1
@@ -164,7 +170,7 @@ string stringifyIndex(unsigned ix) {
         ix /= NCHARS;
     }
     return ss.str();
-#else 
+#else
     stringstream ss;
     ss<<ix;
     return ss.str();
@@ -191,7 +197,7 @@ string renamePointer(const void* p) {
 
 
 /**
- * 
+ *
  * THREAD CLASS
  *
  */
@@ -200,6 +206,7 @@ class List;
 
 class Thread {
 public:
+    PAD;
     long UniqID;
     volatile long Retries;
 //    int* ROFlag; // not used by stamp
@@ -220,7 +227,8 @@ public:
     List* rdSet;
     List* wrSet;
     sigjmp_buf* envPtr;
-    
+    PAD;
+
     Thread(long id);
     void destroy();
     void compileTimeAsserts() {
@@ -241,9 +249,9 @@ public:
 
 
 /**
- * 
+ *
  * LOG IMPLEMENTATION
- * 
+ *
  */
 
 /* list element (serves as an entry in a read/write set) */
@@ -255,14 +263,14 @@ public:
     intptr_t value;
     long Ordinal;
     AVPair** hashTableEntry;
-    
+
     AVPair() {}
     AVPair(AVPair* _Next, AVPair* _Prev, long _Ordinal)
         : Next(_Next), Prev(_Prev), addr(0), value(0), Ordinal(_Ordinal), hashTableEntry(0)
     {}
-    
+
     void validateInvariants() {}
-};
+} __attribute__((aligned(64)));
 
 std::ostream& operator<<(std::ostream& out, const AVPair& obj) {
     return out<<"[addr="<<renamePointer((void*) obj.addr)
@@ -286,9 +294,11 @@ enum hytm_config {
 #ifdef USE_FULL_HASHTABLE
     class HashTable {
     public:
+PAD;
         AVPair** data;
         long sz;        // number of elements in the hash table
         long cap;       // capacity of the hash table
+PAD;
     private:
         void validateInvariants() {
             // hash table capacity is a power of 2
@@ -323,14 +333,14 @@ enum hytm_config {
             DEBUG3 aout("hash table "<<renamePointer(this)<<" init");
             sz = 0;
             cap = 2 * _sz;
-            data = (AVPair**) malloc(sizeof(AVPair*) * cap);
+            data = (AVPair**) MALLOC_PADDED(sizeof(AVPair*) * cap);
             memset(data, 0, sizeof(AVPair*) * cap);
             VALIDATE_INV(this);
         }
 
         __INLINE__ void destroy() {
             DEBUG3 aout("hash table "<<renamePointer(this)<<" destroy");
-            free(data);
+            FREE_PADDED(data);
         }
 
         __INLINE__ int32_t hash(volatile intptr_t* addr) {
@@ -387,17 +397,17 @@ enum hytm_config {
             ++sz;
             VALIDATE_INV(this);
         }
-        
+
         __INLINE__ int requiresExpansion() {
             return 2*sz > cap;
         }
-        
+
     private:
         // expand table by a factor of 2
         __INLINE__ void expandAndClear() {
             AVPair** olddata = data;
             init(cap); // note: cap will be doubled by init
-            free(olddata);
+            FREE_PADDED(olddata);
         }
 
     public:
@@ -410,7 +420,7 @@ enum hytm_config {
             }
             VALIDATE_INV(this);
         }
-        
+
         __INLINE__ void clear(AVPair* head, AVPair* stop) {
 #ifdef HASHTABLE_CLEAR_FROM_LIST
             for (AVPair* e = head; e != stop; e = e->Next) {
@@ -443,7 +453,9 @@ enum hytm_config {
     #define BLOOM_FILTER_WORDS (BLOOM_FILTER_BITS/sizeof(bloom_filter_data_t))
     class HashTable {
     public:
+PAD;
         bloom_filter_data_t filter[BLOOM_FILTER_WORDS]; // bloom filter data
+PAD;
     private:
         void validateInvariants() {
 
@@ -503,6 +515,7 @@ enum hytm_config {
 class List {
 public:
     // linked list (for iteration)
+PAD;
     AVPair* head;
     AVPair* put;    /* Insert position - cursor */
     AVPair* tail;   /* CCM: Pointer to last valid entry */
@@ -510,9 +523,10 @@ public:
     long ovf;       /* Overflow - request to grow */
     long initcap;
     long currsz;
-    
+
     HashTable tab;
-    
+PAD;
+
 private:
     __INLINE__ AVPair* extendList() {
         VALIDATE_INV(this);
@@ -527,7 +541,7 @@ private:
         VALIDATE_INV(this);
         return e;
     }
-    
+
     void validateInvariants() {
         // currsz == size of list
         long _currsz = 0;
@@ -563,7 +577,7 @@ public:
 
         // Allocate the primary list as a large chunk so we can guarantee ascending &
         // adjacent addresses through the list. This improves D$ and DTLB behavior.
-        head = (AVPair*) malloc((sizeof (AVPair) * _initcap) + CACHE_LINE_SIZE);
+        head = (AVPair*) MALLOC_PADDED((sizeof (AVPair) * _initcap) + CACHE_LINE_SIZE);
         assert(head);
         memset(head, 0, sizeof(AVPair) * _initcap);
         AVPair* curr = head;
@@ -586,7 +600,7 @@ public:
         tab.init();
 #endif
     }
-    
+
     void destroy() {
         DEBUG3 aout("list "<<renamePointer(this)<<" destroy");
         /* Free appended overflow entries first */
@@ -599,12 +613,12 @@ public:
             }
         }
         /* Free contiguous beginning */
-        free(head);
+        FREE_PADDED(head);
 #if defined(USE_FULL_HASHTABLE) || defined(USE_BLOOM_FILTER)
         tab.destroy();
 #endif
     }
-    
+
     __INLINE__ void clear() {
         DEBUG3 aout("list "<<renamePointer(this)<<" clear");
         VALIDATE_INV(this);
@@ -633,7 +647,7 @@ public:
         }
         return NULL;
     }
-    
+
 private:
     __INLINE__ AVPair* append(Thread* Self, volatile intptr_t* addr, intptr_t value) {
         AVPair* e = put;
@@ -645,7 +659,7 @@ private:
         VALIDATE ++currsz;
         return e;
     }
-    
+
 public:
     __INLINE__ void insertReplace(Thread* Self, volatile intptr_t* addr, intptr_t value) {
         DEBUG3 aout("list "<<renamePointer(this)<<" insertReplace("<<debug(renamePointer((const void*) (void*) addr))<<","<<debug(value)<<")");
@@ -672,7 +686,7 @@ public:
             *e->addr = e->value;
         }
     }
-    
+
     // Transfer the data in the log to its ultimate location.
     __INLINE__ void writeBackward() {
         //DEBUG3 aout("list "<<renamePointer(this)<<" writeBackward");
@@ -680,7 +694,7 @@ public:
             *e->addr = e->value;
         }
     }
-    
+
     void validateContainsAllAndSameSize(HashTable* tab) {
 #ifdef USE_FULL_HASHTABLE
         if (currsz != tab->sz) {
@@ -731,16 +745,18 @@ __INLINE__ intptr_t AtomicAdd(volatile intptr_t* addr, intptr_t dx) {
 
 
 /**
- * 
+ *
  * THREAD CLASS IMPLEMENTATION
- * 
+ *
  */
 
+PAD;
 volatile long StartTally = 0;
 volatile long AbortTallyHW = 0;
 volatile long AbortTallySW = 0;
 volatile long CommitTallyHW = 0;
 volatile long CommitTallySW = 0;
+PAD;
 
 Thread::Thread(long id) {
     DEBUG1 aout("new thread with id "<<id);
@@ -785,9 +801,9 @@ void Thread::destroy() {
 
 
 /**
- * 
+ *
  * IMPLEMENTATION OF TM OPERATIONS
- * 
+ *
  */
 
 void TxClearRWSets(void* _Self) {
@@ -800,7 +816,7 @@ void TxClearRWSets(void* _Self) {
 
 int TxCommit(void* _Self) {
     Thread* Self = (Thread*) _Self;
-    
+
     // software path
     if (Self->isFallback) {
         // release global lock
@@ -812,7 +828,7 @@ int TxCommit(void* _Self) {
         tmalloc_releaseAllForward(Self->freePtr, NULL);
 #endif
         TM_COUNTER_INC(htmCommit[PATH_FALLBACK], Self->UniqID);
-        
+
     // hardware path
     } else {
 #ifdef TXNL_MEM_RECLAMATION
@@ -827,13 +843,13 @@ int TxCommit(void* _Self) {
 
 void TxAbort(void* _Self) {
     Thread* Self = (Thread*) _Self;
-    
+
     // software path
     if (Self->isFallback) {
         SOFTWARE_BARRIER; // prevent compiler reordering of speculative execution before isFallback check in htm (for power)
         /* Clean up after an abort. Restore any modified locations. */
         Self->wrSet->writeBackward();
-        
+
         // release global lock
         TM_TIMER_END(Self->UniqID);
         releaseLock(&tleLock);
@@ -853,7 +869,7 @@ void TxAbort(void* _Self) {
             exit(-1);
         }
         TM_REGISTER_ABORT(PATH_FALLBACK, 0, Self->UniqID);
-        
+
 #ifdef TXNL_MEM_RECLAMATION
         // "abort" speculative allocations and speculative frees
         // Rollback any memory allocation, and longjmp to retry the txn
@@ -865,7 +881,7 @@ void TxAbort(void* _Self) {
         LWSYNC; // prevent any writes after the longjmp from being moved before this point (on power) // TODO: is this needed?
         SIGLONGJMP(*Self->envPtr, 1);
         ASSERT(0);
-        
+
     // hardware path
     } else {
         XABORT(0);
@@ -900,10 +916,10 @@ void TxStore_stm(void* _Self, volatile intptr_t* addr, intptr_t value) {
 
 
 /**
- * 
+ *
  * FRAMEWORK FUNCTIONS
  * (PROBABLY DON'T NEED TO BE CHANGED WHEN CREATING A VARIATION OF THIS TM)
- * 
+ *
  */
 
 void TxOnce() {

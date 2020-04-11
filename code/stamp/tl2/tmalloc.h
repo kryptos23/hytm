@@ -25,9 +25,11 @@ extern "C" {
 #endif
 
 typedef struct tmalloc {
+    char padding0[192];
     long size;
     long capacity;
     void** elements;
+    char padding1[192];
 } tmalloc_t;
 
 
