@@ -82,7 +82,7 @@ for pinning in $pinnings; do
     if [ "$counting" -eq "0" ]; then
         ### COMPILE ALL ALGORITHMS (for this pinning option)
 	cd scripts
-        ./compile_x64.sh "$pinning" | tee -a ../$compilinglogfile || (echo ERROR COMPILING && exit 1)
+        (./compile_x64.sh "pinning=$pinning" || (echo ERROR COMPILING && exit 1)) | tee -a ../$compilinglogfile
         cd ..
     fi
 

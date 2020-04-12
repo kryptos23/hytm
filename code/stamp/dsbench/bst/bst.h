@@ -44,22 +44,22 @@ private:
     Node<K,V> *root;        // actually const
     Compare cmp;
     PAD;
-    
+
     // similarly, allocatedNodes[tid*PREFETCH_SIZE_WORDS+i] = an allocated node for i = 0..MAX_NODES-2
     Node<K,V> **allocatedNodes;
     PAD;
     #define GET_ALLOCATED_NODE_PTR(tid, i) allocatedNodes[tid*(PREFETCH_SIZE_WORDS+MAX_NODES)+i]
     #define REPLACE_ALLOCATED_NODE(tid, i) { GET_ALLOCATED_NODE_PTR(tid, i) = allocateNode(tid); /*GET_ALLOCATED_NODE_PTR(tid, i)->left.store((uintptr_t) NULL, memory_order_relaxed);*/ }
-    
+
     // debug info
     debugCounters<PHYSICAL_PROCESSORS> counters __attribute__((aligned(BYTES_IN_CACHE_LINE)));
     PAD;
-    
+
     #define IS_SENTINEL(node, parent) ((node)->key == NO_KEY || (parent)->key == NO_KEY)
     inline Node<K,V>* allocateNode(const int tid);
     inline Node<K,V>* initializeNode(const int, Node<K,V> * const, const K&, const V&, Node<K,V> * const, Node<K,V> * const);
     inline int computeSize(Node<K,V>* node);
-    
+
     long long debugKeySum(Node<K,V> * node);
     bool validate(Node<K,V> * const node, const int currdepth, const int leafdepth);
 
@@ -91,7 +91,7 @@ public:
     /**
      * This function must be called once by each thread that will
      * invoke any functions on this class.
-     * 
+     *
      * It must be okay that we do this with the main thread and later with another thread!!!
      */
     void initThread(const int tid) {
@@ -102,7 +102,7 @@ public:
             }
         }
     }
-    
+
     void dfsDeallocateBottomUp(Node<K,V> * const u, int *numNodes) {
         if (u == NULL) return;
         if (u->left != NULL) {
@@ -114,6 +114,7 @@ public:
     }
     ~bst() {
         VERBOSE DS_DEBUG COUTATOMIC("destructor bst");
+        cout<<"destructor bst"<<endl;
         // free every node currently in the data structure.
         // an easy DFS, freeing from the leaves up, handles all nodes.
         int numNodes = 0;
@@ -139,7 +140,7 @@ public:
     int rangeQuery_stm(TM_ARGDECL_ALONE, const int tid, const K& low, const K& hi, Node<K,V> const ** result);
     int rangeUpdate_stm(TM_ARGDECL_ALONE, const int tid, const K& low, const K& hi);
     int size(void); /** warning: size is a LINEAR time operation, and does not return consistent results with concurrency **/
-    
+
     void debugPrintAllocatorStatus() {
         shmem->printStatus();
     }
@@ -170,7 +171,7 @@ public:
     RecManager * const debugGetShmem() {
         return shmem;
     }
-    
+
     bool validate(const long long keysum, const bool checkkeysum);
     long long debugKeySum() {
         return debugKeySum(root->left->left);

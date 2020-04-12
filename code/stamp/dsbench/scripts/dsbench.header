@@ -1,1 +1,1 @@
-step,dummy,alg,-t,t,-mr,mr,-ma,ma,-mp,mp,-p,-k,k,-i,i,-d,d,-rq,rq,-rqsize,rqsize,-nwork,nwork,-nrq,nrq,-seqwidth,seqwidth,-trial,trial,-data
+step,host,alg,-t,t,-mr,mr,-ma,ma,-mp,mp,-p,-k,k,-i,i,-d,d,-rq,rq,-rqsize,rqsize,-nwork,nwork,-nrq,nrq,-seqwidth,seqwidth,-trial,trial,-pinning,pinning,-data
