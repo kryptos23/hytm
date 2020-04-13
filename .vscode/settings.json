@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "tl2.h": "c",
-        "tl2.c": "cpp"
+        "tl2.c": "cpp",
+        "atomic": "cpp"
     }
 }

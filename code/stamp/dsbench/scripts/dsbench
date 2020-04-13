@@ -64,6 +64,7 @@ else
     echo "ERROR: could not find jemalloc library"
     exit 1
 fi
+echo "NOTE: using jemalloc by prefixing \"$envcmd\""
 
 echo "-------------------- BEGIN VARIABLES --------------------" >> $logfile
 ( set -o posix ; set ) >> $logfile

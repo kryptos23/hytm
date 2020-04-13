@@ -1,6 +1,6 @@
 /**
  * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
- * 
+ *
  * Copyright (C) 2015 Trevor Brown
  * This preliminary implementation is CONFIDENTIAL and may not be distributed.
  */
@@ -35,9 +35,11 @@ protected:
 #define BITS_EPOCH(ann) ((ann)&~(EPOCH_INCREMENT-1))
 #define QUIESCENT(ann) ((ann)&1)
 #define GET_WITH_QUIESCENT(ann) ((ann)|1)
-    
+
 #define MINIMUM_OPERATIONS_BEFORE_NEW_EPOCH 100
 #define NUMBER_OF_EPOCH_BAGS 3
+#define NUM_CALLS_BETWEEN_ANNOUNCEMENT_CHECKS 20
+// #define NUM_CALLS_BETWEEN_ANNOUNCEMENT_CHECKS 10
 
 
     // for epoch based reclamation
@@ -61,9 +63,9 @@ public:
     struct rebind2 {
         typedef reclaimer_debra<_Tp1, _Tp2> other;
     };
-    
+
     inline static bool quiescenceIsPerRecordType() { return false; }
-    
+
     inline bool isQuiescent(const int tid) {
         return QUIESCENT(announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed));
     }
@@ -82,7 +84,7 @@ public:
         return true;
     }
     inline static void qUnprotectAll(const int tid) {}
-    
+
     // rotate the epoch bags and reclaim any objects retired two epochs ago.
     inline void rotateEpochBags(const int tid) {
         index[tid*PREFETCH_SIZE_WORDS] = (index[tid*PREFETCH_SIZE_WORDS]+1) % NUMBER_OF_EPOCH_BAGS;
@@ -119,11 +121,11 @@ public:
 
         // incrementally scan the announced epochs of all threads
         // (to avoid high NUMA-caused L3 miss costs only participate in this part of the alg once every X calls to this function)
-        if (0 == (++numCalls % 10)) {
+        if (0 == (++numCalls % NUM_CALLS_BETWEEN_ANNOUNCEMENT_CHECKS)) {
             int otherTid = checked[tid*PREFETCH_SIZE_WORDS];
             if (otherTid >= this->NUM_PROCESSES) {
                 const int c = ++checked[tid*PREFETCH_SIZE_WORDS];
-                if (c > MINIMUM_OPERATIONS_BEFORE_NEW_EPOCH) {
+                if (NUM_CALLS_BETWEEN_ANNOUNCEMENT_CHECKS*c > MINIMUM_OPERATIONS_BEFORE_NEW_EPOCH) {
                     // note: __sync functions imply membars in gcc (for power)
                     __sync_bool_compare_and_swap(&epoch, readEpoch, readEpoch+EPOCH_INCREMENT);
                     // note: __sync functions imply membars in gcc (for power)
@@ -152,7 +154,7 @@ public:
         const long ann = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
         announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(GET_WITH_QUIESCENT(ann), memory_order_relaxed);
     }
-    
+
     // for all schemes except reference counting
     inline void retire(const int tid, T* p) {
         currentBag[tid*PREFETCH_SIZE_WORDS]->add(p);
