@@ -1,6 +1,6 @@
 /**
  * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
- * 
+ *
  * Copyright (C) 2015 Trevor Brown
  * This preliminary implementation is CONFIDENTIAL and may not be distributed.
  */
@@ -115,7 +115,7 @@ public:
             void * reclaimers[1+sizeof...(Rest)];
             getReclaimers(tid, reclaimers, 0);
             get((First *) NULL)->leaveQuiescentState(tid, reclaimers, 1+sizeof...(Rest));
-            __sync_synchronize(); // memory barrier needed (only) for epoch based schemes at the moment...
+            // __sync_synchronize(); // memory barrier needed (only) for epoch based schemes at the moment...
         }
     }
 };
@@ -131,7 +131,7 @@ public:
     const int NUM_PROCESSES;
     RecoveryMgr<SelfType> * const recoveryMgr;
     PAD;
-    
+
     record_manager(const int numProcesses, const int _neutralizeSignal)
             : NUM_PROCESSES(numProcesses)
             , recoveryMgr(new RecoveryMgr<SelfType>(numProcesses, _neutralizeSignal, this))
@@ -157,37 +157,37 @@ public:
     debugInfo * getDebugInfo(T * const recordType) {
         return &rmset->get((T *) NULL)->debugInfoRecord;
     }
-    
+
     // for hazard pointers
 
     template <typename T>
     inline bool isProtected(const int tid, T * const obj) {
         return rmset->get((T *) NULL)->isProtected(tid, obj);
     }
-    
+
     template <typename T>
     inline bool protect(const int tid, T * const obj, CallbackType notRetiredCallback, CallbackArg callbackArg, bool hintMemoryBarrier = true) {
         return rmset->get((T *) NULL)->protect(tid, obj, notRetiredCallback, callbackArg, hintMemoryBarrier);
     }
-    
+
     template <typename T>
     inline void unprotect(const int tid, T * const obj) {
         rmset->get((T *) NULL)->unprotect(tid, obj);
     }
-    
+
     // for DEBRA+
-    
+
     // warning: qProtect must be reentrant and lock-free (i.e., async-signal-safe)
     template <typename T>
     inline bool qProtect(const int tid, T * const obj, CallbackType notRetiredCallback, CallbackArg callbackArg, bool hintMemoryBarrier = true) {
         return rmset->get((T *) NULL)->qProtect(tid, obj, notRetiredCallback, callbackArg, hintMemoryBarrier);
     }
-    
+
     template <typename T>
     inline bool isQProtected(const int tid, T * const obj) {
         return rmset->get((T *) NULL)->isQProtected(tid, obj);
     }
-    
+
     inline void qUnprotectAll(const int tid) {
         assert(!Reclaim::supportsCrashRecovery() || isQuiescent(tid));
         rmset->qUnprotectAll(tid);
@@ -232,7 +232,7 @@ public:
         assert(!Reclaim::supportsCrashRecovery() || isQuiescent(tid));
         return rmset->get((T *) NULL)->allocate(tid);
     }
-    
+
     // optional function which can be used if it is safe to call free()
     template <typename T>
     inline void deallocate(const int tid, T * const p) {

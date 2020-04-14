@@ -1,6 +1,6 @@
 /**
  * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
- * 
+ *
  * Copyright (C) 2015 Trevor Brown
  * This preliminary implementation is CONFIDENTIAL and may not be distributed.
  */
@@ -20,7 +20,7 @@ class pool_interface {
 public:
     PAD;
     debugInfo * const __debug;
-    
+
     const int NUM_PROCESSES;
     blockpool<T> **blockpools; // allocated (or not) and freed by descendants
     Alloc *alloc;
@@ -34,7 +34,7 @@ public:
     struct rebind2 {
         typedef pool_interface<_Tp1, _Tp2> other;
     };
-    
+
     /**
      * if the pool contains any object, then remove one from the pool
      * and return a pointer to it. otherwise, return NULL.
@@ -44,20 +44,20 @@ public:
     inline void addMoveFullBlocks(const int tid, blockbag<T> *bag);
     inline void addMoveAll(const int tid, blockbag<T> *bag);
     inline int computeSize(const int tid);
-    
+
     void debugPrintStatus(const int tid);
-    
+
     pool_interface(const int numProcesses, Alloc * const _alloc, debugInfo * const _debug)
             : NUM_PROCESSES(numProcesses), alloc(_alloc), __debug(_debug) {
         VERBOSE DS_DEBUG cout<<"constructor pool_interface"<<endl;
-        this->blockpools = new blockpool<T>*[numProcesses];
-        for (int tid=0;tid<numProcesses;++tid) {
+        this->blockpools = new blockpool<T>*[MAX_TID_POW2];
+        for (int tid=0;tid<MAX_TID_POW2;++tid) {
             this->blockpools[tid] = new blockpool<T>();
         }
     }
     ~pool_interface() {
         VERBOSE DS_DEBUG cout<<"destructor pool_interface"<<endl;
-        for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
+        for (int tid=0;tid<MAX_TID_POW2;++tid) {
             delete this->blockpools[tid];
         }
         delete[] this->blockpools;

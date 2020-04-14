@@ -1,6 +1,6 @@
 /**
  * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
- * 
+ *
  * Copyright (C) 2015 Trevor Brown
  * This preliminary implementation is CONFIDENTIAL and may not be distributed.
  */
@@ -19,19 +19,14 @@
 #include "globals.h"
 
 #include "allocator_interface.h"
-#include "allocator_bump.h"
 #include "allocator_new.h"
-#include "allocator_once.h"
 
 #include "pool_interface.h"
 #include "pool_none.h"
-#include "pool_perthread_and_shared.h"
 
 #include "reclaimer_interface.h"
 #include "reclaimer_none.h"
 #include "reclaimer_debra.h"
-#include "reclaimer_debraplus.h"
-#include "reclaimer_hazardptr.h"
 #include "recovery_manager.h"
 
 using namespace std;
@@ -46,12 +41,12 @@ protected:
     typedef typename Alloc::template    rebind<Record>::other              classAlloc;
     typedef typename Pool::template     rebind2<Record, classAlloc>::other classPool;
     typedef typename Reclaim::template  rebind2<Record, classPool>::other  classReclaim;
-    
+
 public:
     classAlloc      *alloc;
     classPool       *pool;
     classReclaim    *reclaim;
-    
+
     const int NUM_PROCESSES;
     PAD;
     debugInfo debugInfoRecord;
@@ -77,7 +72,7 @@ public:
         alloc->initThread(tid);
 //        enterQuiescentState(tid);
     }
-    
+
     inline void clearCounters() {
         debugInfoRecord.clear();
     }
@@ -106,7 +101,7 @@ public:
     inline bool isQProtected(const int tid, record_pointer obj) {
         return reclaim->isQProtected(tid, obj);
     }
-    
+
     inline static bool supportsCrashRecovery() {
         return Reclaim::supportsCrashRecovery();
     }

@@ -1,6 +1,6 @@
 /**
  * Preliminary C++ implementation of binary search tree using LLX/SCX.
- * 
+ *
  * Copyright (C) 2014 Trevor Brown
  * This preliminary implementation is CONFIDENTIAL and may not be distributed.
  */
@@ -109,7 +109,7 @@ PAD;
     #endif
 
     #define INIT_THREAD(tid) tree->initThread(tid)
-    #define PRCU_INIT 
+    #define PRCU_INIT
     #define PRCU_REGISTER(tid)
     #define PRCU_UNREGISTER
     #define CLEAR_COUNTERS tree->clearCounters();
@@ -129,7 +129,7 @@ void thread_prefill(void *unused) {
     DS_DECLARATION * tree = (DS_DECLARATION *) __tree;
 
     double insProbability = (INS > 0 ? 100*INS/(INS+DEL) : 50.);
-    
+
     INIT_THREAD(tid);
     running.fetch_add(1);
     __sync_synchronize();
@@ -197,7 +197,7 @@ void prefill(DS_DECLARATION * tree) {
 
         TRACE COUTATOMIC("main thread: shutting down threads"<<endl);
         thread_shutdown();
-        
+
         start = false;
         done = false;
         SYNC_RMW;
@@ -212,12 +212,12 @@ void prefill(DS_DECLARATION * tree) {
     }
     TRACE COUTATOMIC("main thread: shutting down tm"<<endl);
 //    TM_SHUTDOWN();
-    
+
     if (attempts >= MAX_ATTEMPTS) {
         cerr<<"ERROR: could not prefill to expected size "<<expectedSize<<". reached size "<<sz<<" after "<<attempts<<" attempts"<<endl;
         exit(-1);
     }
-    
+
     /**
      * clear counters, but preserve the keysum,
      * so we can compare the keysum in the final tree
@@ -228,7 +228,7 @@ void prefill(DS_DECLARATION * tree) {
     CLEAR_COUNTERS;
     int tid = 0;
     ADD(keysum, keysum);
-    
+
     chrono::time_point<chrono::high_resolution_clock> prefillEndTime = chrono::high_resolution_clock::now();
     auto elapsed = chrono::duration_cast<chrono::milliseconds>(prefillEndTime-prefillStartTime).count();
     COUTATOMIC(endl);
@@ -259,7 +259,7 @@ void thread_timed(void *unused) {
     //Node<test_type, test_type> const ** rqResults = new Node<test_type, test_type> const *[RQSIZE];
     Node<test_type, test_type> const rqResults[RQSIZE];
 #endif
-    
+
     VERBOSE COUTATOMICTID("timed thread initializing"<<endl);
     INIT_THREAD(tid);
     VERBOSE COUTATOMICTID("join running"<<endl);
@@ -267,9 +267,9 @@ void thread_timed(void *unused) {
     __sync_synchronize();
 //    while (!start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<endl); } // wait to start
     int cnt = 0;
-    
+
     papi_start_counters(tid);
-    
+
     if (tid >= WORK_THREADS) {
         VERBOSE COUTATOMICTID("identifying as an rq thread"<<endl);
         // rq thread
@@ -353,11 +353,11 @@ void thread_timed(void *unused) {
     }
 
     papi_stop_counters(tid);
-    
+
     running.fetch_add(-1);
     SYNC_RMW;
     VERBOSE COUTATOMICTID("termination"<<endl);
-    
+
     PRCU_UNREGISTER;
     VERBOSE COUTATOMICTID("calling TM_THREAD_EXIT"<<endl);
     TM_THREAD_EXIT();
@@ -366,36 +366,36 @@ void thread_timed(void *unused) {
 template <class MemMgmt>
 void trial() {
 #if defined(BST)
-    __tree = (void*) new DS_DECLARATION(NO_KEY, NO_VALUE, RETRY, PHYSICAL_PROCESSORS /*TOTAL_THREADS*/);
+    __tree = (void*) new DS_DECLARATION(NO_KEY, NO_VALUE, RETRY, /*PHYSICAL_PROCESSORS*/ TOTAL_THREADS);
 #else
 #error "Failed to define a data structure"
 #endif
-    
+
     papi_init_program(TOTAL_THREADS);
-    
+
     // get random number generator seeded with time
     // we use this rng to seed per-thread rng's that use a different algorithm
     srand(time(NULL));
     for (int i=0;i<MAX_TID_POW2;++i) {
         rngs[i].setSeed(rand());
     }
-    
+
     TM_STARTUP(TOTAL_THREADS);
     if (PREFILL) prefill((DS_DECLARATION *) __tree);
     __sync_synchronize();
-    
+
     thread_startup(TOTAL_THREADS);
-    
+
     startTime = chrono::high_resolution_clock::now();
     __sync_synchronize();
-    
+
     thread_start(thread_timed<MemMgmt>, NULL);
-    
+
     endTime = chrono::high_resolution_clock::now();
     __sync_synchronize();
     elapsedMillis = chrono::duration_cast<chrono::milliseconds>(endTime-startTime).count();
     COUTATOMIC((elapsedMillis/1000.)<<"s"<<endl);
-    
+
     thread_shutdown();
     TM_SHUTDOWN();
     SYNC_RMW;
@@ -406,7 +406,7 @@ void trial() {
 void sighandler(int signum) {
     printf("Process %d got signal %d\n", getpid(), signum);
 
-#ifdef POSIX_SYSTEM    
+#ifdef POSIX_SYSTEM
     if (signum == SIGUSR1) {
         TRACE_TOGGLE;
     } else {
@@ -480,7 +480,7 @@ void printOutput() {
 //    int totalOps = totalSuccessful + totalChanges;
 
     COUTATOMIC(endl);
-    
+
     long long rqSuccessTotal = GET_TOTAL(rqSuccess);
     long long rqFailTotal = GET_TOTAL(rqFail);
     long long findSuccessTotal = GET_TOTAL(findSuccess);
@@ -511,17 +511,17 @@ void printOutput() {
     COUTATOMIC(endl);
 
     COUTATOMIC(endl);
-    
+
     COUTATOMIC("PAPI performance counters:"<<endl);
     papi_print_counters(totalSuccAll);
-    
+
     COUTATOMIC(endl);
-   
+
 #if defined(BST)
     if (PRINT_TREE) {
         tree->debugPrintToFile("tree_", 0, "", 0, ".out");
     }
-    
+
     // free tree
     delete tree;
 #endif
@@ -542,10 +542,8 @@ void performExperiment() {
 template <class Reclaim, class Alloc>
 void performExperiment() {
     // determine the correct pool class
-    
-/*    if (strcmp(POOL_TYPE, "perthread_and_shared") == 0) {
-        performExperiment<Reclaim, Alloc, pool_perthread_and_shared<test_type> >();
-    } else*/ if (strcmp(POOL_TYPE, "none") == 0) {
+
+    if (strcmp(POOL_TYPE, "none") == 0) {
         performExperiment<Reclaim, Alloc, pool_none<test_type> >();
     } else {
         cout<<"bad pool type"<<endl;
@@ -556,12 +554,8 @@ void performExperiment() {
 template <class Reclaim>
 void performExperiment() {
     // determine the correct allocator class
-    
-    if (strcmp(ALLOC_TYPE, "once") == 0) {
-        performExperiment<Reclaim, allocator_once<test_type> >();
-//    } else if (strcmp(ALLOC_TYPE, "bump") == 0) {
-//        performExperiment<Reclaim, allocator_bump<test_type> >();
-    } else if (strcmp(ALLOC_TYPE, "new") == 0) {
+
+    if (strcmp(ALLOC_TYPE, "new") == 0) {
         performExperiment<Reclaim, allocator_new<test_type> >();
     } else {
         cout<<"bad allocator type"<<endl;
@@ -571,7 +565,7 @@ void performExperiment() {
 
 void performExperiment() {
     // determine the correct reclaim class
-    
+
     if (strcmp(RECLAIM_TYPE, "none") == 0) {
         performExperiment<reclaimer_none<test_type> >();
     } else if (strcmp(RECLAIM_TYPE, "debra") == 0) {
@@ -663,26 +657,26 @@ int main(int argc, char** argv) {
     PRINTS(POOL_TYPE);
     PRINTI(PRINT_TREE);
     PRINTI(THREAD_BINDING);
-    
+
 #ifdef RECORD_ABORT_ADDRESSES
     cout<<"RECORD_ABORT_ADDRESSES=1"<<endl;
 #else
     cout<<"RECORD_ABORT_ADDRESSES=0"<<endl;
 #endif
-    
+
     // print actual thread bindings
     cout<<"ACTUAL_THREAD_BINDINGS=";
     for (int i=0;i<TOTAL_THREADS;++i) {
         cout<<(i?",":"")<<binding_getActualBinding(i, PHYSICAL_PROCESSORS);
     }
     cout<<endl;
-    
+
     if (!binding_isInjectiveMapping(TOTAL_THREADS, PHYSICAL_PROCESSORS)) {
         cout<<"ERROR: thread binding maps more than one thread to a single logical processor"<<endl;
         exit(-1);
     }
-    
+
     performExperiment();
-    
+
     return 0;
 }

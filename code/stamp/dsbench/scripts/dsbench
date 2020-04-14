@@ -17,7 +17,7 @@ fi
 keyranges="100000 10000"
 insdel_pcnts="0 5 20"
 
-ntrials=3
+ntrials=5
 t=10000
 timeoutsec=`expr $t / 1000`
 timeoutsec=`expr $timeoutsec + 3`

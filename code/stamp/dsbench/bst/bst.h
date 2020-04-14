@@ -83,8 +83,8 @@ public:
         Node<K,V> *rootleft = initializeNode(tid, allocateNode(tid), NO_KEY, NO_VALUE, NULL, NULL);
         root = initializeNode(tid, allocateNode(tid), NO_KEY, NO_VALUE, rootleft, NULL);
         cmp = Compare();
-        allocatedNodes = new Node<K,V> * [numProcesses*(PREFETCH_SIZE_WORDS+MAX_NODES) + 2*PREFETCH_SIZE_WORDS /* for padding via shifting */] + PREFETCH_SIZE_WORDS /* shift to pad */;
-        for (int tid=0;tid<numProcesses;++tid) {
+        allocatedNodes = new Node<K,V> * [MAX_TID_POW2*(PREFETCH_SIZE_WORDS+MAX_NODES) + 2*PREFETCH_SIZE_WORDS /* for padding via shifting */] + PREFETCH_SIZE_WORDS /* shift to pad */;
+        for (int tid=0;tid<MAX_TID_POW2;++tid) {
             GET_ALLOCATED_NODE_PTR(tid, 0) = NULL; // set up initial conditions for initThread(tid)
         }
     }
