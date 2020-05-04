@@ -29,6 +29,7 @@
 #endif
 #include "node.h"
 #include "../dsbench_tm.h"
+#define MAX_NODES 6
 
 using namespace std;
 

@@ -11,48 +11,48 @@
  *
  * For the license of bayes/sort.h and bayes/sort.c, please see the header
  * of the files.
- * 
+ *
  * ------------------------------------------------------------------------
- * 
+ *
  * For the license of kmeans, please see kmeans/LICENSE.kmeans
- * 
+ *
  * ------------------------------------------------------------------------
- * 
+ *
  * For the license of ssca2, please see ssca2/COPYRIGHT
- * 
+ *
  * ------------------------------------------------------------------------
- * 
+ *
  * For the license of lib/mt19937ar.c and lib/mt19937ar.h, please see the
  * header of the files.
- * 
+ *
  * ------------------------------------------------------------------------
- * 
+ *
  * For the license of lib/rbtree.h and lib/rbtree.c, please see
  * lib/LEGALNOTICE.rbtree and lib/LICENSE.rbtree
- * 
+ *
  * ------------------------------------------------------------------------
- * 
+ *
  * Unless otherwise noted, the following license applies to STAMP files:
- * 
+ *
  * Copyright (c) 2007, Stanford University
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
- * 
+ *
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
- * 
+ *
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in
  *       the documentation and/or other materials provided with the
  *       distribution.
- * 
+ *
  *     * Neither the name of Stanford University nor the names of its
  *       contributors may be used to endorse or promote products derived
  *       from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY STANFORD UNIVERSITY ``AS IS'' AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -79,6 +79,7 @@
 #include "thread.h"
 #include "types.h"
 //#include "rapl.h"
+#include "print_elapsed_extern.h"
 
 static THREAD_LOCAL_T    global_threadId;
 static long              global_numThread       = 1;
@@ -95,8 +96,10 @@ threadWait (void* argPtr)
 {
     long threadId = *(long*)argPtr;
 
-    THREAD_LOCAL_SET(global_threadId, (long)threadId);
+    if (threadId == 0) PRINT_ELAPSED_FROM_START();
 
+    THREAD_LOCAL_SET(global_threadId, (long)threadId);
+    if (threadId == 0) PRINT_ELAPSED_FROM_START();
 //    cpu_set_t my_set;
 //    CPU_ZERO(&my_set);
 //    CPU_SET(threadId % 8, &my_set);
@@ -107,13 +110,18 @@ threadWait (void* argPtr)
         if (global_doShutdown) {
             break;
         }
+        if (threadId == 0) PRINT_ELAPSED_FROM_START();
+        // { printf("BAR_ENTERED tid=%ld %s:%d %dms\n", threadId, __FILE__, __LINE__, (int) std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - ____executionStartTimeDebug).count()); }
         global_funcPtr(global_argPtr);
+        // { printf("DONE tid=%ld %s:%d %dms\n", threadId, __FILE__, __LINE__, (int) std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - ____executionStartTimeDebug).count()); }
         THREAD_BARRIER(global_barrierPtr, threadId); /* wait for end parallel */
+        // { printf("BAR_LEFT tid=%ld %s:%d %dms\n", threadId, __FILE__, __LINE__, (int) std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - ____executionStartTimeDebug).count()); }
         if (threadId == 0) {
 //        	endEnergy();
             break;
         }
     }
+    //if (threadId == 0) PRINT_ELAPSED_FROM_START();
 }
 
 void thread_startup (long numThread)
@@ -124,24 +132,31 @@ void thread_startup (long numThread)
     global_doShutdown = FALSE;
 
     /* Set up barrier */
+    PRINT_ELAPSED_FROM_START();
     assert(global_barrierPtr == NULL);
     global_barrierPtr = THREAD_BARRIER_ALLOC(numThread);
     assert(global_barrierPtr);
+    PRINT_ELAPSED_FROM_START();
     THREAD_BARRIER_INIT(global_barrierPtr, numThread);
+    PRINT_ELAPSED_FROM_START();
 
     /* Set up ids */
     THREAD_LOCAL_INIT(global_threadId);
+    PRINT_ELAPSED_FROM_START();
     assert(global_threadIds == NULL);
     global_threadIds = (long*)malloc(numThread * sizeof(long));
     assert(global_threadIds);
+    PRINT_ELAPSED_FROM_START();
     for (i = 0; i < numThread; i++) {
         global_threadIds[i] = i;
     }
+    PRINT_ELAPSED_FROM_START();
 
     /* Set up thread list */
     assert(global_threads == NULL);
     global_threads = (THREAD_T*)malloc(numThread * sizeof(THREAD_T));
     assert(global_threads);
+    PRINT_ELAPSED_FROM_START();
 
 //	startEnergy();
 
@@ -153,6 +168,7 @@ void thread_startup (long numThread)
                       &threadWait,
                       &global_threadIds[i]);
     }
+    PRINT_ELAPSED_FROM_START();
 
     /*
      * Wait for primary thread to call thread_start

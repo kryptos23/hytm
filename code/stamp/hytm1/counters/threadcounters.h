@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   theadcounters.h
  * Author: trbot
  *
@@ -20,7 +20,8 @@
 #include "../platform.h"
 using namespace std;
 
-#define MAX_ABORT_STATUS 4096
+// #define MAX_ABORT_STATUS 4096
+#define MAX_ABORT_STATUS 8
 
 #define NUMBER_OF_PATHS 3
 #define PATH_FAST_HTM 0
@@ -67,7 +68,7 @@ public:
 //    tm_counter_t jumpToSlow;
     tm_counter_t garbage;
     char padding1[PREFETCH_SIZE_BYTES];
-    
+
     void clear() {
         memset(this, 0, sizeof(*this));
     }
@@ -177,7 +178,7 @@ void registerHTMAbort(tm_debugCounters<NUM_PROCESSES>& counters, const int tid, 
 #       define getbit(bit) ((texasr>>(bit))&1)
         unsigned long texasr = __builtin_get_texasr();
         unsigned long tfiah = __builtin_get_tfiar();
-        
+
 #       define BIT_USER 1
 #       define BIT_CAPACITY 2
 #       define BIT_CONFLICT 3
@@ -291,7 +292,7 @@ string cpp_getExplicitAbortName(const int compressedStatus) {
         ss<<"explicit("<<explicitCode<<")";
     }
 #else
-    
+
 #endif
 #endif
     return ss.str();

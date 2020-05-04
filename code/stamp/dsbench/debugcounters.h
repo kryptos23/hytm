@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   debugcounters.h
  * Author: trbot
  *
@@ -31,8 +31,6 @@ using namespace std;
 //#define ABORT_SCX_FAILED 14
 //#define ABORT_LOCK_HELD 15
 //#define ABORT_TLE_LOCKED 30
-//
-//#define MAX_ABORT_STATUS 4096
 //
 //int getCompressedStatus(const int status) {
 //    return (status & 63) | ((status >> 24)<<6);
@@ -95,7 +93,7 @@ public:
     counter_t keysum;
     counter_t prefillSize;
     char padding1[PREFETCH_SIZE_BYTES];
-    
+
 //#ifdef RECORD_ABORTS
 //    void registerHTMAbort(const int status, const int path) {
 //        ++htmAbort[path*MAX_ABORT_STATUS+getCompressedStatus(status)];
@@ -115,9 +113,6 @@ class debugCounters {
     threadCounters counters[NUM_PROCESSES];
     char padding1[PREFETCH_SIZE_BYTES];
 public:
-//    threadCounters& operator[](int tid) {
-//        return counters[tid];
-//    }
     threadCounters * operator[](int tid) {
         return counters+tid;
     }

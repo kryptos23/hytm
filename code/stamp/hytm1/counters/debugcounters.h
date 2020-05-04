@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   debugcounters.h
  * Author: trbot
  *
@@ -25,14 +25,14 @@ extern "C" {
 #define ABORT_PROCESS_ON_FALLBACK 3
 #define ABORT_LOCK_HELD 15
 #define ABORT_TLE_LOCKED 30
-    
+
 int getCompressedStatus(const int status);
 
 int getCompressedStatusAutomaticAbortCode(const int compressedStatus);
 
 int getCompressedStatusExplicitAbortCode(const int compressedStatus);
 
-#define MAX_ABORT_STATUS 4096
+#define MAX_ABORT_STATUS 8
 
 struct c_debugCounters {
     volatile char padding0[PREFETCH_SIZE_BYTES];

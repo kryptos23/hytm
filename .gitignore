@@ -21,3 +21,4 @@ code/stamp/dsbench/temp.txt
 code/stamp/dsbench/*.dsbench_*
 step*.data
 temp*.txt
+bin/

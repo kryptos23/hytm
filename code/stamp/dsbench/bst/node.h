@@ -1,6 +1,6 @@
 /**
  * Preliminary C++ implementation of binary search tree using LLX/SCX.
- * 
+ *
  * Copyright (C) 2014 Trevor Brown
  * This preliminary implementation is CONFIDENTIAL and may not be distributed.
  */
@@ -12,7 +12,6 @@
 #include <iomanip>
 #include <atomic>
 #include <set>
-#include "scxrecord.h"
 using namespace std;
 
 template <class K, class V>
@@ -20,12 +19,9 @@ class Node {
 public:
     V value;
     K key;
-    SCXRecord<K,V> * volatile scxRecord;
-    volatile bool marked;
     Node<K,V> * volatile left;
     Node<K,V> * volatile right;
-//    char padding[10000];
-    
+
     Node() {
         // left blank for efficiency with custom allocator
     }
@@ -35,12 +31,10 @@ public:
 
     K getKey() { return key; }
     V getValue() { return value; }
-    
+
     friend ostream& operator<<(ostream& os, const Node<K,V>& obj) {
         ios::fmtflags f( os.flags() );
-        os<<"[key="<<obj.key
-          <<" marked="<<obj.marked;
-        os<<" scxRecord@0x"<<hex<<(long)(obj.scxRecord);
+        os<<"[key="<<obj.key;
 //        os.flags(f);
         os<<" left@0x"<<hex<<(long)(obj.left);
 //        os.flags(f);
@@ -50,11 +44,12 @@ public:
         os.flags(f);
         return os;
     }
-    
+
     // somewhat slow version that detects cycles in the tree
     void printTreeFile(ostream& os, set< Node<K,V>* > *seen) {
-//        os<<"(["<<key<<","<</*(long)(*this)<<","<<*/marked<<","<<scxRecord->state<<"],"<<weight<<",";
-        os<<"(["<<key<<","<<marked<<"],"<<scxRecord->state<<",";
+        os<<"(";
+        os<<key;
+        os<<",";
         if (left == NULL) {
             os<<"-";
         } else if (seen->find((Node<K,V> *)left) != seen->end()) {   // for finding cycles
@@ -79,34 +74,34 @@ public:
         set< Node<K,V>* > seen;
         printTreeFile(os, &seen);
     }
-    
-    // somewhat slow version that detects cycles in the tree
-    void printTreeFileWeight(ostream& os, set< Node<K,V>* > *seen) {
-//        os<<"(["<<key<<","<</*(long)(*this)<<","<<*/marked<<","<<scxRecord->state<<"],"<<weight<<",";
-        os<<"(["<<key<<"],";//<<weight<<",";
-        if (left == NULL) {
-            os<<"-";
-        } else if (seen->find((Node<K,V> *)left) != seen->end()) {   // for finding cycles
-            os<<"!"; // cycle!                          // for finding cycles
-        } else {
-            seen->insert((Node<K,V> *)left);
-            left->printTreeFileWeight(os, seen);
-        }
-        os<<",";
-        if (right == NULL) {
-            os<<"-";
-        } else if (seen->find((Node<K,V> *)right) != seen->end()) {  // for finding cycles
-            os<<"!"; // cycle!                          // for finding cycles
-        } else {
-            seen->insert((Node<K,V> *)right);
-            right->printTreeFileWeight(os, seen);
-        }
-        os<<")";
-    }
+
+//     // somewhat slow version that detects cycles in the tree
+//     void printTreeFileWeight(ostream& os, set< Node<K,V>* > *seen) {
+// //        os<<"(["<<key<<","<</*(long)(*this)<<","<<*/marked<<","<<scxRecord->state<<"],"<<weight<<",";
+//         os<<"(["<<key<<"],";//<<weight<<",";
+//         if (left == NULL) {
+//             os<<"-";
+//         } else if (seen->find((Node<K,V> *)left) != seen->end()) {   // for finding cycles
+//             os<<"!"; // cycle!                          // for finding cycles
+//         } else {
+//             seen->insert((Node<K,V> *)left);
+//             left->printTreeFileWeight(os, seen);
+//         }
+//         os<<",";
+//         if (right == NULL) {
+//             os<<"-";
+//         } else if (seen->find((Node<K,V> *)right) != seen->end()) {  // for finding cycles
+//             os<<"!"; // cycle!                          // for finding cycles
+//         } else {
+//             seen->insert((Node<K,V> *)right);
+//             right->printTreeFileWeight(os, seen);
+//         }
+//         os<<")";
+//     }
 
     void printTreeFileWeight(ostream& os) {
-        set< Node<K,V>* > seen;
-        printTreeFileWeight(os, &seen);
+        // set< Node<K,V>* > seen;
+        // printTreeFileWeight(os, &seen);
     }
 
 };

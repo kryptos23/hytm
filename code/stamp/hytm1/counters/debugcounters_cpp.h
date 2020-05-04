@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   debugcounters_print.h
  * Author: trbot
  *
@@ -27,7 +27,7 @@ using namespace std;
 #define TM_TIMER_END(tid) countersProbEndTime(__tm_counters, (tid), __tm_counters->timingOnFallback)
 #define TM_CLEAR_COUNTERS() countersClear(__tm_counters)
 #define TM_PRINT_COUNTERS() countersPrint(__tm_counters)
-#define TM_CREATE_COUNTERS() { __tm_counters = (c_debugCounters *) malloc(sizeof(c_debugCounters)); countersInit(__tm_counters, MAX_TID_POW2); }
+#define TM_CREATE_COUNTERS() { __tm_counters = (c_debugCounters *) malloc(sizeof(c_debugCounters)); /*printf("sizeof(c_debugCounters)=%lu\n", sizeof(c_debugCounters));*/ countersInit(__tm_counters, MAX_TID_POW2); }
 #define TM_DESTROY_COUNTERS() { free(__tm_counters); }
 
 /**
@@ -52,7 +52,7 @@ string cpp_getAutomaticAbortNames(const int compressedStatus) {
     if (compressedStatus & (1<<BIT_USER)) ss<<" explicit";
     if (compressedStatus & (1<<BIT_CAPACITY)) ss<<" capacity";
     if (compressedStatus & (1<<BIT_CONFLICT)) ss<<" conflict";
-    if (compressedStatus & (1<<BIT_RETRY)) ss<<" retry";
+    // if (compressedStatus & (1<<BIT_RETRY)) ss<<" retry";
 #endif
 #endif
     return ss.str();
@@ -68,7 +68,7 @@ string cpp_getExplicitAbortName(const int compressedStatus) {
         ss<<"explicit("<<explicitCode<<")";
     }
 #else
-    
+
 #endif
 #endif
     return ss.str();

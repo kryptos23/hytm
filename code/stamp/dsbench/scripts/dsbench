@@ -9,11 +9,6 @@ seqwidth=48
 algs_reclaimers_pools="dsbench_hytm2_3path~debra~none dsbench_tl2~debra~none dsbench_hytm1~debra~none dsbench_hytm2~debra~none dsbench_hytm3~debra~none dsbench_hybridnorec~debra~none"
 #algs_reclaimers_pools="$algs_reclaimers_pools dsbench_tl2~none~none dsbench_hytm1~none~none dsbench_hytm2~none~none dsbench_hytm3~none~none dsbench_hybridnorec~none~none"
 
-if [ "$machine" == "cheshire-r07u03" ]; then
-    algs_reclaimers_pools="$algs_reclaimers_pools dsbench_hytm2_nonspec~debra~none dsbench_hybridnorec_nonspec~debra~none"
-    #algs_reclaimers_pools="$algs_reclaimers_pools dsbench_hytm2_nonspec~none~none dsbench_hybridnorec_nonspec~none~none"
-fi
-
 keyranges="100000 10000"
 insdel_pcnts="0 5 20"
 
@@ -40,7 +35,7 @@ cd ..
 
 outdir=output.${machine}.${expname}
 libdir=../lib
-bindir=.
+bindir=./bin/
 scriptsdir=scripts
 logfile=$outdir/log.out
 compilinglogfile=$outdir/compiling.out
@@ -76,8 +71,8 @@ cat $logfile
 
 echo > $compilinglogfile
 
-cnt1=0
-cnt2=0
+cnt1=10000
+cnt2=10000
 for counting in 1 0; do
 for pinning in $pinnings; do
     if [ "$counting" -eq "0" ]; then
@@ -114,15 +109,14 @@ for pinning in $pinnings; do
                         continue
                     fi
                     for ((trial=0;trial<$ntrials;++trial)); do
-                        cnt2=`expr $cnt2 + 1`
-                        echo -n "trial $cnt2 / $cnt1: "
+                        cnt2=$((cnt2 + 1))
+                        echo "[$cnt2 / $cnt1] $pinning k=$k $alg u=$((2*i)) n=$nwork,$nrq"
 
                         args="-t $t -mr $mr -ma $ma -mp $mp $p -k $k -i $insdel_pcnt -d $insdel_pcnt -rq 0 -rqsize 256 -nwork $nwork -nrq $nrq"
                         cmd="$machine.$alg $args"
-                        fname=`echo $cmd | tr " " "."`
-                        fname="step$cnt2.${fname}.-seqwidth.$seqwidth.-trial.$trial.-pinning.${pinning}"
-                        fname="$outdir/$fname.data"
-                        echo "$envcmd ${malloc_conf} time timeout $timeoutsec $cmdprefix $bindir/$cmd >> $fname 2>>$stderrfile"
+                        fname="$outdir/step$cnt2.data"
+
+                        #echo "$envcmd ${malloc_conf} time timeout $timeoutsec $cmdprefix $bindir/$cmd"
                         echo "$envcmd ${malloc_conf} time timeout $timeoutsec $cmdprefix $bindir/$cmd >> $fname 2>>$stderrfile" > $fname
                         eval "$envcmd ${malloc_conf} time timeout $timeoutsec $cmdprefix $bindir/$cmd >> $fname 2>>$stderrfile"
                         if [ "$?" -ne "0" ]; then
@@ -130,6 +124,14 @@ for pinning in $pinnings; do
                             echo "ERROR: nonzero status after executing preceding command"
                             #cat $stderrfile
                             #exit
+                        fi
+
+                        ## test mode check for nonzero throughput
+                        if [ "$#" -ne "0" ]; then
+                            tput=$(grep "incl. queries" $fname | cut -d":" -f2 | tr -d " ")
+                            valid=$(grep "Validation" $fname | cut -d" " -f2)
+                            [[ "$valid" == "OK:" ]] || (echo "ERROR: $fname FAILED validation" | tee -a $logfile)
+                            [[ "$tput" -ge "0" ]] || (echo "ERROR: $fname tput=0 or missing" | tee -a $logfile)
                         fi
                     done
                 done
@@ -152,4 +154,6 @@ rm -f $compilinglogfile
 #cd ..
 
 #echo -e $problems
-cat $stderrfile
+cat $stderrfile | grep -vE "maxresident|pagefaults"
+
+grep "ERROR:" $logfile

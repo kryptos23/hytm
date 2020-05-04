@@ -23,6 +23,7 @@ typedef long test_type; // really want compile-time assert that this is the same
 #include <typeinfo>
 #include <pthread.h>
 #include <atomic>
+#include "print_elapsed.h"
 #include "dsbench_tm.h"
 #include "common/random.h"
 #include "globals.h"
@@ -58,9 +59,9 @@ chrono::time_point<chrono::high_resolution_clock> endTime;
 PAD;
 long elapsedMillis;
 PAD;
-bool start = false;
+volatile bool start = false;
 PAD;
-bool done = false;
+volatile bool done = false;
 PAD;
 atomic_int running; // number of threads that are running
 PAD;
@@ -128,7 +129,7 @@ void thread_prefill(void *unused) {
     Random * rng = &rngs[tid];
     DS_DECLARATION * tree = (DS_DECLARATION *) __tree;
 
-    double insProbability = (INS > 0 ? 100*INS/(INS+DEL) : 50.);
+    double insProbability = (INSERT_FRAC > 0 ? 100*INSERT_FRAC/(INSERT_FRAC+DELETE_FRAC) : 50.);
 
     INIT_THREAD(tid);
     running.fetch_add(1);
@@ -176,7 +177,7 @@ void prefill(DS_DECLARATION * tree) {
 
     const double PREFILL_THRESHOLD = 0.05;
     const int MAX_ATTEMPTS = 500;
-    const double expectedFullness = (INS+DEL ? INS / (double)(INS+DEL) : 0.5); // percent full in expectation
+    const double expectedFullness = (INSERT_FRAC+DELETE_FRAC ? INSERT_FRAC / (double)(INSERT_FRAC+DELETE_FRAC) : 0.5); // percent full in expectation
     const int expectedSize = (int)(MAXKEY * expectedFullness);
 
     int sz = 0;
@@ -204,10 +205,11 @@ void prefill(DS_DECLARATION * tree) {
 
         sz = GET_TOTAL(prefillSize);
         //sz = tree->getSize();
-        int absdiff = (sz < expectedSize ? expectedSize - sz : sz - expectedSize);
-        if (absdiff < expectedSize*PREFILL_THRESHOLD) {
-            break;
-        }
+        if (sz >= expectedSize * (1. - PREFILL_THRESHOLD)) break;
+        // int absdiff = (sz < expectedSize ? expectedSize - sz : sz - expectedSize);
+        // if (absdiff < expectedSize*PREFILL_THRESHOLD) {
+        //     break;
+        // }
         TRACE COUTATOMIC("main thread: prefilling iteration "<<attempts<<" sz="<<sz<<" expectedSize="<<expectedSize<<" keysum="<<GET_TOTAL(keysum)<<" treekeysum="<<tree->debugKeySum()<<" treesize="<<tree->size()<<endl);
     }
     TRACE COUTATOMIC("main thread: shutting down tm"<<endl);
@@ -331,17 +333,17 @@ void thread_timed(void *unused) {
             int key = rng->nextNatural(MAXKEY);
             //cout<<"MAXKEY="<<MAXKEY<<" random key for tid="<<tid<<" is "<<key<<endl;
             double op = rng->nextNatural(100000000) / 1000000.;
-            if (op < INS) {
+            if (op < INSERT_FRAC) {
                 if (INSERT_AND_CHECK_SUCCESS) {
                     ADD(keysum, key);
                 }
                 INCREMENT(insertSuccess);
-            } else if (op < INS+DEL) {
+            } else if (op < INSERT_FRAC+DELETE_FRAC) {
                 if (DELETE_AND_CHECK_SUCCESS) {
                     ADD(keysum, -key);
                 }
                 INCREMENT(eraseSuccess);
-            } else if (op < INS+DEL+RQ) {
+            } else if (op < INSERT_FRAC+DELETE_FRAC+RQ) {
                 int rqcnt;
                 RQ_AND_CHECK_SUCCESS(rqcnt);
                 INCREMENT(rqSuccess);
@@ -370,8 +372,10 @@ void trial() {
 #else
 #error "Failed to define a data structure"
 #endif
+    PRINT_ELAPSED_FROM_START();
 
-    papi_init_program(TOTAL_THREADS);
+    papi_init_program(TOTAL_THREADS);                   // costs 65 ms (all in PAPI library init call)
+    PRINT_ELAPSED_FROM_START();
 
     // get random number generator seeded with time
     // we use this rng to seed per-thread rng's that use a different algorithm
@@ -379,27 +383,37 @@ void trial() {
     for (int i=0;i<MAX_TID_POW2;++i) {
         rngs[i].setSeed(rand());
     }
+    PRINT_ELAPSED_FROM_START();
 
-    TM_STARTUP(TOTAL_THREADS);
+    TM_STARTUP(TOTAL_THREADS);                          // costs 700 ms (reduced to 300 ms with omp) -- see TxOnce -- reduced by eliminating some detail from aborts
+    PRINT_ELAPSED_FROM_START();
     if (PREFILL) prefill((DS_DECLARATION *) __tree);
+    PRINT_ELAPSED_FROM_START();
     __sync_synchronize();
 
     thread_startup(TOTAL_THREADS);
+    PRINT_ELAPSED_FROM_START();
 
     startTime = chrono::high_resolution_clock::now();
     __sync_synchronize();
 
-    thread_start(thread_timed<MemMgmt>, NULL);
+    PRINT_ELAPSED_FROM_START();
+    thread_start(thread_timed<MemMgmt>, NULL);          // costs 75 ms
+    PRINT_ELAPSED_FROM_START();
 
     endTime = chrono::high_resolution_clock::now();
     __sync_synchronize();
     elapsedMillis = chrono::duration_cast<chrono::milliseconds>(endTime-startTime).count();
     COUTATOMIC((elapsedMillis/1000.)<<"s"<<endl);
+    PRINT_ELAPSED_FROM_START();
 
     thread_shutdown();
-    TM_SHUTDOWN();
+    PRINT_ELAPSED_FROM_START();
+    TM_SHUTDOWN();                                      // costs 30 ms
+    PRINT_ELAPSED_FROM_START();
     SYNC_RMW;
     papi_deinit_program();
+    PRINT_ELAPSED_FROM_START();
 }
 
 #ifdef BST
@@ -474,6 +488,7 @@ void printOutput() {
 #endif
         exit(-1);
     }
+    PRINT_ELAPSED_FROM_START();
 
 //    int totalSuccessful = GET_TOTAL(pathSuccess);
 //    int totalChanges = GET_TOTAL(updateChange);
@@ -524,7 +539,10 @@ void printOutput() {
 
     // free tree
     delete tree;
+    printf("tree deleted\n");
 #endif
+
+    PRINT_ELAPSED_FROM_START();
 }
 
 #define PRINTI(name) { cout<<(#name)<<"="<<name<<endl; }
@@ -533,7 +551,7 @@ void printOutput() {
 template <class Reclaim, class Alloc, class Pool>
 void performExperiment() {
 #if defined(BST)
-    typedef record_manager<Reclaim, Alloc, Pool, Node<test_type, test_type>, SCXRecord<test_type, test_type> > MemMgmt;
+    typedef record_manager<Reclaim, Alloc, Pool, Node<test_type, test_type> > MemMgmt;
 #endif
     EXPERIMENT_FN<MemMgmt>();
     printOutput<MemMgmt>();
@@ -588,9 +606,9 @@ int main(int argc, char** argv) {
 //    NO_THREADS = false;
     for (int i=1;i<argc;++i) {
         if (strcmp(argv[i], "-i") == 0) {
-            INS = atof(argv[++i]);
+            INSERT_FRAC = atof(argv[++i]);
         } else if (strcmp(argv[i], "-d") == 0) {
-            DEL = atof(argv[++i]);
+            DELETE_FRAC = atof(argv[++i]);
         } else if (strcmp(argv[i], "-rq") == 0) {
             RQ = atof(argv[++i]);
         } else if (strcmp(argv[i], "-rqsize") == 0) {
@@ -628,6 +646,7 @@ int main(int argc, char** argv) {
             exit(1);
         }
     }
+    PRINT_ELAPSED_FROM_START();
     binding_configurePolicy(PHYSICAL_PROCESSORS);
 
     TOTAL_THREADS = WORK_THREADS + RQ_THREADS;
@@ -647,8 +666,8 @@ int main(int argc, char** argv) {
     PRINTI(HTM_ATTEMPT_THRESH);
     PRINTI(PREFILL);
     PRINTI(MILLIS_TO_RUN);
-    PRINTI(INS);
-    PRINTI(DEL);
+    PRINTI(INSERT_FRAC);
+    PRINTI(DELETE_FRAC);
     PRINTI(MAXKEY);
     PRINTI(WORK_THREADS);
     PRINTI(RQ_THREADS);
@@ -676,7 +695,9 @@ int main(int argc, char** argv) {
         exit(-1);
     }
 
+    PRINT_ELAPSED_FROM_START();
     performExperiment();
 
+    PRINT_ELAPSED_FROM_START();
     return 0;
 }

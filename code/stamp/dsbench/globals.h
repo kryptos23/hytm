@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   globals.h
  * Author: trbot
  *
@@ -27,8 +27,8 @@ PAD;
 #endif
 
 PAD;
-double INS;
-double DEL;
+double INSERT_FRAC;
+double DELETE_FRAC;
 double RQ;
 int RQSIZE;
 int MAXKEY;

@@ -1305,16 +1305,22 @@ intptr_t TxLoad_fasthtm(void* _Self, volatile intptr_t* addr) {
 void TxOnce() {
     CTASSERT((_TABSZ & (_TABSZ - 1)) == 0); /* must be power of 2 */
 
+    PRINT_ELAPSED_FROM_START();
 //    initSighandler(); /**** DEBUG CODE ****/
-    TM_CREATE_COUNTERS();
+    TM_CREATE_COUNTERS();                                       // costs 300 ms with omp, 700+ without
+    PRINT_ELAPSED_FROM_START();
     printf("%s %s\n", TM_NAME, "system ready\n");
 #ifdef STACK_SPACE_LOCKTAB
-//    memset(LockTab, 0, _TABSZ*sizeof(vLock));
+//    memset(LockTab, 0, _TABSZ*sizeof(vLock));                    // costs 4-6 ms
 #else
+    PRINT_ELAPSED_FROM_START();
     LockTab = (vLockSpace*) malloc(_TABSZ*sizeof(vLockSpace));
+    PRINT_ELAPSED_FROM_START();
     memset(LockTab, 0, _TABSZ*sizeof(vLockSpace));
+    PRINT_ELAPSED_FROM_START();
     fallbackCount = 0;
 #endif
+    PRINT_ELAPSED_FROM_START();
 }
 
 void TxClearCounters() {

@@ -38,7 +38,6 @@ inline Node<K,V>* bst<K,V,Compare,RecManager>::initializeNode(
     // from an entry point to the data structure.
     newnode->left = left;
     newnode->right = right;
-    newnode->marked = false;
     return newnode;
 }
 
@@ -64,7 +63,7 @@ template<class K, class V, class Compare, class RecManager>
 inline int bst<K,V,Compare,RecManager>::size() {
     return computeSize(root->left->left);
 }
-    
+
 template<class K, class V, class Compare, class RecManager>
 inline int bst<K,V,Compare,RecManager>::computeSize(Node<K,V> * const root) {
     if (root == NULL) return 0;
@@ -88,7 +87,7 @@ int bst<K,V,Compare,RecManager>::rangeQuery_tle(const int tid, const K& low, con
     TLEScope scope (&this->lock, MAX_FAST_HTM_RETRIES, tid, counters->pathSuccess, counters->pathFail, counters->htmAbort);
 
     cnt = 0;
-    
+
     // depth first traversal (of interesting subtrees)
     stack.push(root);
     while (!stack.isEmpty()) {
@@ -113,7 +112,7 @@ int bst<K,V,Compare,RecManager>::rangeQuery_tle(const int tid, const K& low, con
             }
         }
     }
-    
+
     scope.end();
     shmem->enterQuiescentState(tid);
     return cnt;
@@ -156,7 +155,7 @@ int bst<K,V,Compare,RecManager>::rangeUpdate_stm(TM_ARGDECL_ALONE, const int tid
 //    cout<<"rangeUpdate_stm(lo="<<low<<", hi="<<hi<<")"<<endl;
 //    ptrstack<Node<K,V> > stack;
     block<Node<K,V> > stack (NULL);
-    
+
     shmem->leaveQuiescentState(tid);
     TM_BEGIN();
 
@@ -167,7 +166,7 @@ int bst<K,V,Compare,RecManager>::rangeUpdate_stm(TM_ARGDECL_ALONE, const int tid
     while (!stack.isEmpty()) {
         Node<K,V> * node = stack.pop();
         Node<K,V> * left = (Node<K,V> *) TM_SHARED_READ_P(node->left);
-        
+
         // if internal node, explore its children
         K key = (K) TM_SHARED_READ_L(node->key);
         if (left != NULL) {
@@ -178,7 +177,7 @@ int bst<K,V,Compare,RecManager>::rangeUpdate_stm(TM_ARGDECL_ALONE, const int tid
             if (key == this->NO_KEY || cmp(low, key)) {
                 stack.push(left);
             }
-            
+
         // else if leaf node, check if we should return it
         } else {
             if (key != this->NO_KEY && !cmp(key, low) && !cmp(hi, key)) {
@@ -190,7 +189,7 @@ int bst<K,V,Compare,RecManager>::rangeUpdate_stm(TM_ARGDECL_ALONE, const int tid
     }
     TM_END();
     shmem->enterQuiescentState(tid);
-    
+
     // success
     return result;
 }
@@ -201,7 +200,7 @@ const pair<V,bool> bst<K,V,Compare,RecManager>::find_tle(const int tid, const K&
     pair<V,bool> result;
     Node<K,V> *p;
     Node<K,V> *l;
-    
+
     shmem->leaveQuiescentState(tid);
     TLEScope scope (&this->lock, MAX_FAST_HTM_RETRIES, tid, counters->pathSuccess, counters->pathFail, counters->htmAbort);
 
@@ -213,7 +212,7 @@ const pair<V,bool> bst<K,V,Compare,RecManager>::find_tle(const int tid, const K&
     l = p->left;
     if (l == NULL) {
         result = pair<V,bool>(NO_VALUE, false); // no keys in data structure
-        
+
         scope.end();
         shmem->enterQuiescentState(tid);
         return result; // success
@@ -246,7 +245,7 @@ const pair<V,bool> bst<K,V,Compare,RecManager>::find_stm(TM_ARGDECL_ALONE, const
     pair<V,bool> result;
     Node<K,V> *p;
     Node<K,V> *l;
-    
+
     shmem->leaveQuiescentState(tid);
     TM_BEGIN_RO();
 
@@ -394,7 +393,7 @@ const pair<V,bool> bst<K,V,Compare,RecManager>::erase_tle(const int tid, const K
     TLEScope scope (&this->lock, MAX_FAST_HTM_RETRIES, tid, counters->pathSuccess, counters->pathFail, counters->htmAbort);
 
     V result = NO_VALUE;
-    
+
     Node<K,V> *gp, *p, *l;
     l = root->left;
     if (l->left == NULL) {
@@ -454,7 +453,7 @@ const pair<V,bool> bst<K,V,Compare,RecManager>::erase_stm(TM_ARGDECL_ALONE, cons
     TM_BEGIN();
 
     V result = NO_VALUE;
-    
+
     Node<K,V> *gp, *p, *l;
     l = (Node<K,V> *) TM_SHARED_READ_P(((Node<K,V> *) TM_SHARED_READ_P(root))->left);
     if (TM_SHARED_READ_P(l->left) == NULL) {

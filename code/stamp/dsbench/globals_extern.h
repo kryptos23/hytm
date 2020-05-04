@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   globals_extern.h
  * Author: trbot
  *
@@ -49,8 +49,8 @@ extern std::atomic_bool ___validateops;
 #define COUTATOMIC(coutstr) cout<<coutstr
 #define COUTATOMICTID(coutstr) cout<<"tid="<<(tid<10?" ":"")<<tid<<": "<<coutstr
 
-extern double INS;
-extern double DEL;
+extern double INSERT_FRAC;
+extern double DELETE_FRAC;
 extern double RQ;
 extern int RQSIZE;
 extern int MAXKEY;
@@ -70,6 +70,10 @@ extern bool PRINT_TREE;
 extern bool ALLOWABLE_PATH_CONCURRENCY[14][14];
 
 #if defined(BST)
+
+    #define P1ALG1
+    #define P2ALG1
+    #define P3ALG12
 
     #if defined(P3ALG13)
     #define RQNAME rangeQuery_lock

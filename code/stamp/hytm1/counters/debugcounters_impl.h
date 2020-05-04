@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   debugcounters_impl.h
  * Author: trbot
  *
@@ -14,7 +14,7 @@ extern "C" {
 
 #include <stdio.h>
 #include "debugcounters.h"
-    
+
 #ifdef RECORD_ABORT_ADDRESSES
 #define MAX_ABORT_ADDR (1<<24)
 volatile char padding0[PREFETCH_SIZE_BYTES];
@@ -24,28 +24,14 @@ long abortAddr[MAX_ABORT_ADDR];
 volatile char padding1[PREFETCH_SIZE_BYTES];
 #endif
 
-//int getCompressedStatus(const int status) {
-//    return (status & 63) | ((status >> 24)<<6);
-//}
-//
-//int getCompressedStatusAutomaticAbortCode(const int compressedStatus) {
-//    return compressedStatus & 63;
-//}
-//
-//int getCompressedStatusExplicitAbortCode(const int compressedStatus) {
-//    return compressedStatus >> 6;
-//}
-//
-//int getStatusExplicitAbortCode(const int status) {
-//    return status >> 24;
-//}
-
 void registerHTMAbort(struct c_debugCounters *cs, const int tid, const XBEGIN_ARG_T arg, const int path) {
 #ifdef RECORD_ABORTS
     int s = 0;
     char userAbortName = 0;
     if (arg) {
 #   if defined(__powerpc64__) || defined(__ppc64__) || defined(__PPC64__)
+        if (MAX_ABORT_STATUS < 4096) { printf("ERROR: SET MAX_ABORT_STATUS to 4096 or GREATER to allow POWER8 abort tracking\n"); exit(-1); }
+
         // FOR P8 TEXASR BIT DEFINITIONS, SEE PAGE 803 IN (http://fileadmin.cs.lth.se/cs/education/EDAN25/PowerISA_V2.07_PUBLIC.pdf)
 #       define P8_MASK_ABORT_CODE ((1<<7)-1)
 #       define P8_BIT_PERSISTENT 7
@@ -67,7 +53,7 @@ void registerHTMAbort(struct c_debugCounters *cs, const int tid, const XBEGIN_AR
 #       define getbit(bit) ((texasr>>(bit))&1)
         unsigned long texasr = __builtin_get_texasr();
         unsigned long tfiah = __builtin_get_tfiar();
-        
+
 #       define BIT_USER 1
 #       define BIT_CAPACITY 2
 #       define BIT_CONFLICT 3
@@ -101,21 +87,30 @@ void registerHTMAbort(struct c_debugCounters *cs, const int tid, const XBEGIN_AR
         }
 #       endif
 #   else
-#       define BIT_USER 1
-#       define BIT_CAPACITY 2
-#       define BIT_CONFLICT 3
-#       define BIT_RETRY 4
-#       define BIT_ILLEGAL 5
-#       define BIT_USER_NAME_START 6
-#       define NUM_USER_NAME_BITS 3
+// #       define BIT_USER 1
+// #       define BIT_CAPACITY 2
+// #       define BIT_CONFLICT 3
+// #       define BIT_RETRY 4
+// #       define BIT_ILLEGAL 5
+// #       define BIT_USER_NAME_START 6
+// #       define NUM_USER_NAME_BITS 3
+
+//         s = (X_ABORT_STATUS_IS_USER(arg) << BIT_USER)
+//           | (X_ABORT_STATUS_IS_CAPACITY(arg) << BIT_CAPACITY)
+//           | (X_ABORT_STATUS_IS_CONFLICT(arg) << BIT_CONFLICT)
+//           | (X_ABORT_STATUS_IS_RETRY(arg) << BIT_RETRY)
+//           | (X_ABORT_STATUS_IS_ILLEGAL(arg) << BIT_ILLEGAL)
+//           | (X_ABORT_STATUS_IS_USER_NAMED(arg, &userAbortName) << BIT_USER_NAME_START);
+//         if (s & (1<<BIT_USER_NAME_START)) s |= ((userAbortName&((1<<NUM_USER_NAME_BITS)-1)) << BIT_USER_NAME_START);
+
+#       define BIT_USER 0
+#       define BIT_CAPACITY 1
+#       define BIT_CONFLICT 2
 
         s = (X_ABORT_STATUS_IS_USER(arg) << BIT_USER)
           | (X_ABORT_STATUS_IS_CAPACITY(arg) << BIT_CAPACITY)
-          | (X_ABORT_STATUS_IS_CONFLICT(arg) << BIT_CONFLICT)
-          | (X_ABORT_STATUS_IS_RETRY(arg) << BIT_RETRY)
-          | (X_ABORT_STATUS_IS_ILLEGAL(arg) << BIT_ILLEGAL)
-          | (X_ABORT_STATUS_IS_USER_NAMED(arg, &userAbortName) << BIT_USER_NAME_START);
-        if (s & (1<<BIT_USER_NAME_START)) s |= ((userAbortName&((1<<NUM_USER_NAME_BITS)-1)) << BIT_USER_NAME_START);
+          | (X_ABORT_STATUS_IS_CONFLICT(arg) << BIT_CONFLICT);
+
 #   endif
     }
     if (s >= MAX_ABORT_STATUS) {
@@ -145,15 +140,16 @@ void countersClear(struct c_debugCounters *cs) {
 
 void countersInit(struct c_debugCounters *cs, const int numProcesses) {
     cs->NUM_PROCESSES = numProcesses;
-    int j=0;
-    for (;j<NUMBER_OF_PATHS;++j) {
+    PRINT_ELAPSED_FROM_START();
 #ifdef RECORD_ABORTS
-        #pragma omp parallel for
-        for (int i=0;i<MAX_ABORT_STATUS;++i) {
-            cs->htmAbort[j*MAX_ABORT_STATUS+i] = (struct c_debugCounter *) malloc(sizeof(struct c_debugCounter));
-            counterInit(cs->htmAbort[j*MAX_ABORT_STATUS+i], cs->NUM_PROCESSES);
-        }
+    // #pragma omp parallel for schedule(static, 16) num_threads(64)
+    for (int k=0;k<NUMBER_OF_PATHS*MAX_ABORT_STATUS;++k) {
+        cs->htmAbort[k] = (struct c_debugCounter *) malloc(sizeof(struct c_debugCounter));
+        counterInit(cs->htmAbort[k], cs->NUM_PROCESSES);
+    }
 #endif
+    PRINT_ELAPSED_FROM_START();
+    for (int j=0;j<NUMBER_OF_PATHS;++j) {
         cs->htmCommit[j] = (struct c_debugCounter *) malloc(sizeof(struct c_debugCounter));
         counterInit(cs->htmCommit[j], cs->NUM_PROCESSES);
     }
@@ -165,6 +161,7 @@ void countersInit(struct c_debugCounters *cs, const int numProcesses) {
     counterInit(cs->timingTemp, cs->NUM_PROCESSES);
     cs->timingOnFallback = (struct c_debugCounter *) malloc(sizeof(struct c_debugCounter));
     counterInit(cs->timingOnFallback, cs->NUM_PROCESSES);
+    PRINT_ELAPSED_FROM_START();
 }
 
 void countersDestroy(struct c_debugCounters *cs) {
