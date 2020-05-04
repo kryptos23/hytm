@@ -22,7 +22,7 @@
 
 #include <setjmp.h>
 #include <stdio.h>
-#include "../dsbench/recordmgr/machineconstants.h"
+#include "recordmgr/machineconstants.h"
 
 extern volatile long CommitTallySW;
 extern volatile int tleLock;

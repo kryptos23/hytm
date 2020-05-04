@@ -1,6 +1,6 @@
 /**
  * Preliminary C++ implementation of binary search tree using LLX/SCX.
- * 
+ *
  * Copyright (C) 2014 Trevor Brown
  * This preliminary implementation is CONFIDENTIAL and may not be distributed.
  */
@@ -8,7 +8,7 @@
 #ifndef RANDOM_H
 #define	RANDOM_H
 
-#include "../recordmgr/machineconstants.h"
+#include "recordmgr/machineconstants.h"
 
 class Random {
 private:
@@ -23,7 +23,7 @@ public:
     Random(int seed) {
         this->seed = seed;
     }
-    
+
     void setSeed(int seed) {
         this->seed = seed;
     }

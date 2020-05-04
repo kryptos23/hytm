@@ -16,7 +16,7 @@
 #ifndef STM_H
 #define STM_H 1
 
-#include "../dsbench/recordmgr/machineconstants.h"
+#include "recordmgr/machineconstants.h"
 
 #include "tl2.h"
 #include "util.h"

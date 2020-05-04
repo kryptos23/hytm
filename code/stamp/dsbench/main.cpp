@@ -32,6 +32,10 @@ typedef long test_type; // really want compile-time assert that this is the same
 #include "binding.h"
 //#include "../hytm1/platform_impl.h" // for SYNC_RMW primitive
 #include "common/papi/papi_util_impl.h"
+#include "bst_impl.h"
+#include "recordmgr/record_manager.h"
+
+using namespace std;
 
 #ifndef EXPERIMENT_FN
 #define EXPERIMENT_FN trial
@@ -42,15 +46,6 @@ PAD;
 static Random __rngs[2+MAX_TID_POW2]; // create per-thread random number generators (padded to avoid false sharing)
 static Random * rngs = &__rngs[1]; // shifted for padding
 PAD;
-
-#if defined(BST)
-#include "bst/bst_impl.h"
-#include "recordmgr/record_manager.h"
-#else
-#error "Failed to define a data structure"
-#endif
-
-using namespace std;
 
 // variables used in the concurrent test
 PAD;
@@ -84,11 +79,7 @@ const test_type NEG_INFTY = -1;
 const test_type POS_INFTY = 2000000000;
 PAD;
 
-#if defined(BST)
 #define DS_DECLARATION bst<test_type, test_type, less<test_type>, MemMgmt>
-#else
-#error "Failed to define a data structure"
-#endif
 
 #define STR(x) XSTR(x)
 #define XSTR(x) #x
@@ -96,28 +87,19 @@ PAD;
 #define VALUE key
 #define KEY key
 
-#if defined(BST)
-    #if defined(TLE) || defined(tle)
-        #define INSERT_AND_CHECK_SUCCESS tree->insert_tle(tid, key, VALUE) == tree->NO_VALUE
-        #define DELETE_AND_CHECK_SUCCESS tree->erase_tle(tid, key).second
-        #define FIND_AND_CHECK_SUCCESS tree->find_tle(tid, key)
-        #define RQ_AND_CHECK_SUCCESS(rqcnt) { cout<<"ERROR: RQ not supported in TLE mode"<<endl; exit(-1); }
-    #else
-        #define INSERT_AND_CHECK_SUCCESS tree->insert_stm(TM_ARG_ALONE, tid, key, VALUE) == tree->NO_VALUE
-        #define DELETE_AND_CHECK_SUCCESS tree->erase_stm(TM_ARG_ALONE, tid, key).second
-        #define FIND_AND_CHECK_SUCCESS tree->find_stm(TM_ARG_ALONE, tid, key)
-        #define RQ_AND_CHECK_SUCCESS(rqcnt) (rqcnt) = tree->rangeUpdate_stm(TM_ARG_ALONE, tid, key, key+RQSIZE)
-    #endif
+#define INSERT_AND_CHECK_SUCCESS tree->insert_stm(TM_ARG_ALONE, tid, key, VALUE) == tree->NO_VALUE
+#define DELETE_AND_CHECK_SUCCESS tree->erase_stm(TM_ARG_ALONE, tid, key).second
+#define FIND_AND_CHECK_SUCCESS tree->find_stm(TM_ARG_ALONE, tid, key)
+#define RQ_AND_CHECK_SUCCESS(rqcnt) (rqcnt) = tree->rangeUpdate_stm(TM_ARG_ALONE, tid, key, key+RQSIZE)
 
-    #define INIT_THREAD(tid) tree->initThread(tid)
-    #define PRCU_INIT
-    #define PRCU_REGISTER(tid)
-    #define PRCU_UNREGISTER
-    #define CLEAR_COUNTERS tree->clearCounters();
-    #define INCREMENT(name) (++tree->debugGetCounters()[tid]->name)
-    #define ADD(name, val) (tree->debugGetCounters()[tid]->name += (val))
-    #define GET_TOTAL(name) ({ long long ___totalsum=0; for (int ___tid=0;___tid<TOTAL_THREADS;++___tid) { ___totalsum += tree->debugGetCounters()[___tid]->name; } ___totalsum; })
-#endif
+#define INIT_THREAD(tid) tree->initThread(tid)
+#define PRCU_INIT
+#define PRCU_REGISTER(tid)
+#define PRCU_UNREGISTER
+#define CLEAR_COUNTERS tree->clearCounters();
+#define INCREMENT(name) (++tree->debugGetCounters()[tid]->name)
+#define ADD(name, val) (tree->debugGetCounters()[tid]->name += (val))
+#define GET_TOTAL(name) ({ long long ___totalsum=0; for (int ___tid=0;___tid<TOTAL_THREADS;++___tid) { ___totalsum += tree->debugGetCounters()[___tid]->name; } ___totalsum; })
 
 template <class MemMgmt>
 void thread_prefill(void *unused) {
@@ -257,10 +239,8 @@ void thread_timed(void *unused) {
     Random * rng = &rngs[tid];
     DS_DECLARATION * tree = (DS_DECLARATION *) __tree;
 
-#if defined(BST)
     //Node<test_type, test_type> const ** rqResults = new Node<test_type, test_type> const *[RQSIZE];
     Node<test_type, test_type> const rqResults[RQSIZE];
-#endif
 
     VERBOSE COUTATOMICTID("timed thread initializing"<<endl);
     INIT_THREAD(tid);
@@ -367,11 +347,7 @@ void thread_timed(void *unused) {
 
 template <class MemMgmt>
 void trial() {
-#if defined(BST)
     __tree = (void*) new DS_DECLARATION(NO_KEY, NO_VALUE, RETRY, /*PHYSICAL_PROCESSORS*/ TOTAL_THREADS);
-#else
-#error "Failed to define a data structure"
-#endif
     PRINT_ELAPSED_FROM_START();
 
     papi_init_program(TOTAL_THREADS);                   // costs 65 ms (all in PAPI library init call)
@@ -416,7 +392,6 @@ void trial() {
     PRINT_ELAPSED_FROM_START();
 }
 
-#ifdef BST
 void sighandler(int signum) {
     printf("Process %d got signal %d\n", getpid(), signum);
 
@@ -443,7 +418,6 @@ void sighandler(int signum) {
         bst<test_type, test_type, less<test_type>, void> *tree =
         ((bst<test_type, test_type, less<test_type>, void> *) __tree);
         tree->debugPrintToFile("tree", 0, "", 0, "");
-        tree->debugPrintToFileWeight("tree", 0, "", 0, "weight");
 
         fstream fs ("addr", fstream::out);
 //        printInterruptedAddresses(fs);
@@ -460,7 +434,6 @@ void sighandler(int signum) {
     }
 #endif
 }
-#endif
 
 string percent(int numer, int denom) {
     if (numer == 0 || denom == 0) return "0%";
@@ -483,9 +456,7 @@ void printOutput() {
         cout<<"Validation OK: threadsKeySum="<<threadsKeySum<<" treeKeySum="<<treeKeySum<<endl;
     } else {
         cout<<"Validation FAILURE: threadsKeySum="<<threadsKeySum<<" treeKeySum="<<treeKeySum<<endl;
-#if defined(BST)
         tree->debugPrintToFile("tree_", 0, "", 0, ".out");
-#endif
         exit(-1);
     }
     PRINT_ELAPSED_FROM_START();
@@ -532,7 +503,6 @@ void printOutput() {
 
     COUTATOMIC(endl);
 
-#if defined(BST)
     if (PRINT_TREE) {
         tree->debugPrintToFile("tree_", 0, "", 0, ".out");
     }
@@ -540,7 +510,6 @@ void printOutput() {
     // free tree
     delete tree;
     printf("tree deleted\n");
-#endif
 
     PRINT_ELAPSED_FROM_START();
 }
@@ -550,9 +519,7 @@ void printOutput() {
 
 template <class Reclaim, class Alloc, class Pool>
 void performExperiment() {
-#if defined(BST)
     typedef record_manager<Reclaim, Alloc, Pool, Node<test_type, test_type> > MemMgmt;
-#endif
     EXPERIMENT_FN<MemMgmt>();
     printOutput<MemMgmt>();
 }
@@ -650,19 +617,12 @@ int main(int argc, char** argv) {
     binding_configurePolicy(PHYSICAL_PROCESSORS);
 
     TOTAL_THREADS = WORK_THREADS + RQ_THREADS;
-//    PRINTS(P1NAME);
-//    PRINTS(P2NAME);
-//    PRINTS(P3NAME);
     PRINTS(STR(FIND_AND_CHECK_SUCCESS));
     PRINTS(STR(INSERT_AND_CHECK_SUCCESS));
     PRINTS(STR(DELETE_AND_CHECK_SUCCESS));
-//    PRINTS(STR(FIND_FUNC));
-//    PRINTS(STR(INSERT_FUNC));
-//    PRINTS(STR(ERASE_FUNC));
-//    PRINTS(STR(RQ_FUNC));
     PRINTS(STR(EXPERIMENT_FN));
-//    PRINTI(MAX_FAST_HTM_RETRIES);
-//    PRINTI(MAX_SLOW_HTM_RETRIES);
+    PRINTI(MAX_FAST_HTM_RETRIES);
+    PRINTI(MAX_SLOW_HTM_RETRIES);
     PRINTI(HTM_ATTEMPT_THRESH);
     PRINTI(PREFILL);
     PRINTI(MILLIS_TO_RUN);

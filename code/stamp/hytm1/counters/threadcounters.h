@@ -16,7 +16,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-#include "../../dsbench/recordmgr/machineconstants.h"
+#include "recordmgr/machineconstants.h"
 #include "../platform.h"
 using namespace std;
 

@@ -81,5 +81,3 @@ else
     echo "ERROR: unknown machine $machine"
     exit 1
 fi
-
-g++ -O3 add.cpp -o add

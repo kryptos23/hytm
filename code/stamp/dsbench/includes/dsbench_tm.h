@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   dsbench_tm.h
  * Author: trbot
  *
@@ -29,7 +29,7 @@
 #  define P_MEMORY_SHUTDOWN()           /* nothing */
 
 #  include <string.h>
-#  include "../lib/thread.h"
+#  include "thread.h"
 
 #    define TM_ARG                        STM_SELF,
 #    define TM_ARG_ALONE                  STM_SELF
@@ -73,62 +73,54 @@
 #  define TM_LOCAL_WRITE_I(var, val)    TM_LOCAL_WRITE_L(var, val)
 
 #if defined hytm1
-#include "../hytm1/stm.h"
-#include "../hytm1/tmalloc.h"
-#include "../hytm1/tmalloc.c"
-#include "../hytm1/hytm1.h"
-#include "../hytm1/hytm1.cpp"
+#include "../../hytm1/stm.h"
+#include "../../hytm1/tmalloc.h"
+#include "../../hytm1/tmalloc.c"
+#include "../../hytm1/hytm1.h"
+#include "../../hytm1/hytm1.cpp"
 #warning Using hytm1
 #elif defined hytm2
-#include "../hytm2/stm.h"
-#include "../hytm2/tmalloc.h"
-#include "../hytm2/tmalloc.c"
-#include "../hytm2/hytm2.h"
-#include "../hytm2/hytm2.cpp"
+#include "../../hytm2/stm.h"
+#include "../../hytm2/tmalloc.h"
+#include "../../hytm2/tmalloc.c"
+#include "../../hytm2/hytm2.h"
+#include "../../hytm2/hytm2.cpp"
 #warning Using hytm2
 #elif defined hytm2_3path
-#include "../hytm2_3path/stm.h"
-#include "../hytm2_3path/tmalloc.h"
-#include "../hytm2_3path/tmalloc.c"
-#include "../hytm2_3path/hytm2_3path.h"
-#include "../hytm2_3path/hytm2_3path.cpp"
+#include "../../hytm2_3path/stm.h"
+#include "../../hytm2_3path/tmalloc.h"
+#include "../../hytm2_3path/tmalloc.c"
+#include "../../hytm2_3path/hytm2_3path.h"
+#include "../../hytm2_3path/hytm2_3path.cpp"
 #warning Using hytm2_3path
 #elif defined hytm2sw
 #error hytm2sw is not supported
 #elif defined hytm3
-#include "../hytm3/stm.h"
-#include "../hytm3/tmalloc.h"
-#include "../hytm3/tmalloc.c"
-#include "../hytm3/hytm3.h"
-#include "../hytm3/hytm3.cpp"
+#include "../../hytm3/stm.h"
+#include "../../hytm3/tmalloc.h"
+#include "../../hytm3/tmalloc.c"
+#include "../../hytm3/hytm3.h"
+#include "../../hytm3/hytm3.cpp"
 #warning Using hytm3
 #elif defined hybridnorec
-#include "../hybridnorec/stm.h"
-#include "../hybridnorec/tmalloc.h"
-#include "../hybridnorec/tmalloc.c"
-#include "../hybridnorec/hybridnorec.h"
-#include "../hybridnorec/hybridnorec.cpp"
+#include "../../hybridnorec/stm.h"
+#include "../../hybridnorec/tmalloc.h"
+#include "../../hybridnorec/tmalloc.c"
+#include "../../hybridnorec/hybridnorec.h"
+#include "../../hybridnorec/hybridnorec.cpp"
 #warning Using hybridnorec
 #elif defined tl2
-#include "../tl2/stm.h"
-#include "../tl2/tmalloc.h"
-#include "../tl2/tmalloc.c"
-#include "../tl2/tl2.h"
-#include "../tl2/tl2.c"
+#include "../../tl2/stm.h"
+#include "../../tl2/tmalloc.h"
+#include "../../tl2/tmalloc.c"
+#include "../../tl2/tl2.h"
+#include "../../tl2/tl2.c"
 #warning Using tl2
 #elif defined seqtm
-#include "../seqtm/stm.h"
-#include "../seqtm/seqtm.h"
-#include "../seqtm/seqtm.cpp"
+#include "../../seqtm/stm.h"
+#include "../../seqtm/seqtm.h"
+#include "../../seqtm/seqtm.cpp"
 #warning Using seqtm
-#elif defined TLE
-#include "tlewrapper/stm.h"
-#include "tle.h"
-#warning Using TLE
-#elif defined notm
-#include "tlewrapper/stm.h"
-#include "../hytm1/platform.h"
-#warning Not using any synchronization
 #endif
 
 #endif	/* DSBENCH_TM_H */

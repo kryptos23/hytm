@@ -11,7 +11,7 @@
 #include <string>
 using namespace std;
 
-#include "recordmgr/machineconstants.h"
+#include "globals_extern.h"
 
 #ifndef SOFTWARE_BARRIER
 #define SOFTWARE_BARRIER asm volatile("": : :"memory")
@@ -44,26 +44,7 @@ char * POOL_TYPE;
 int MAX_FAST_HTM_RETRIES;
 int MAX_SLOW_HTM_RETRIES;
 bool PRINT_TREE;
-
 string PATH_NAMES[] = {"fast htm", "slow htm", "fallback"};
-
-// the following describes the allowable concurrency between the numbered algorithms for the BST (numbering is defined in globals_extern.h)
-bool ALLOWABLE_PATH_CONCURRENCY[14][14] = {
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-    {0,1,1,1,1,1,1,0,0,0,0,0,0,0}, // 1
-    {0,1,1,1,1,1,1,1,1,1,1,0,0,0}, // 2
-    {0,1,1,1,1,1,1,0,0,0,0,0,0,0}, // 3
-    {0,1,1,1,1,1,1,1,1,1,1,0,0,0}, // 4
-    {0,1,1,1,1,1,1,1,1,1,1,0,0,0}, // 5
-    {0,1,1,1,1,1,1,1,1,1,1,1,1,0}, // 6
-    {0,0,1,0,1,1,1,1,1,1,1,0,0,0}, // 7
-    {0,0,1,0,1,1,1,1,1,1,1,0,0,0}, // 8
-    {0,0,1,0,1,1,1,1,1,1,1,0,0,0}, // 9
-    {0,0,1,0,1,1,1,1,1,1,1,1,1,0}, // 10
-    {0,0,0,0,0,0,1,0,0,0,1,1,1,0}, // 11
-    {0,0,0,0,0,0,1,0,0,0,1,1,1,0}, // 12
-    {0,0,0,0,0,0,0,0,0,0,0,0,0,1}  // 13
-};
 PAD;
 
 #endif	/* GLOBALS_H */

@@ -25,6 +25,7 @@ if [ "$#" -ne "0" ]; then
 	ntrials=1
 	t=1
 	p=
+    threadcounts="1 ${maxthreadcount}"
 fi
 
 ##########################################################
@@ -77,7 +78,7 @@ for counting in 1 0; do
 for pinning in $pinnings; do
     if [ "$counting" -eq "0" ]; then
         ### COMPILE ALL ALGORITHMS (for this pinning option)
-	cd scripts
+	    cd scripts
         (./compile_x64.sh "pinning=$pinning" || (echo ERROR COMPILING && exit 1)) | tee -a ../$compilinglogfile
         cd ..
     fi
@@ -126,13 +127,11 @@ for pinning in $pinnings; do
                             #exit
                         fi
 
-                        ## test mode check for nonzero throughput
-                        if [ "$#" -ne "0" ]; then
-                            tput=$(grep "incl. queries" $fname | cut -d":" -f2 | tr -d " ")
-                            valid=$(grep "Validation" $fname | cut -d" " -f2)
-                            [[ "$valid" == "OK:" ]] || (echo "ERROR: $fname FAILED validation" | tee -a $logfile)
-                            [[ "$tput" -ge "0" ]] || (echo "ERROR: $fname tput=0 or missing" | tee -a $logfile)
-                        fi
+                        ## sanity-check: for nonzero throughput or failed validation
+                        tput=$(grep "incl. queries" $fname | cut -d":" -f2 | tr -d " ")
+                        valid=$(grep "Validation" $fname | cut -d" " -f2)
+                        [[ "$valid" == "OK:" ]] || (echo "ERROR: $fname FAILED validation" | tee -a $logfile)
+                        [[ "$tput" -ge "0" ]] || (echo "ERROR: $fname tput=0 or missing" | tee -a $logfile)
                     done
                 done
             done
