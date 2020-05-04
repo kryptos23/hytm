@@ -1,5 +1,13 @@
 #!/bin/bash
 
+scriptdiffs=$(diff dsbench.format dsbench.format.parallel | wc -l)
+if [ "$scriptdiffs" -ne 4 ]; then
+    echo "Unexpected differences between dsbench.format and dsbench.format.parallel !"
+    echo "Please edit until they only differ in the source'd script at the bottom, or edit to disable this warning!"
+    echo "    (This warning is intended to help you catch mismatches in the extracted field set...)"
+    exit 1
+fi
+
 exp=dsbench
 source format-script-begin.bash
 
