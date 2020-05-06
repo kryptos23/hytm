@@ -30,7 +30,6 @@ typedef long test_type; // really want compile-time assert that this is the same
 #include "globals_extern.h"
 #include "recordmgr/machineconstants.h"
 #include "binding.h"
-//#include "../hytm1/platform_impl.h" // for SYNC_RMW primitive
 #include "common/papi/papi_util_impl.h"
 #include "bst_impl.h"
 #include "recordmgr/record_manager.h"
