@@ -63,12 +63,13 @@
 
 
 
-#  define STM_BEGIN(isReadOnly)         do { \
-                                            STM_JMPBUF_T STM_JMPBUF; \
-                                            int STM_RO_FLAG = isReadOnly; \
-                                            sigsetjmp(STM_JMPBUF, 1); \
-                                            TxStart(STM_SELF, &STM_JMPBUF, &STM_RO_FLAG); \
-                                        } while (0) /* enforce comma */
+#  define STM_BEGIN(isReadOnly) \
+    do { \
+        STM_JMPBUF_T STM_JMPBUF; \
+        int STM_RO_FLAG = isReadOnly; \
+        sigsetjmp(STM_JMPBUF, 1); \
+        TxStart(STM_SELF, &STM_JMPBUF, &STM_RO_FLAG); \
+    } while (0) /* enforce comma */
 
 #define STM_BEGIN_RD()                  STM_BEGIN(1)
 #define STM_BEGIN_WR()                  STM_BEGIN(0)

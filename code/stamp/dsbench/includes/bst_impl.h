@@ -108,10 +108,10 @@ private:
     PAD;
 
     // similarly, allocatedNodes[tid*PREFETCH_SIZE_WORDS+i] = an allocated node for i = 0..MAX_NODES-2
-    Node<K,V> **allocatedNodes;
-    PAD;
-    #define GET_ALLOCATED_NODE_PTR(tid, i) allocatedNodes[tid*(PREFETCH_SIZE_WORDS+MAX_NODES)+i]
-    #define REPLACE_ALLOCATED_NODE(tid, i) { GET_ALLOCATED_NODE_PTR(tid, i) = allocateNode(tid); /*GET_ALLOCATED_NODE_PTR(tid, i)->left.store((uintptr_t) NULL, memory_order_relaxed);*/ }
+    // Node<K,V> **allocatedNodes;
+    // PAD;
+    // #define GET_ALLOCATED_NODE_PTR(tid, i) allocatedNodes[tid*(PREFETCH_SIZE_WORDS+MAX_NODES)+i]
+    // #define REPLACE_ALLOCATED_NODE(tid, i) { GET_ALLOCATED_NODE_PTR(tid, i) = allocateNode(tid); /*GET_ALLOCATED_NODE_PTR(tid, i)->left.store((uintptr_t) NULL, memory_order_relaxed);*/ }
 
     // debug info
     debugCounters<PHYSICAL_PROCESSORS> counters __attribute__((aligned(BYTES_IN_CACHE_LINE)));
@@ -145,10 +145,10 @@ public:
         Node<K,V> *rootleft = initializeNode(tid, allocateNode(tid), NO_KEY, NO_VALUE, NULL, NULL);
         root = initializeNode(tid, allocateNode(tid), NO_KEY, NO_VALUE, rootleft, NULL);
         cmp = Compare();
-        allocatedNodes = new Node<K,V> * [MAX_TID_POW2*(PREFETCH_SIZE_WORDS+MAX_NODES) + 2*PREFETCH_SIZE_WORDS /* for padding via shifting */] + PREFETCH_SIZE_WORDS /* shift to pad */;
-        for (int tid=0;tid<MAX_TID_POW2;++tid) {
-            GET_ALLOCATED_NODE_PTR(tid, 0) = NULL; // set up initial conditions for initThread(tid)
-        }
+        // allocatedNodes = new Node<K,V> * [MAX_TID_POW2*(PREFETCH_SIZE_WORDS+MAX_NODES) + 2*PREFETCH_SIZE_WORDS /* for padding via shifting */] + PREFETCH_SIZE_WORDS /* shift to pad */;
+        // for (int tid=0;tid<MAX_TID_POW2;++tid) {
+        //     GET_ALLOCATED_NODE_PTR(tid, 0) = NULL; // set up initial conditions for initThread(tid)
+        // }
     }
     /**
      * This function must be called once by each thread that will
@@ -158,11 +158,11 @@ public:
      */
     void initThread(const int tid) {
         shmem->initThread(tid);
-        if (GET_ALLOCATED_NODE_PTR(tid, 0) == NULL) {
-            for (int i=0;i<MAX_NODES;++i) {
-                REPLACE_ALLOCATED_NODE(tid, i);
-            }
-        }
+        // if (GET_ALLOCATED_NODE_PTR(tid, 0) == NULL) {
+        //     for (int i=0;i<MAX_NODES;++i) {
+        //         REPLACE_ALLOCATED_NODE(tid, i);
+        //     }
+        // }
     }
 
     void dfsDeallocateBottomUp(Node<K,V> * const u, int *numNodes) {
@@ -182,13 +182,13 @@ public:
         int numNodes = 0;
         dfsDeallocateBottomUp(root, &numNodes);
         VERBOSE DS_DEBUG COUTATOMIC(" deallocated nodes "<<numNodes<<endl);
-        for (int tid=0;tid<shmem->NUM_PROCESSES;++tid) {
-            for (int i=0;i<MAX_NODES;++i) {
-                shmem->deallocate(tid, GET_ALLOCATED_NODE_PTR(tid, i));
-            }
-        }
+        // for (int tid=0;tid<shmem->NUM_PROCESSES;++tid) {
+        //     for (int i=0;i<MAX_NODES;++i) {
+        //         shmem->deallocate(tid, GET_ALLOCATED_NODE_PTR(tid, i));
+        //     }
+        // }
         delete shmem;
-        delete[] (allocatedNodes - PREFETCH_SIZE_WORDS); // unshift before free (since array is shifted upon alloc)
+        // delete[] (allocatedNodes - PREFETCH_SIZE_WORDS); // unshift before free (since array is shifted upon alloc)
     }
 
     Node<K,V> *getRoot(void) { return root; }
@@ -414,8 +414,17 @@ template<class K, class V, class Compare, class RecManager>
 const V bst<K,V,Compare,RecManager>::insert_stm(TM_ARGDECL_ALONE, const int tid, const K& key, const V& val) {
     shmem->leaveQuiescentState(tid);
 //    TRACE COUTATOMICTID("insert_stm("<<key<<")"<<endl);
+
+    Node<K,V> * node0 = allocateNode(tid);
+    Node<K,V> * node1 = allocateNode(tid);
+
+    SOFTWARE_BARRIER;
+
+    initializeNode(tid, node0, key, val, NULL, NULL);
+    // initializeNode(tid, GET_ALLOCATED_NODE_PTR(tid, 0), key, val, /*1,*/ NULL, NULL);
+
     TM_BEGIN();
-    initializeNode(tid, GET_ALLOCATED_NODE_PTR(tid, 0), key, val, /*1,*/ NULL, NULL);
+
     Node<K,V> *p = (Node<K,V> *) TM_SHARED_READ_P(root);
     Node<K,V> *l = (Node<K,V> *) TM_SHARED_READ_P(p->left);
     if (TM_SHARED_READ_P(l->left) != NULL) { // the tree contains some node besides sentinels...
@@ -435,27 +444,37 @@ const V bst<K,V,Compare,RecManager>::insert_stm(TM_ARGDECL_ALONE, const int tid,
         V result = TM_SHARED_READ_L(l->value);
         TM_SHARED_WRITE_L(l->value, val);
         TM_END();
+
         shmem->enterQuiescentState(tid);
+        shmem->deallocate(tid, node0);
+        shmem->deallocate(tid, node1);
         return result;
     } else {
         if (TM_SHARED_READ_L(l->key) == NO_KEY || cmp(key, TM_SHARED_READ_L(l->key))) {
-            initializeNode(tid, GET_ALLOCATED_NODE_PTR(tid, 1), TM_SHARED_READ_L(l->key), TM_SHARED_READ_L(l->value), /*newWeight,*/ GET_ALLOCATED_NODE_PTR(tid, 0), l);
+            initializeNode(tid, node1, TM_SHARED_READ_L(l->key), TM_SHARED_READ_L(l->value), node0, l);
+            // initializeNode(tid, GET_ALLOCATED_NODE_PTR(tid, 1), TM_SHARED_READ_L(l->key), TM_SHARED_READ_L(l->value), /*newWeight,*/ GET_ALLOCATED_NODE_PTR(tid, 0), l);
         } else {
-            initializeNode(tid, GET_ALLOCATED_NODE_PTR(tid, 1), key, val, /*newWeight,*/ l, GET_ALLOCATED_NODE_PTR(tid, 0));
+            initializeNode(tid, node1, key, val, l, node0);
+            // initializeNode(tid, GET_ALLOCATED_NODE_PTR(tid, 1), key, val, /*newWeight,*/ l, GET_ALLOCATED_NODE_PTR(tid, 0));
         }
 
         Node<K,V> *pleft = (Node<K,V> *) TM_SHARED_READ_P(p->left);
         if (l == pleft) {
-            TM_SHARED_WRITE_P(p->left, GET_ALLOCATED_NODE_PTR(tid, 1));
+            TM_SHARED_WRITE_P(p->left, node1);
+            // TM_SHARED_WRITE_P(p->left, GET_ALLOCATED_NODE_PTR(tid, 1));
         } else {
-            TM_SHARED_WRITE_P(p->right, GET_ALLOCATED_NODE_PTR(tid, 1));
+            TM_SHARED_WRITE_P(p->right, node1);
+            // TM_SHARED_WRITE_P(p->right, GET_ALLOCATED_NODE_PTR(tid, 1));
         }
+
         TM_END();
         shmem->enterQuiescentState(tid);
 
+        SOFTWARE_BARRIER;
+
         // do memory reclamation and allocation
-        REPLACE_ALLOCATED_NODE(tid, 0);
-        REPLACE_ALLOCATED_NODE(tid, 1);
+        // REPLACE_ALLOCATED_NODE(tid, 0);
+        // REPLACE_ALLOCATED_NODE(tid, 1);
 
         return NO_VALUE;
     }

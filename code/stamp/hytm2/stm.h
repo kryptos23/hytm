@@ -76,50 +76,51 @@ typedef struct Thread_void {
 __thread intptr_t (*sharedReadFunPtr)(void* Self, volatile intptr_t* addr);
 __thread void (*sharedWriteFunPtr)(void* Self, volatile intptr_t* addr, intptr_t val);
 
-#  define STM_BEGIN(isReadOnly)         do { \
-                                            SOFTWARE_BARRIER; \
-                                            sharedReadFunPtr = &TxLoad_htm; \
-                                            sharedWriteFunPtr = &TxStore_htm; \
-                                            SOFTWARE_BARRIER; \
-                                            STM_JMPBUF_T STM_JMPBUF; \
-                                            /*int STM_RO_FLAG = isReadOnly;*/ \
-                                            \
-                                            Thread_void* ___Self = (Thread_void*) STM_SELF; \
-                                            TxClearRWSets(STM_SELF); \
-                                            \
-                                            XBEGIN_ARG_T ___xarg; \
-                                            ___Self->Retries = 0; \
-                                            ___Self->isFallback = 0; \
-                                            ___Self->IsRO = 1; \
-                                            ___Self->envPtr = &STM_JMPBUF; \
-                                            unsigned ___htmattempts; \
-                                            for (___htmattempts = 0; ___htmattempts < HTM_ATTEMPT_THRESH; ++___htmattempts) { \
-                                                if (XBEGIN(___xarg)) { \
-                                                    break; \
-                                                } else { /* if we aborted */ \
-                                                    TM_REGISTER_ABORT(PATH_FAST_HTM, ___xarg, ___Self->UniqID); \
-                                                    ++___Self->AbortsHW; \
-                                                } \
-                                            } \
-                                            /*printf("exited loop\n");*/ \
-                                            if (___htmattempts < HTM_ATTEMPT_THRESH) break; \
-                                            /* STM attempt */ \
-                                            /*DEBUG2 aout("thread "<<___Self->UniqID<<" started s/w tx attempt "<<(___Self->AbortsSW+___Self->CommitsSW)<<"; s/w commits so far="<<___Self->CommitsSW);*/ \
-                                            /*DEBUG1 if ((___Self->CommitsSW % 50000) == 0) aout("thread "<<___Self->UniqID<<" has committed "<<___Self->CommitsSW<<" s/w txns");*/ \
-                                            DEBUG2 printf("thread %ld started s/w tx; attempts so far=%ld, s/w commits so far=%ld\n", ___Self->UniqID, (___Self->AbortsSW+___Self->CommitsSW), ___Self->CommitsSW); \
-                                            DEBUG1 if ((___Self->CommitsSW % 25000) == 0) printf("thread %ld has committed %ld s/w txns (over all threads so far=%ld)\n", ___Self->UniqID, ___Self->CommitsSW, CommitTallySW); \
-                                            if (sigsetjmp(STM_JMPBUF, 1)) { \
-                                                TxClearRWSets(STM_SELF); \
-                                            } \
-                                            SOFTWARE_BARRIER; \
-                                            sharedReadFunPtr = &TxLoad_stm; \
-                                            sharedWriteFunPtr = &TxStore_stm; \
-                                            SOFTWARE_BARRIER; \
-                                            ___Self->isFallback = 1; \
-                                            ___Self->IsRO = 1; \
-                                            SYNC_RMW; /* prevent instructions in the txn/critical section from being moved before this point (on power) */ \
-                                            SOFTWARE_BARRIER; \
-                                        } while (0); /* enforce comma */
+#  define STM_BEGIN(isReadOnly) \
+    do { \
+        SOFTWARE_BARRIER; \
+        sharedReadFunPtr = &TxLoad_htm; \
+        sharedWriteFunPtr = &TxStore_htm; \
+        SOFTWARE_BARRIER; \
+        STM_JMPBUF_T STM_JMPBUF; \
+        /*int STM_RO_FLAG = isReadOnly;*/ \
+        \
+        Thread_void* ___Self = (Thread_void*) STM_SELF; \
+        TxClearRWSets(STM_SELF); \
+        \
+        XBEGIN_ARG_T ___xarg; \
+        ___Self->Retries = 0; \
+        ___Self->isFallback = 0; \
+        ___Self->IsRO = 1; \
+        ___Self->envPtr = &STM_JMPBUF; \
+        unsigned ___htmattempts; \
+        for (___htmattempts = 0; ___htmattempts < HTM_ATTEMPT_THRESH; ++___htmattempts) { \
+            if (XBEGIN(___xarg)) { \
+                break; \
+            } else { /* if we aborted */ \
+                TM_REGISTER_ABORT(PATH_FAST_HTM, ___xarg, ___Self->UniqID); \
+                ++___Self->AbortsHW; \
+            } \
+        } \
+        /*printf("exited loop\n");*/ \
+        if (___htmattempts < HTM_ATTEMPT_THRESH) break; \
+        /* STM attempt */ \
+        /*DEBUG2 aout("thread "<<___Self->UniqID<<" started s/w tx attempt "<<(___Self->AbortsSW+___Self->CommitsSW)<<"; s/w commits so far="<<___Self->CommitsSW);*/ \
+        /*DEBUG1 if ((___Self->CommitsSW % 50000) == 0) aout("thread "<<___Self->UniqID<<" has committed "<<___Self->CommitsSW<<" s/w txns");*/ \
+        DEBUG2 printf("thread %ld started s/w tx; attempts so far=%ld, s/w commits so far=%ld\n", ___Self->UniqID, (___Self->AbortsSW+___Self->CommitsSW), ___Self->CommitsSW); \
+        DEBUG1 if ((___Self->CommitsSW % 25000) == 0) printf("thread %ld has committed %ld s/w txns (over all threads so far=%ld)\n", ___Self->UniqID, ___Self->CommitsSW, CommitTallySW); \
+        if (sigsetjmp(STM_JMPBUF, 1)) { \
+            TxClearRWSets(STM_SELF); \
+        } \
+        SOFTWARE_BARRIER; \
+        sharedReadFunPtr = &TxLoad_stm; \
+        sharedWriteFunPtr = &TxStore_stm; \
+        SOFTWARE_BARRIER; \
+        ___Self->isFallback = 1; \
+        ___Self->IsRO = 1; \
+        SYNC_RMW; /* prevent instructions in the txn/critical section from being moved before this point (on power) */ \
+        SOFTWARE_BARRIER; \
+    } while (0); /* enforce comma */
 
 
 #define STM_BEGIN_RD()                  STM_BEGIN(1)

@@ -1,5 +1,12 @@
 {
     "files.associations": {
-        "cassert": "cpp"
-    }
+        "cassert": "cpp",
+        "ostream": "cpp"
+    },
+    "svg.preview.background": "black",
+
+    // "terminal.explorerKind": "external",
+    // "terminal.integrated.shell.windows": "C:\\Users\\trbot\\AppData\\Local\\wsltty\\bin\\mintty.exe",
+    // //"terminal.integrated.cwd": "C:\\",
+    // "terminal.integrated.shellArgs.windows": "--WSL= --configdir=C:\\Users\\trbot\\AppData\\Roaming\\wsltty",
 }

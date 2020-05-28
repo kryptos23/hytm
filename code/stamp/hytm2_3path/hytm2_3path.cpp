@@ -449,9 +449,9 @@ std::ostream& operator<<(std::ostream& out, const AVPair& obj) {
 }
 
 enum hytm_config {
-    INIT_WRSET_NUM_ENTRY = 1024,
-    INIT_RDSET_NUM_ENTRY = 8192,
-    INIT_LOCAL_NUM_ENTRY = 1024,
+    INIT_WRSET_NUM_ENTRY = 64,
+    INIT_RDSET_NUM_ENTRY = 128,
+    INIT_LOCAL_NUM_ENTRY = 64,
 };
 
 #ifdef USE_FULL_HASHTABLE

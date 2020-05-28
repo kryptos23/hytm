@@ -476,23 +476,23 @@ void printOutput() {
 //        findSuccessTotal += GET_TOTAL(findSuccess);
 //        findFailTotal += GET_TOTAL(findFail);
 //    }
-    if (GET_TOTAL(insertSuccess)) COUTATOMIC("total insert succ             : "<<GET_TOTAL(insertSuccess)<<endl);
-    if (GET_TOTAL(insertFail)) COUTATOMIC("total insert retry            : "<<GET_TOTAL(insertFail)<<endl);
-    if (GET_TOTAL(eraseSuccess)) COUTATOMIC("total erase succ              : "<<GET_TOTAL(eraseSuccess)<<endl);
-    if (GET_TOTAL(eraseFail)) COUTATOMIC("total erase retry             : "<<GET_TOTAL(eraseFail)<<endl);
-    if (findSuccessTotal) COUTATOMIC("total find succ               : "<<findSuccessTotal<<endl);
-    if (findFailTotal) COUTATOMIC("total find retry              : "<<findFailTotal<<endl);
-    if (rqSuccessTotal) COUTATOMIC("total rq succ                 : "<<rqSuccessTotal<<endl);
-    if (rqFailTotal) COUTATOMIC("total rq fail                 : "<<rqFailTotal<<endl);
+    if (GET_TOTAL(insertSuccess)) COUTATOMIC("insert_succ="<<GET_TOTAL(insertSuccess)<<endl);
+    if (GET_TOTAL(insertFail)) COUTATOMIC("insert_retry="<<GET_TOTAL(insertFail)<<endl);
+    if (GET_TOTAL(eraseSuccess)) COUTATOMIC("erase_succ="<<GET_TOTAL(eraseSuccess)<<endl);
+    if (GET_TOTAL(eraseFail)) COUTATOMIC("erase_retry="<<GET_TOTAL(eraseFail)<<endl);
+    if (findSuccessTotal) COUTATOMIC("find_succ="<<findSuccessTotal<<endl);
+    if (findFailTotal) COUTATOMIC("find_retry="<<findFailTotal<<endl);
+    if (rqSuccessTotal) COUTATOMIC("rq_succ="<<rqSuccessTotal<<endl);
+    if (rqFailTotal) COUTATOMIC("rq_fail="<<rqFailTotal<<endl);
     const long totalSuccUpdates = GET_TOTAL(insertSuccess)+GET_TOTAL(eraseSuccess);
     const long totalSuccAll = totalSuccUpdates + rqSuccessTotal + findSuccessTotal;
     const long throughput = (long) (totalSuccUpdates / (MILLIS_TO_RUN/1000.));
     const long throughputAll = (long) (totalSuccAll / (MILLIS_TO_RUN/1000.));
-    COUTATOMIC("total succ updates            : "<<totalSuccUpdates<<endl);
-    COUTATOMIC("total succ                    : "<<totalSuccAll<<endl);
-    COUTATOMIC("throughput (succ updates/sec) : "<<throughput<<endl);
-    COUTATOMIC("    incl. queries             : "<<throughputAll<<endl);
-    COUTATOMIC("elapsed milliseconds          : "<<MILLIS_TO_RUN<<endl);
+    COUTATOMIC("total_succ_updates="<<totalSuccUpdates<<endl);
+    COUTATOMIC("total_succ="<<totalSuccAll<<endl);
+    //COUTATOMIC("update_throughput="<<throughput<<endl);
+    COUTATOMIC("throughput="<<throughputAll<<endl);
+    COUTATOMIC("elapsed_milliseconds="<<MILLIS_TO_RUN<<endl);
     COUTATOMIC(endl);
 
     COUTATOMIC(endl);
@@ -630,6 +630,7 @@ int main(int argc, char** argv) {
     PRINTI(MAXKEY);
     PRINTI(WORK_THREADS);
     PRINTI(RQ_THREADS);
+    PRINTS(ALGO);
     PRINTS(RECLAIM_TYPE);
     PRINTS(ALLOC_TYPE);
     PRINTS(POOL_TYPE);

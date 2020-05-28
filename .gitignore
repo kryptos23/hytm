@@ -22,3 +22,9 @@ code/stamp/dsbench/*.dsbench_*
 step*.data
 temp*.txt
 bin/
+perf.data
+perf.data.old
+run.txt
+temp_plot.png
+out.png
+out.svg

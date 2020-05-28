@@ -1,0 +1,410 @@
+ 2001  cd vscode_projects/hytm/code/stamp/
+ 2002  l
+ 2003  cd dsbench/
+ 2004  l
+ 2005  for ((t=1000;t<=16000;t*=2)); do echo t=$t ; rm temp.txt ; printf "%20s %20s\n" "tput" "avg" ; for ((i=0;i<4;++i)); do LD_PRELOAD=../lib/libjemalloc.so.2 numactl --interleave=all ./`hostname`.dsbench_hytm3 -t$t -mr debra -ma new -mp none -p -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 192 -nrq 0 | grep "incl." | cut -d":" -f2 | tr -d " " >> temp.txt ; avg=`awk '{total+=$1;count++} END {printf "%d",total/count}' temp.txt` ; printf "%'20d %'20d\n" "`tail -1 temp.txt`" "$avg" ; done ; done
+ 2006  for ((t=1000;t<=16000;t*=2)); do echo t=$t ; rm temp.txt ; printf "%20s %20s\n" "tput" "avg" ; for ((i=0;i<4;++i)); do LD_PRELOAD=../lib/libjemalloc.so.2 numactl --interleave=all ./rift.dsbench_hytm3 -t$t -mr debra -ma new -mp none -p -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 192 -nrq 0 | grep "incl." | cut -d":" -f2 | tr -d " " >> temp.txt ; avg=`awk '{total+=$1;count++} END {printf "%d",total/count}' temp.txt` ; printf "%'20d %'20d\n" "`tail -1 temp.txt`" "$avg" ; done ; done
+ 2007  for ((t=1000;t<=1000;t*=2)); do echo t=$t ; rm temp.txt ; printf "%20s %20s\n" "tput" "avg" ; for ((i=0;i14;++i)); do LD_PRELOAD=../lib/libjemalloc.so.2 numactl --interleave=all ./rift.dsbench_hytm3 -t$t -mr debra -ma new -mp none -p -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 192 -nrq 0 | grep "incl." | cut -d":" -f2 | tr -d " " >> temp.txt ; avg=`awk '{total+=$1;count++} END {printf "%d",total/count}' temp.txt` ; printf "%'20d %'20d\n" "`tail -1 temp.txt`" "$avg" ; done ; done
+ 2008  for ((t=1000;t<=1000;t*=2)); do echo t=$t ; rm temp.txt ; printf "%20s %20s\n" "tput" "avg" ; for ((i=0;i<1;++i)); do LD_PRELOAD=../lib/libjemalloc.so.2 numactl --interleave=all ./rift.dsbench_hytm3 -t$t -mr debra -ma new -mp none -p -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 192 -nrq 0 | grep "incl." | cut -d":" -f2 | tr -d " " >> temp.txt ; avg=`awk '{total+=$1;count++} END {printf "%d",total/count}' temp.txt` ; printf "%'20d %'20d\n" "`tail -1 temp.txt`" "$avg" ; done ; done
+ 2009  for ((t=1000;t<=1000;t*=2)); do echo t=$t ; rm temp.txt ; printf "%20s %20s\n" "tput" "avg" ; for ((i=0;i<1;++i)); do LD_PRELOAD=../lib/libjemalloc.so.2 numactl --interleave=all ./rift.dsbench_hytm3 -t$t -mr debra -ma new -mp none -p -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 192 -nrq 0 ; done ; done
+ 2010  ./rift.dsbench_hytm3
+ 2011  for ((t=1000;t<=1000;t*=2)); do echo t=$t ; rm temp.txt ; printf "%20s %20s\n" "tput" "avg" ; for ((i=0;i<1;++i)); do LD_PRELOAD=../lib/libjemalloc.so.2 numactl --interleave=all ./rift.dsbench_hytm3 -t $t -mr debra -ma new -mp none -p -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 192 -nrq 0 ; done ; done
+ 2012  for ((t=1000;t<=1000;t*=2)); do echo t=$t ; rm temp.txt ; printf "%20s %20s\n" "tput" "avg" ; for ((i=0;i<1;++i)); do LD_PRELOAD=../lib/libjemalloc.so.2 numactl --interleave=all ./rift.dsbench_hytm3 -t $t -mr debra -ma new -mp none -p -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 144 -nrq 0 ; done ; done
+ 2013  l
+ 2014  echo "0" | sudo tee /proc/sys/kernel/kptr_restrict
+ 2015  sudo sh -c 'echo -1 >/proc/sys/kernel/perf_event_paranoid'
+ 2016  for ((t=1000;t<=1000;t*=2)); do echo t=$t ; rm temp.txt ; printf "%20s %20s\n" "tput" "avg" ; for ((i=0;i<1;++i)); do LD_PRELOAD=../lib/libjemalloc.so.2 numactl --interleave=all ./rift.dsbench_hytm3 -t $t -mr debra -ma new -mp none -p -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 144 -nrq 0 ; done ; done
+ 2017  l
+ 2018  cd scripts/q
+ 2019  cd scripts/
+ 2020  l
+ 2021  chmod 755 *.bash
+ 2022  l
+ 2023  chmod 755 dsbench
+ 2024  chmod 755 dsbench.format*
+ 2025  l
+ 2026  chmod 755 add
+ 2027  ./add
+ 2028  ./dsbench
+ 2029  /dsbench
+ 2030  l
+ 2031  /dsbench
+ 2032  ./dsbench
+ 2033  /dsbench
+ 2034  ./dsbench
+ 2035  git config --get remote.origin.url
+ 2036  ./dsbench
+ 2037  l
+ 2038  ./dsbench.format
+ 2039  l ..
+ 2040  ./dsbench.format zyra
+ 2041  ./dsbench.format.parallel zyra
+ 2042  l
+ 2043  pico dsbench.format.parallel
+ 2044  pico format-script-begin.bash
+ 2045  pico format-script-end.bash
+ 2046  pico dsbench.format.parallel
+ 2047  pico format-script-end.parallel.bash
+ 2048  htop
+ 2049  ./dsbench.format.parallel zyra
+ 2050  pico format-script-end.parallel.bash
+ 2051  ./dsbench.format.parallel zyra
+ 2052  l
+ 2053  htop
+ 2054  cd ..
+ 2055  l
+ 2056  ls output.zyra.dsbench/*.csv
+ 2057  ls output.zyra.dsbench/ | wc
+ 2058  zip -r output.zyra.dsbench5.zip output.zyra.dsbench/
+ 2059  cp output.zyra.dsbench/*.csv .
+ 2060  l
+ 2061  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 144 -nrq 0
+ 2062  cat scripts/compile_x64.sh
+ 2063  make -j -f Makefile.stm machine=`hostname` EXTRAFLAGS3=-DHTM_ATTEMPT_THRESH=20
+ 2064  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 144 -nrq 0
+ 2065  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 143 -nrq 1
+ 2066  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 144 -nrq 0
+ 2067  l scripts
+ 2068  cd scripts
+ 2069  pico dsbench
+ 2070  l
+ 2071  cd ..
+ 2072  l
+ 2073  cd scripts/
+ 2074  l
+ 2075  ./dsbench
+ 2076  pico dsbench
+ 2077  pico plaf.bash
+ 2078  pico dsbench
+ 2079  ./dsbench
+ 2080  l
+ 2081  cd ..
+ 2082  l
+ 2083  zip -r output.zyra.dsbench6.zip output.zyra.dsbench
+ 2084  git status
+ 2085  git add bst/bst.h
+ 2086  git add scripts/dsbench
+ 2087  git add scripts/dsbench.header
+ 2088  cd scripts/
+ 2089  l
+ 2090  ./dsbench.format.parallel zyra
+ 2091  l
+ 2092  cd ..
+ 2093  l
+ 2094  l output.zyra.dsbench
+ 2095  zip -r output.zyra.dsbench6.zip output.zyra.dsbench
+ 2096  cd sc
+ 2097  cd scripts/
+ 2098  l
+ 2099  ./dsbench
+ 2100  ./dsbench.format.parallel zyra
+ 2101  l
+ 2102  l ../output.zyra.dsbench/*.csv
+ 2103  ./compile_x64.sh pinning=ZYRA_CLUSTER
+ 2104  cd ..
+ 2105  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 144 -nrq 0
+ 2106  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 143 -nrq 1
+ 2107  cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER ; cd ..
+ 2108  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 144 -nrq 0
+ 2109  cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER ; cd ..
+ 2110  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 144 -nrq 0
+ 2111  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 143 -nrq 1
+ 2112  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 142 -nrq 0
+ 2113  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 141 -nrq 1
+ 2114  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0
+ 2115  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 1000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0
+ 2116  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 100 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0
+ 2117  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 1 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0
+ 2118  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0
+ 2119  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 141 -nrq 1
+ 2120  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 141 -nrq 1
+ 2121  LD_PRELOAD=../lib/libjemalloc.so  time numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 141 -nrq 1
+ 2122  LD_PRELOAD=../lib/libjemalloc.so  time numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0
+ 2123  LD_PRELOAD=../lib/libjemalloc.so  time numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0
+ 2124  htop
+ 2125  LD_PRELOAD=../lib/libjemalloc.so  time numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0
+ 2126  LD_PRELOAD=../lib/libjemalloc.so  time numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep "incl.|epoch"
+ 2127  LD_PRELOAD=../lib/libjemalloc.so  time numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch"
+ 2128  LD_PRELOAD=../lib/libjemalloc.so  time numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=[1-9]"
+ 2129  LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=[1-9]"
+ 2130  for trial in 1 2 3 4 5 ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=[1-9]" ; done
+ 2131  for trial in 1 2 3 4 5 ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 141 -nrq 1 | grep -E "incl.|epoch=[1-9]" ; done
+ 2132  for trial in 1 2 3 4 5 ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 141 -nrq 1 | grep -E "incl.|epoch=[1-9]|PAPI" ; done
+ 2133  for trial in 1 2 3 4 5 ; echo ; echo ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 141 -nrq 1 | grep -E "incl.|epoch=[1-9]|PAPI" ; done
+ 2134  for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 141 -nrq 1 | grep -E "incl.|epoch=[1-9]|PAPI" ; done
+ 2135  for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=[1-9]|PAPI" ; done
+ 2136  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER"
+ 2137  for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=[1-9]|PAPI" ; done
+ 2138  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER"
+ 2139  for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=[1-9]|PAPI" ; done
+ 2140  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER"
+ 2141  for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=[1-9]|PAPI" ; done
+ 2142  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER"
+ 2143  for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=[1-9]|PAPI" ; done
+ 2144  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER"
+ 2145  for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=[1-9]|PAPI" ; done
+ 2146  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER"
+ 2147  for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=[1-9]|PAPI" ; done
+ 2148  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER"
+ 2149  for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=[1-9]|PAPI" ; done
+ 2150  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER"
+ 2151  for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=|PAPI" ; done
+ 2152  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER"
+ 2153  for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=|PAPI" ; done
+ 2154  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER"
+ 2155  for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=|PAPI" ; done
+ 2156  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER"
+ 2157  for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=|PAPI" ; done
+ 2158  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=|PAPI" ; done
+ 2159  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=|PAPI|TRACE" ; done
+ 2160  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all gdb ./zyra.dsbench_hytm3 -ex="set args -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0" | grep -E "incl.|epoch=|PAPI|TRACE" ; done
+ 2161  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all gdb ./zyra.dsbench_hytm3 -ex="set args -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0" ; done
+ 2162  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=|PAPI|TRACE" ; done
+ 2163  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=|PAPI|TRACE" ; done
+ 2164  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=|PAPI|TRACE" ; done
+ 2165  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 ; done
+ 2166  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all gdb ./zyra.dsbench_hytm3 -ex="set args -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0" ; done
+ 2167  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 ; done
+ 2168  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=|PAPI|TRACE" ; done
+ 2169  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "incl.|epoch=|PAPI|TRACE" ; done
+ 2170  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 141 -nrq 1 | grep -E "incl.|epoch=|PAPI|TRACE" ; done
+ 2171  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 141 -nrq 1 | grep -E "throughput|incl.|epoch=|PAPI|TRACE" ; done
+ 2172  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 141 -nrq 1 | grep -E "range|throughput|incl.|epoch=|PAPI|TRACE" ; done
+ 2173  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 141 -nrq 1 | grep -E "range|throughput|incl.|epoch=[1-9]|PAPI|TRACE" ; done
+ 2174  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 141 -nrq 1 ; done
+ 2175  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 141 -nrq 1 | grep -E "rq|throughput|incl.|epoch=[1-9]|PAPI|TRACE" ; done
+ 2176  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 141 -nrq 1 | grep -E "rq|throughput|incl.|epoch=[1-9][0-9]*|PAPI|TRACE" ; done
+ 2177  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "rq|throughput|incl.|epoch=[1-9][0-9]*|PAPI|TRACE" ; done
+ 2178  bash -c "cd scripts ; ./compile_x64.sh pinning=ZYRA_CLUSTER" && for trial in 1 2 3 4 5 ; do echo ; LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm3 -t 10000 -mr debra -ma new -mp none -p -k 2 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep -E "rq|throughput|incl.|epoch=[1-9][0-9]*|PAPI|TRACE" ; done
+ 2179  pwd
+ 2180  l
+ 2181  cd scripts/
+ 2182  l
+ 2183  ./dsbench && ./dsbench.format.parallel zyra
+ 2184  l ../
+ 2185  l ../*
+ 2186  l -d ../*
+ 2187  l
+ 2188  cat ../step6057.zyra.dsbench_hybridnorec.-t.10000.-mr.debra.-ma.new.-mp.none.-p.-k.10000.-i.20.-d.20.-rq.0.-rqsize.256.-nwork.35.-nrq.1.-seqwidth.48.-trial.1.-pinning.ZYRA_SCATTER.data
+ 2189  cat ../output.zyra.dsbench/step6057.zyra.dsbench_hybridnorec.-t.10000.-mr.debra.-ma.new.-mp.none.-p.-k.10000.-i.20.-d.20.-rq.0.-rqsize.256.-nwork.35.-nrq.1.-seqwidth.48.-trial.1.-pinning.ZYRA_SCATTER.data
+ 2190  cat ../output.zyra.dsbench/errors.out | grep -v -E "insert succ|erase succ"
+ 2191  cat ../output.zyra.dsbench/errors.out | grep -v -E "insert succ|erase succ|RES_STL"
+ 2192  cat ../output.zyra.dsbench/errors.out | grep -v -E "insert succ|erase succ|RES_STL|L1_DCM|WIDTH_SEQ"
+ 2193  cat ../output.zyra.dsbench/errors.out | grep -v -E "insert succ|erase succ|RES_STL|L1_DCM|WIDTH_SEQ|footprint peak"
+ 2194  cat ../output.zyra.dsbench/errors.out | grep -v -E "insert succ|erase succ|RES_STL|L1_DCM|WIDTH_SEQ|footprint peak" | wc
+ 2195  cat ../output.zyra.dsbench/errors.out | grep -v -E "insert succ|erase succ|RES_STL|L1_DCM|WIDTH_SEQ|footprint peak" | grep "INS" | wc
+ 2196  cat ../output.zyra.dsbench/errors.out | grep -v -E "insert succ|erase succ|RES_STL|L1_DCM|WIDTH_SEQ|footprint peak|INS"
+ 2197  cat ../output.zyra.dsbench/errors.out | grep -v -E "insert succ|erase succ|RES_STL|L1_DCM|WIDTH_SEQ|footprint|INS"
+ 2198  cat ../output.zyra.dsbench/errors.out | grep -v -E "insert succ|erase succ|RES_STL|L1_DCM|WIDTH_SEQ|footprint|INS|tree"
+ 2199  cat ../output.zyra.dsbench/step4827.zyra.dsbench_hytm2_3path.-t.10000.-mr.debra.-ma.new.-mp.none.-p.-k.10000.-i.20.-d.20.-rq.0.-rqsize.256.-nwork.126.-nrq.0.-seqwidth.48.-trial.1.-pinning.ZYRA_SCATTER.data
+ 2200  cd ..
+ 2201  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 100
+ 2202  00 -mr debra -ma new -mp none -p -k 10000 -i 20 -d 20 -rq 0 -rqsize 256 -nwork 126 -nrq 0 >> output.zyra.dsb
+ 2203  ench/step4827.zyra.dsbench_hytm2_3path.-t.10000.-mr.debra.-ma.new.-mp.none.-p.-k.10000.-i.20.-d.20.-rq.0.-rq
+ 2204  size.256.-nwork.126.-nrq.0.-seqwidth.48.-trial.1.-pinning.ZYRA_SCATTER.data 2>>output.zyra.dsbench/stderr.ou
+ 2205  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 20 -d 20 -rq 0 -rqsize 256 -nwork 126 -nrq 0 >> output.zyra.dsbench/step4827.zyra.dsbench_hytm2_3path.-t.10000.-mr.debra.-ma.new.-mp.none.-p.-k.10000.-i.20.-d.20.-rq.0.-rqsize.256.-nwork.126.-nrq.0.-seqwidth.48.-trial.1.-pinning.ZYRA_SCATTER.data 2>>output.zyra.dsbench/stderr.out
+ 2206  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 20 -d 20 -rq 0 -rqsize 256 -nwork 126 -nrq 0
+ 2207  cat tree_00.out
+ 2208  LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 20 -d 20 -rq 0 -rqsize 256 -nwork 126 -nrq 0
+ 2209  LD_PRELOAD=../lib/libjemalloc.so time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 20 -d 20 -rq 0 -rqsize 256 -nwork 126 -nrq 0
+ 2210  LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0
+ 2211  LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all gdb ./zyra.dsbench_hytm2_3path -ex="set args -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0"
+ 2212  l
+ 2213  LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all gdb ./rift.dsbench_hytm2_3path -ex="set args -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0"
+ 2214  LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./rift.dsbench_hytm2_3path set args -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0
+ 2215  LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./rift.dsbench_hytm2_3path -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0
+ 2216  LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./rift.dsbench_hytm2_3path -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep Validation
+ 2217  for ((i=0;i<100;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./rift.dsbench_hytm2_3path -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep Validation ; done
+ 2218  for ((i=0;i<30;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./rift.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -p -k 100 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep Validation ; done
+ 2219  for ((i=0;i<30;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./rift.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -p -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep Validation ; done
+ 2220  for ((i=0;i<100;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./rift.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -p -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep Validation ; done
+ 2221  for ((i=0;i<100;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./rift.dsbench_hytm2 -t 1000 -mr debra -ma new -mp none -p -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep Validation ; done
+ 2222  for ((i=0;i<1000;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./rift.dsbench_hytm2 -t 1000 -mr debra -ma new -mp none -p -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep Validation | tee temp.txt ; done
+ 2223  grep "ok" temp.txt
+ 2224  grep "FAILED" temp.txt
+ 2225  grep "FAIL" temp.txt
+ 2226  grep "Fail" temp.txt
+ 2227  for ((i=0;i<100;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./rift.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -p -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep Validation ; done
+ 2228  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 53 -nrq 1
+ 2229  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 53 -nrq 1
+ 2230  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER"
+"
+ 2231  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 53 -nrq 1
+ 2232  l
+ 2233* l scripts/
+ 2234  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 53 -nrq 1
+ 2235  cd scripts/
+ 2236  ./dsbench test
+ 2237  bash -c "cd .. ; LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2 -t 10000 -mr debra -ma new -mp none -p -k 10000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 53 -nrq 1"
+ 2238  ./dsbench test
+ 2239  /dsbench testcareset -c
+ 2240  reset -c
+ 2241  cat ../output.zyra.dsbench/step10130.data
+ 2242  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all
+ 2243  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all  ./zyra.dsbench_hytm1 -t 1 -mr debra -ma new -mp none  -k 100000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 89 -nrq 1
+ 2244  cd ..
+ 2245  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all  ./zyra.dsbench_hytm1 -t 1 -mr debra -ma new -mp none  -k 100000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 89 -nrq 1
+ 2246  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all  ./zyra.dsbench_hytm1 -t 1 -mr debra -ma new -mp none  -k 100000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 141 -nrq 1
+ 2247  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all  ./zyra.dsbench_hytm1 -t 1 -mr debra -ma new -mp none  -k 1000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 141 -nrq 1
+ 2248  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all  ./zyra.dsbench_hytm1 -t 1 -mr debra -ma new -mp none  -k 10 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 141 -nrq 1
+ 2249  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all  ./zyra.dsbench_hytm1 -t 1 -mr debra -ma new -mp none  -k 100000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 141 -nrq 1
+ 2250  cd scripts/
+ 2251  ./dsbench test
+ 2252  cat ../output.zyra.dsbench/step10006.data
+ 2253  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1 -mr debra -ma new -mp none  -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 54 -nrq 0
+ 2254  cd ..
+ 2255  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1 -mr debra -ma new -mp none  -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 54 -nrq 0
+ 2256  history | grep compile
+ 2257  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER"
+"
+ 2258  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1 -mr debra -ma new -mp none  -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 54 -nrq 0
+ 2259  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER"
+"
+ 2260  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER"
+"
+ 2261  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER"
+"
+ 2262  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER"
+"
+ 2263  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1 -mr debra -ma new -mp none  -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 54 -nrq 0
+ 2264  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER"
+"
+ 2265  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1 -mr debra -ma new -mp none  -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 54 -nrq 0
+ 2266  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER"
+"
+ 2267  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER"
+"
+ 2268  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1 -mr debra -ma new -mp none  -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 54 -nrq 0
+ 2269  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER"
+"
+ 2270  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1 -mr debra -ma new -mp none  -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 54 -nrq 0
+ 2271  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER"
+"
+ 2272  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1 -mr debra -ma new -mp none  -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 54 -nrq 0
+ 2273  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER"
+"
+ 2274  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1 -mr debra -ma new -mp none  -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 54 -nrq 0
+ 2275  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER"
+"
+ 2276* bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER" "
+ 2277  LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1 -mr debra -ma new -mp none  -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 54 -nrq 0
+ 2278  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER" " && LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1 -mr debra -ma new -mp none  -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 54 -nrq 0
+ 2279  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER" " && LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all gdb ./zyra.dsbench_hytm2_3path -ex="set args -t 1 -mr debra -ma new -mp none  -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 54 -nrq 0"
+ 2280  template <class MemMgmt>
+ 2281  void * thread_init(long tid) {
+ 2282  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER" " && LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all gdb ./zyra.dsbench_hytm2_3path -ex="set args -t 1 -mr debra -ma new -mp none  -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 54 -nrq 0"
+ 2283  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER" " && LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1 -mr debra -ma new -mp none  -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 54 -nrq 0
+ 2284  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER" " && LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none  -k 100000 -i 25 -d 25 -rq 0 -rqsize 256 -nwork 54 -nrq 0
+ 2285  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER" " && LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none  -k 100000 -i 25 -d 25 -rq 0 -rqsize 256 -nwork 54 -nrq 0 -p
+ 2286  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER" " && LD_PRELOAD=../lib/libjemalloc.so  time timeout 13 numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1 -mr debra -ma new -mp none  -k 100000 -i 25 -d 25 -rq 0 -rqsize 256 -nwork 54 -nrq 0
+ 2287  cd scripts/
+ 2288  ./dsbench test
+ 2289  cat $stderrfile | grep -v "maxresident"
+ 2290  cat ../output.zyra.dsbench/stderr.out | grep -v "maxresident"
+ 2291  cat ../output.zyra.dsbench/stderr.out | grep -v "maxresident|pagefaults"
+ 2292  cat ../output.zyra.dsbench/stderr.out | grep -vE "maxresident|pagefaults"
+ 2293  grep "ERROR" ../output.zyra.dsbench/log.out
+ 2294  cat ../output.zyra.dsbench/log.out
+ 2295  history | grep 3path
+ 2296  cd ..
+ 2297  for ((i=0;i<100;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./rift.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -p -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep Validation ; done
+ 2298  for ((i=0;i<100;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -p -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep Validation ; done
+ 2299  for ((i=0;i<10000;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -p -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep Validation | tee -a temp.txt ; done
+ 2300  history | grep compile
+ 2301  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER" " && for ((i=0;i<10000;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -p -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep Validation | tee -a temp.txt ; done
+ 2302  rm temp.txt ; bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_SCATTER" " && for ((i=0;i<10000;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -p -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep Validation | tee -a temp.txt ; done
+ 2303  rm temp.txt ; bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_CLUSTER" " && for ((i=0;i<1000;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -p -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep Validation | tee -a temp.txt ; done
+ 2304  rm temp.txt ; bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_CLUSTER" " && for ((i=0;i<1000;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm2 -t 1000 -mr debra -ma new -mp none -p -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep Validation | tee -a temp.txt ; done
+ 2305  rm temp.txt ; bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_CLUSTER" " && for ((i=0;i<1000;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep Validation | tee -a temp.txt ; done
+ 2306  rm temp.txt ; bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_CLUSTER" " && for ((i=0;i<1000;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm2 -t 1000 -mr debra -ma new -mp none -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep Validation | tee -a temp.txt ; done
+ 2307  rm temp.txt ; bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_CLUSTER" " && for ((i=0;i<1000;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 2 -nrq 0 | grep Validation | tee -a temp.txt ; done
+ 2308  rm temp.txt ; bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_CLUSTER" " && for ((i=0;i<1000;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 1 -nrq 0 | grep Validation | tee -a temp.txt ; done
+ 2309  LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all valgrind --fair-sched=yes ./zyra.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 1 -nrq 0
+ 2310  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_CLUSTER" " && LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./zyra.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 1 -nrq 0
+ 2311  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_CLUSTER" " && ./zyra.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 1 -nrq 0
+ 2312  bash -c "cd scripts ; ./compile_x64.sh "pinning=ZYRA_CLUSTER" " && ./zyra.dsbench_hytm2 -t 1000 -mr debra -ma new -mp none -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 1 -nrq 0
+ 2313  ls ..
+ 2314  pwd
+ 2315  cd ..
+ 2316  cd dsbench
+ 2317  pwd
+ 2318  cd /home/t35brown/vscode_projects/hytm/code/stamp/dsbench
+ 2319  l
+ 2320  l .
+ 2321  l ./
+ 2322  ls -d ./*
+ 2323  l -d ./*
+ 2324  history
+ 2325  history | history.txt
+ 2326  l
+ 2327  history > history.txt
+ 2328  l
+ 2329  ll
+ 2330  cd scripts/
+ 2331  l
+ 2332  ./compile_x64.sh
+ 2333  l
+ 2334  chmod 755 testing_validation.sh
+ 2335  ./testing_validation.sh
+ 2336  l
+ 2337  diff dsbench.format dsbench.format.parallel
+ 2338  diff dsbench.format dsbench.format.parallel | wc -l
+ 2339  ./dsbench.format
+ 2340  ./dsbench.format.parallel
+ 2341  ./dsbench.format
+ 2342  l
+ 2343  ./dsbench test
+ 2344  l
+ 2345  ./testing_validation.sh
+ 2346  l
+ 2347  for ((i=0;i<100;++i)) ; do LD_PRELOAD=../lib/libjemalloc.so numactl --interleave=all ./rift.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -p -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep "incl." ; done
+ 2348  for ((i=0;i<100;++i)) ; do LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/rift.dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -p -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep "incl." ; done
+ 2349  for ((i=0;i<100;++i)) ; do LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -p -k 10 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep "incl." ; done
+ 2350  for ((i=0;i<100;++i)) ; do LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_hytm2_3path -t 1000 -mr debra -ma new -mp none -p -k 100000 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep "incl." ; done
+ 2351  for ((i=0;i<100;++i)) ; do LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_hytm2 -t 1000 -mr debra -ma new -mp none -p -k 100000 -i 50 -d 50 -rq 0 -rqsize 256 -nwork 142 -nrq 0 | grep "incl." ; done
+ 2352  for ((i=0;i<100;++i)) ; do LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_hytm2 -t 5000 -mr debra -ma new -mp none -p -k 100000 -i 10 -d 10 -rq 0 -rqsize 256 -nwork 36 -nrq 0 | grep "incl." ; done
+ 2353  for ((i=0;i<100;++i)) ; do LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_hytm2_3path -t 5000 -mr debra -ma new -mp none -p -k 100000 -i 10 -d 10 -rq 0 -rqsize 256 -nwork 36 -nrq 0 | grep "incl." ; done
+ 2354  for alg in hytm2 hytm2_3path ; do for ((i=0;i<1;++i)) ; do echo -n $alg ; LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_${alg} -t 5000 -mr debra -ma new -mp none -p -k 100000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 36 -nrq 0 | grep "incl." ; done ; done
+ 2355  for alg in hytm2 hytm2_3path ; do for ((i=0;i<1;++i)) ; do echo -n $alg ; LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_${alg} -t 30000 -mr debra -ma new -mp none -p -k 100000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 36 -nrq 0 | grep "incl." ; done ; done
+ 2356  for alg in hytm2 hytm2_3path ; do for ((i=0;i<1;++i)) ; do echo -n $alg ; LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_${alg} -t 10000 -mr debra -ma new -mp none -p -k 100000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 36 -nrq 0 | grep "incl." ; done ; done
+ 2357  rm temp.txt ; for alg in hytm2 hytm2_3path ; do for ((i=0;i<3;++i)) ; do echo -n $alg | tee -a temp.txt ; LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_${alg} -t 10000 -mr debra -ma new -mp none -p -k 100000 -i 5 -d 5 -rq 0 -rqsize 256 -nwork 36 -nrq 0 | grep "incl." | cut -d":" -f2 | tee -a temp.txt ; done ; done
+ 2358  echo alg tput | tee temp.txt ; for alg in hytm2 hytm2_3path ; do for ((i=0;i<3;++i)) ; do echo -n $alg | tee -a temp.txt ; LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_${alg} -t 10000 -mr debra -ma new -mp none -p -k 100000 -i 0 -d 0 -rq 0 -rqsize 256 -nwork 36 -nrq 0 | grep "incl." | cut -d":" -f2 | tee -a temp.txt ; done ; done
+ 2359  echo k uhalf alg tput | tee temp.txt ; for k in 100000 10000 ; do for uhalf in 0 1 5 20 50 ; do for alg in hytm1 hytm2 hytm2_3path hytm3 tl2 ; do for ((i=0;i<1;++i)) ; do echo -n $k $uhalf $alg | tee -a temp.txt ; LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_${alg} -t 10000 -mr debra -ma new -mp none -p -k $k -i $uhalf -d $uhalf -rq 0 -rqsize 256 -nwork 36 -nrq 0 | grep "incl." | cut -d":" -f2 | tee -a temp.txt ; done ; done ; done ; done
+ 2360  cat temp.txt
+ 2361  l
+ 2362  for k in 100000 ; do for uhalf in 0 ; do for alg in hytm1 ; do for ((i=0;i<1;++i)) ; do LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_${alg} -t 10000 -mr debra -ma new -mp none -p -k $k -i $uhalf -d $uhalf -rq 0 -rqsize 256 -nwork 36 -nrq 0 ; done ; done ; done ; done
+ 2363  for k in 100000 ; do for uhalf in 0 ; do for alg in hytm2_3path ; do for ((i=0;i<1;++i)) ; do LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_${alg} -t 10000 -mr debra -ma new -mp none -p -k $k -i $uhalf -d $uhalf -rq 0 -rqsize 256 -nwork 36 -nrq 0 > run.txt ; cols run.txt MAXKEY INSERT_FRAC done ; done ; done ; done
+ 2364  ./compile_x64.sh
+ 2365  for k in 100000 ; do for uhalf in 0 ; do for alg in hytm2_3path ; do for ((i=0;i<1;++i)) ; do LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_${alg} -t 10000 -mr debra -ma new -mp none -p -k $k -i $uhalf -d $uhalf -rq 0 -rqsize 256 -nwork 36 -nrq 0 > run.txt ; cols run.txt MAXKEY INSERT_FRAC ; done ; done ; done ; done
+ 2366  cols
+ 2367  ls ~/tools
+ 2368  echo $PATH
+ 2369  source ~/.bashrc
+ 2370  pico run.txt
+ 2371  ./compile_x64.sh
+ 2372  for k in 100000 ; do for uhalf in 0 ; do for alg in hytm2_3path ; do for ((i=0;i<1;++i)) ; do LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_${alg} -t 10000 -mr debra -ma new -mp none -p -k $k -i $uhalf -d $uhalf -rq 0 -rqsize 256 -nwork 36 -nrq 0 > run.txt ; cols run.txt MAXKEY INSERT_FRAC ALG throughput ; done ; done ; done ; done
+ 2373  pico ~/tools/cols
+ 2374  cols run.txt MAXKEY INSERT_FRAC ALG throughput
+ 2375  pico ~/tools/cols
+ 2376  cols run.txt MAXKEY INSERT_FRAC ALG throughput
+ 2377  pico ~/tools/cols
+ 2378  cols run.txt MAXKEY INSERT_FRAC ALG throughput
+ 2379  pico ~/tools/cols
+ 2380  cols run.txt MAXKEY INSERT_FRAC ALG throughput
+ 2381  for k in 100000 ; do for uhalf in 0 ; do for alg in hytm2_3path ; do for ((i=0;i<1;++i)) ; do LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_${alg} -t 10000 -mr debra -ma new -mp none -p -k $k -i $uhalf -d $uhalf -rq 0 -rqsize 256 -nwork 36 -nrq 0 > run.txt ; cols run.txt MAXKEY INSERT_FRAC ALG throughput ; done ; done ; done ; done
+ 2382  ./compile_x64.sh
+ 2383* for k in 100000 ; do for uhalf in 0 ; do for alg in hytm2_3path ; do for ((i=0;i<1;++i)) ; do LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_${alg} -t 10000 -mr debra -ma new -mp none -p -k $k -i $uhalf -d $uhalf -rq 0 -rqsize 256 -nwork 36 -nrq 0 > run.txt ; fields run.txt MAXKEY INSERT_FRAC ALG throughput | tee temp.txt ; done ; done ; done ; done
+ 2384  extract
+ 2385  mv ~/tools/cols ~/tools/cols
+ 2386  getcols
+ 2387  fields
+ 2388  mv ~/tools/cols ~/tools/fields
+ 2389  rm temp.txt ; for k in 100000 10000 ; do for uhalf in 0 1 5 20 50 ; do for alg in hytm1 hytm2 hytm2_3path hytm3 tl2 ; do for ((i=0;i<1;++i)) ; do LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_${alg} -t 10000 -mr debra -ma new -mp none -p -k $k -i $uhalf -d $uhalf -rq 0 -rqsize 256 -nwork 36 -nrq 0 > run.txt ; fields MAXKEY INSERT_FRAC ALG throughput | tee -a temp.txt ; done ; done ; done ; done
+ 2390  rm temp.txt ; for k in 100000 10000 ; do for uhalf in 0 1 5 20 50 ; do for alg in hytm1 hytm2 hytm2_3path hytm3 tl2 ; do for ((i=0;i<1;++i)) ; do LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_${alg} -t 10000 -mr debra -ma new -mp none -p -k $k -i $uhalf -d $uhalf -rq 0 -rqsize 256 -nwork 36 -nrq 0 > run.txt ; fields run.txt MAXKEY INSERT_FRAC ALG throughput | tee -a temp.txt ; done ; done ; done ; done
+ 2391  echo MAXKEY INSERT_FRAC ALG throughput > temp_header.txt ; rm temp.txt ; for k in 100000 10000 ; do for uhalf in 0 1 5 20 50 ; do for alg in hytm1 hytm2 hytm2_3path hytm3 tl2 ; do for ((i=0;i<1;++i)) ; do LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_${alg} -t 10000 -mr debra -ma new -mp none -p -k $k -i $uhalf -d $uhalf -rq 0 -rqsize 256 -nwork 36 -nrq 0 > temp_run.txt ; fields temp_run.txt $(cat temp_header.txt) | tee -a temp.txt ; done ; done ; done ; done
+ 2392  echo MAXKEY INSERT_FRAC ALG throughput > temp_header.txt ; rm temp.txt ; for k in 100000 10000 ; do for uhalf in 0 1 5 20 50 ; do for alg in hytm1 hytm2 hytm2_3path hytm3 tl2 ; do for ((i=0;i<1;++i)) ; do LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_${alg} -t 10000 -mr debra -ma new -mp none -p -k $k -i $uhalf -d $uhalf -rq 0 -rqsize 256 -nwork 36 -nrq 0 > temp_run.txt ; fields temp_run.txt $(cat temp_header.txt) >> temp.txt ; done ; done ; done ; done
+ 2393  echo MAXKEY INSERT_FRAC ALG throughput > temp.txt ; for k in 100000 10000 ; do for uhalf in 0 1 5 20 50 ; do for alg in hytm1 hytm2 hytm2_3path hytm3 tl2 ; do for ((i=0;i<1;++i)) ; do LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all ../bin/$(hostname).dsbench_${alg} -t 10000 -mr debra -ma new -mp none -p -k $k -i $uhalf -d $uhalf -rq 0 -rqsize 256 -nwork 36 -nrq 0 > run.txt ; fields run.txt $(head -1 temp.txt) >> temp.txt ; done ; done ; done ; done
+ 2394  echo $DISPLAY
+ 2395  xclock
+ 2396  echo $DISPLAY
+ 2397  history > debug_history.txt
