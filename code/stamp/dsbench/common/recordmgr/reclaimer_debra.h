@@ -31,18 +31,17 @@ using namespace std;
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_debra : public reclaimer_interface<T, Pool> {
 protected:
-#define EPOCH_INCREMENT 2
-#define BITS_EPOCH(ann) ((ann)&~(EPOCH_INCREMENT-1))
-#define QUIESCENT(ann) ((ann)&1)
-#define GET_WITH_QUIESCENT(ann) ((ann)|1)
+#   define EPOCH_INCREMENT 2
+#   define BITS_EPOCH(ann) ((ann)&~(EPOCH_INCREMENT-1))
+#   define QUIESCENT(ann) ((ann)&1)
+#   define GET_WITH_QUIESCENT(ann) ((ann)|1)
 
-#define MINIMUM_OPERATIONS_BEFORE_NEW_EPOCH 100
-#define NUMBER_OF_EPOCH_BAGS 3
-#define NUM_CALLS_BETWEEN_ANNOUNCEMENT_CHECKS 10
+#   define MINIMUM_OPERATIONS_BEFORE_NEW_EPOCH 100
+#   define NUMBER_OF_EPOCH_BAGS 3
+#   define NUM_CALLS_BETWEEN_ANNOUNCEMENT_CHECKS 10
 
-// #define TECHNIQUE_QBITS
-#define TECHNIQUE_QWORDS
-
+// #   define TECHNIQUE_QBITS
+#   define TECHNIQUE_QWORDS
 
     // for epoch based reclamation
     PAD;
@@ -51,9 +50,10 @@ protected:
     atomic_long * announcedEpoch;       // announcedEpoch[tid*PREFETCH_SIZE_WORDS]
 #ifdef TECHNIQUE_QWORDS
     atomic_long * quiescence;
-#endif
-#ifdef TECHNIQUE_QBITS
+#elif defined TECHNIQUE_QBITS
     long * checked;                     // checked[tid*PREFETCH_SIZE_WORDS] = how far we've come in checking the announced epochs of other threads
+#else
+    #error must specify one of TECHNIQUE_QBITS or TECHNIQUE_QWORDS
 #endif
     blockbag<T> ** epochbags;           // epochbags[NUMBER_OF_EPOCH_BAGS*tid+0..NUMBER_OF_EPOCH_BAGS*tid+(NUMBER_OF_EPOCH_BAGS-1)] are epoch bags for thread tid.
     blockbag<T> ** currentBag;          // pointer to current epoch bag for each process
@@ -74,10 +74,12 @@ public:
     inline static bool quiescenceIsPerRecordType() { return false; }
 
     inline bool isQuiescent(const int tid) {
-#ifdef TECHINQUE_QBITS
+#ifdef TECHNIQUE_QBITS
         return QUIESCENT(announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed));
 #elif defined TECHNIQUE_QWORDS
         return true;
+#else
+    #error must specify one of TECHNIQUE_QBITS or TECHNIQUE_QWORDS
 #endif
     }
 
@@ -121,7 +123,7 @@ public:
         //SOFTWARE_BARRIER; // prevent any bookkeeping from being moved after this point by the compiler.
         long readEpoch = epoch;
 
-#ifdef TECHINQUE_QBITS
+#ifdef TECHNIQUE_QBITS
         bool result = false;
 
         const long ann = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
@@ -220,6 +222,8 @@ public:
             }
         }
         return false;
+#else
+    #error must specify one of TECHNIQUE_QBITS or TECHNIQUE_QWORDS
 #endif
     }
     inline void enterQuiescentState(const int tid) {
@@ -229,6 +233,8 @@ public:
 #elif defined TECHNIQUE_QWORDS
         const long q = quiescence[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
         quiescence[tid*PREFETCH_SIZE_WORDS].store(1+q, memory_order_relaxed);
+#else
+    #error must specify one of TECHNIQUE_QBITS or TECHNIQUE_QWORDS
 #endif
     }
 
@@ -258,9 +264,10 @@ public:
         announcedEpoch = new atomic_long[(2+MAX_TID_POW2)*PREFETCH_SIZE_WORDS] + PREFETCH_SIZE_WORDS;   /* shift to pad */
 #ifdef TECHNIQUE_QWORDS
         quiescence = new atomic_long[(2+MAX_TID_POW2)*PREFETCH_SIZE_WORDS] + PREFETCH_SIZE_WORDS;       /* shift to pad */
-#endif
-#ifdef TECHNIQUE_QBITS
+#elif defined TECHNIQUE_QBITS
         checked = new long[(2+MAX_TID_POW2)*PREFETCH_SIZE_WORDS] + PREFETCH_SIZE_WORDS;                 /* shift to pad */
+#else
+    #error must specify one of TECHNIQUE_QBITS or TECHNIQUE_QWORDS
 #endif
         for (int tid=0;tid<MAX_TID_POW2;++tid) {
             for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
@@ -271,10 +278,11 @@ public:
 #ifdef TECHNIQUE_QWORDS
             announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(0, memory_order_relaxed);
             quiescence[tid*PREFETCH_SIZE_WORDS].store(0, memory_order_relaxed);
-#endif
-#ifdef TECHNIQUE_QBITS
+#elif defined TECHNIQUE_QBITS
             announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(GET_WITH_QUIESCENT(0), memory_order_relaxed);
             checked[tid*PREFETCH_SIZE_WORDS] = 0;
+#else
+    #error must specify one of TECHNIQUE_QBITS or TECHNIQUE_QWORDS
 #endif
         }
     }
@@ -294,9 +302,10 @@ public:
         delete[] (announcedEpoch - PREFETCH_SIZE_WORDS);    /* unshift to remove padding */
 #ifdef TECHNIQUE_QWORDS
         delete[] (quiescence - PREFETCH_SIZE_WORDS);        /* unshift to remove padding */
-#endif
-#ifdef TECHNIQUE_QBITS
+#elif defined TECHNIQUE_QBITS
         delete[] (checked - PREFETCH_SIZE_WORDS);           /* unshift to remove padding */
+#else
+    #error must specify one of TECHNIQUE_QBITS or TECHNIQUE_QWORDS
 #endif
     }
 
