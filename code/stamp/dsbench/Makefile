@@ -17,13 +17,13 @@ ifneq ($(has_libpapi), 0)
     LDFLAGS += -lpapi
 endif
 
-EXTRAFLAGS3=-DHTM_ATTEMPT_THRESH=20 ## DEFAULT HTM retry/attempt threshold
+EXTRAFLAGS3=-DHTM_ATTEMPT_THRESH=40 ## DEFAULT HTM retry/attempt threshold
 
 FLAGS += -std=c++0x
 FLAGS += -O3
-FLAGS += -fopenmp
+# FLAGS += -fopenmp
 #FLAGS += -DSTM -I$(STM) -I$(LIB)
-FLAGS += -g
+FLAGS += -g3
 FLAGS += -I./common -I./includes -I../lib
 EXTRAFLAGS := $(EXTRAFLAGS1) $(EXTRAFLAGS2) $(EXTRAFLAGS3) $(EXTRAFLAGS4)
 FLAGS += $(EXTRAFLAGS)

@@ -1,10 +1,10 @@
-- adjust initial read/write set sizes
+- interaction between avx_memsets and hardware tm?
+
+DONE: adjust initial read/write set sizes
     affects perf a fair bit --- especially causing huge memsets with avx...
     apparently even during measured parts of experiments???
 
-- interaction between avx_memsets and hardware tm?
-
-- very different TxLoad_stm costs for inserts vs erase/find???
+DONE: very different TxLoad_stm costs for inserts vs erase/find???
     exposed with command:
         ./compile_x64.sh && BIN="zyra.dsbench_hytm2" ; ARGS="-t 10000 -mr debra -ma new -mp none -p -k 10000 -i 20 -d 20 -rq 0 -rqsize 256 -nwork 36 -nrq 0" ; LD_PRELOAD=../../lib/libjemalloc.so numactl --interleave=all perf record -F 999 -D 5000 -g ../bin/$BIN $ARGS && flamegraph "$BIN $ARGS"
 
@@ -13,5 +13,5 @@
         - after some investigation it seems to make some sense...
             insert fails more because it's ALWAYS a write-transaction... unlike erase.
 
-- try flame graphs with dwarf
+DONE: try flame graphs with dwarf
     seems a bit sketchier...
