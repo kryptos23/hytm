@@ -23,9 +23,9 @@ pinnings="${pin_cluster} ${pin_scatter}"
 if [ "$#" -ne "0" ]; then
 	echo "RUNNING IN TEST MODE"
 	ntrials=1
-	t=1
+	t=100
 	p=
-    threadcounts="1 ${maxthreadcount}"
+    threadcounts="2 ${maxthreadcount}"
 fi
 
 ##########################################################
@@ -89,11 +89,11 @@ for pinning in $pinnings; do
         alg=`echo $alg_reclaimer_pool | cut -d"~" -f1`
         mr=`echo $alg_reclaimer_pool | cut -d"~" -f2`
         mp=`echo $alg_reclaimer_pool | cut -d"~" -f3`
-            if [ "$counting" -eq "1" ]; then
-                echo "counting trials for pinning $pinning, alg $alg, mr $mr, mp $mp and k $k"
-            fi
+        if [ "$counting" -eq "1" ]; then
+            echo "counting trials for pinning $pinning, alg $alg, mr $mr, mp $mp and k $k"
+        fi
 
-            for insdel_pcnt in $insdel_pcnts; do
+        for insdel_pcnt in $insdel_pcnts; do
             for nthreads in $threadcounts; do
                 if [ "$nthreads" -gt "1" ]; then
                     nminusone=`expr $nthreads - 1`
@@ -141,6 +141,20 @@ for pinning in $pinnings; do
 done
 done
 
+# ######################
+# ## extract csv
+# ######################
+
+# ./dsbench.format.parallel $(hostname)
+# fcsv=../output.$(hostname).dsbench/dsbench.csv
+
+
+
+######################
+## cleanup and warn of any errors
+######################
+
+
 cat $logfile > $f
 cat $compilinglogfile > $logfile
 echo >> $logfile
@@ -155,4 +169,7 @@ rm -f $compilinglogfile
 #echo -e $problems
 cat $stderrfile | grep -vE "maxresident|pagefaults"
 
-grep "ERROR:" $logfile
+if [ -e "$logfile" ]; then
+    grep "ERROR:" $logfile
+fi
+echo "done."

@@ -40,8 +40,13 @@ protected:
 #   define NUMBER_OF_EPOCH_BAGS 3
 #   define NUM_CALLS_BETWEEN_ANNOUNCEMENT_CHECKS 10
 
-// #   define TECHNIQUE_QBITS
-#   define TECHNIQUE_QWORDS
+#   if !defined TECHNIQUE_QBITS && !defined TECHNIQUE_QWORDS
+#       define TECHNIQUE_QWORDS
+#   endif
+
+#   if !defined DEBRA_ORIGINAL_FREE && !defined DEAMORTIZE_FREE_CALLS
+#       define DEAMORTIZE_FREE_CALLS
+#   endif
 
     // for epoch based reclamation
     PAD;
@@ -58,6 +63,9 @@ protected:
     blockbag<T> ** epochbags;           // epochbags[NUMBER_OF_EPOCH_BAGS*tid+0..NUMBER_OF_EPOCH_BAGS*tid+(NUMBER_OF_EPOCH_BAGS-1)] are epoch bags for thread tid.
     blockbag<T> ** currentBag;          // pointer to current epoch bag for each process
     long * index;                       // index of currentBag in epochbags for each process
+#ifdef DEAMORTIZE_FREE_CALLS
+    blockbag<T> ** deamortizedFreeables;
+#endif
     PAD;
     // note: oldest bag is number (index+1)%NUMBER_OF_EPOCH_BAGS
 
@@ -102,7 +110,32 @@ public:
     inline void rotateEpochBags(const int tid) {
         index[tid*PREFETCH_SIZE_WORDS] = (index[tid*PREFETCH_SIZE_WORDS]+1) % NUMBER_OF_EPOCH_BAGS;
         blockbag<T> * const freeable = epochbags[NUMBER_OF_EPOCH_BAGS*tid+index[tid*PREFETCH_SIZE_WORDS]];
+
+
+
+        int numLeftover = 0;
+#ifdef DEAMORTIZE_FREE_CALLS
+        auto freelist = deamortizedFreeables[tid*PREFETCH_SIZE_WORDS];
+        if (!freelist->isEmpty()) {
+            // numLeftover += (freelist->isEmpty()
+            //         ? 0
+            //         : (freelist->getSizeInBlocks()-1)*BLOCK_SIZE + freelist->getHeadSize());
+            // printf("numLeftover=%d\n", numLeftover);
+            //
+            // // "CATCH-UP" bulk free
+            // this->pool->addMoveFullBlocks(tid, freelist);
+        }
+        freelist->appendMoveFullBlocks(freeable);
+#else
+        // numLeftover += (freeable->getSizeInBlocks()-1)*BLOCK_SIZE + freeable->getHeadSize();
         this->pool->addMoveFullBlocks(tid, freeable); // moves any full blocks (may leave a non-full block behind)
+#endif
+        SOFTWARE_BARRIER;
+
+
+
+        // this->pool->addMoveFullBlocks(tid, freeable); // moves any full blocks (may leave a non-full block behind)
+
         currentBag[tid*PREFETCH_SIZE_WORDS] = freeable;
     }
     // invoke this at the beginning of each operation that accesses
@@ -141,6 +174,13 @@ public:
         }
         // note: readEpoch, when written to announcedEpoch[tid],
         //       will set the state to non-quiescent and non-neutralized
+
+#   ifdef DEAMORTIZE_FREE_CALLS
+        // TODO: make this work for each object type
+        if (!deamortizedFreeables[tid*PREFETCH_SIZE_WORDS]->isEmpty()) {
+            this->pool->add(tid, deamortizedFreeables[tid*PREFETCH_SIZE_WORDS]->remove());
+        }
+#   endif
 
         // incrementally scan the announced epochs of all threads
         // (to avoid high NUMA-caused L3 miss costs only participate in this part of the alg once every X calls to this function)
@@ -192,6 +232,12 @@ public:
             return true;
 
         } else {
+#   ifdef DEAMORTIZE_FREE_CALLS
+            // TODO: make this work for each object type
+            if (!deamortizedFreeables[tid*PREFETCH_SIZE_WORDS]->isEmpty()) {
+                this->pool->add(tid, deamortizedFreeables[tid*PREFETCH_SIZE_WORDS]->remove());
+            }
+#   endif
             // if (tid == 0) printf("TRACE: tid=%d did saw a==readEpoch; a=%ld readEpoch=%ld checked=%d NUM_PROCESSES=%d\n", tid, a, readEpoch, checked, this->NUM_PROCESSES);
             if (0 == (numCalls % NUM_CALLS_BETWEEN_ANNOUNCEMENT_CHECKS)) {
                 if (checked < this->NUM_PROCESSES) {
@@ -226,6 +272,7 @@ public:
     #error must specify one of TECHNIQUE_QBITS or TECHNIQUE_QWORDS
 #endif
     }
+
     inline void enterQuiescentState(const int tid) {
 #ifdef TECHNIQUE_QBITS
         const long ann = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
@@ -262,6 +309,9 @@ public:
         currentBag = new blockbag<T>*[(2+MAX_TID_POW2)*PREFETCH_SIZE_WORDS] + PREFETCH_SIZE_WORDS;      /* shift to pad */
         index = new long[(2+MAX_TID_POW2)*PREFETCH_SIZE_WORDS] + PREFETCH_SIZE_WORDS;                   /* shift to pad */
         announcedEpoch = new atomic_long[(2+MAX_TID_POW2)*PREFETCH_SIZE_WORDS] + PREFETCH_SIZE_WORDS;   /* shift to pad */
+#ifdef DEAMORTIZE_FREE_CALLS
+        deamortizedFreeables = new blockbag<T>*[(2+MAX_TID_POW2)*PREFETCH_SIZE_WORDS] + PREFETCH_SIZE_WORDS;      /* shift to pad */
+#endif
 #ifdef TECHNIQUE_QWORDS
         quiescence = new atomic_long[(2+MAX_TID_POW2)*PREFETCH_SIZE_WORDS] + PREFETCH_SIZE_WORDS;       /* shift to pad */
 #elif defined TECHNIQUE_QBITS
@@ -269,12 +319,16 @@ public:
 #else
     #error must specify one of TECHNIQUE_QBITS or TECHNIQUE_QWORDS
 #endif
+
         for (int tid=0;tid<MAX_TID_POW2;++tid) {
             for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
                 epochbags[NUMBER_OF_EPOCH_BAGS*tid+i] = new blockbag<T>(this->pool->blockpools[tid]);
             }
             currentBag[tid*PREFETCH_SIZE_WORDS] = epochbags[NUMBER_OF_EPOCH_BAGS*tid];
             index[tid*PREFETCH_SIZE_WORDS] = 0;
+#ifdef DEAMORTIZE_FREE_CALLS
+            deamortizedFreeables[tid*PREFETCH_SIZE_WORDS] = new blockbag<T>(this->pool->blockpools[tid]);
+#endif
 #ifdef TECHNIQUE_QWORDS
             announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(0, memory_order_relaxed);
             quiescence[tid*PREFETCH_SIZE_WORDS].store(0, memory_order_relaxed);
@@ -295,11 +349,18 @@ public:
                 this->pool->addMoveAll(tid, epochbags[NUMBER_OF_EPOCH_BAGS*tid+i]);
                 delete epochbags[NUMBER_OF_EPOCH_BAGS*tid+i];
             }
+#ifdef DEAMORTIZE_FREE_CALLS
+            this->pool->addMoveAll(tid, deamortizedFreeables[tid*PREFETCH_SIZE_WORDS]);
+            delete deamortizedFreeables[tid*PREFETCH_SIZE_WORDS];
+#endif
         }
         delete[] (epochbags - PREFETCH_SIZE_WORDS);         /* unshift to remove padding */
         delete[] (index - PREFETCH_SIZE_WORDS);             /* unshift to remove padding */
         delete[] (currentBag - PREFETCH_SIZE_WORDS);        /* unshift to remove padding */
         delete[] (announcedEpoch - PREFETCH_SIZE_WORDS);    /* unshift to remove padding */
+#ifdef DEAMORTIZE_FREE_CALLS
+        delete[] (deamortizedFreeables - PREFETCH_SIZE_WORDS); /* unshift to remove padding */
+#endif
 #ifdef TECHNIQUE_QWORDS
         delete[] (quiescence - PREFETCH_SIZE_WORDS);        /* unshift to remove padding */
 #elif defined TECHNIQUE_QBITS

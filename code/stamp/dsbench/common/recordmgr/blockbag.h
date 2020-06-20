@@ -1,6 +1,6 @@
 /**
  * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
- * 
+ *
  * Copyright (C) 2015 Trevor Brown
  * This preliminary implementation is CONFIDENTIAL and may not be distributed.
  */
@@ -27,7 +27,7 @@ class block;
 
 /* todo: use a 4kb page minus 3 cache lines ? */
 #define BLOCK_SIZE (247)
-    
+
     template <typename T>
     class alignas(64) block { // stack implemented as an array
         private:
@@ -35,14 +35,14 @@ class block;
             int size;
         public:
             block<T> *next;
-            
+
             block(block<T> * const _next) : next(_next) {
                 size = 0;
             }
             ~block() {
                 assert(size == 0);
             }
-            
+
             bool isFull() {
                 return size == BLOCK_SIZE;
             }
@@ -123,7 +123,7 @@ class block;
                 size = 0;
             }
     } __attribute__((aligned(64)));
-    
+
     template <typename T>
     class blockbag_iterator {
     private:
@@ -134,8 +134,8 @@ class block;
     public:
         block<T> *getCurr() const { return curr; }
         int getIndex() const { return ix; }
-        
-        blockbag_iterator(block<T> * const _head, const int _ix, blockbag<T> * const _bag) 
+
+        blockbag_iterator(block<T> * const _head, const int _ix, blockbag<T> * const _bag)
                 : bag(_bag), head(_head) {
             ix = _ix;
             curr = head;
@@ -182,7 +182,7 @@ class block;
     bool operator!=(const blockbag_iterator<T>& a, const blockbag_iterator<T>& b) {
         return !(a == b);
     }
-    
+
     // bag implemented with linked list whose nodes are blocks.
     // invariant: head and tail are never NULL
     // invariant: head is not full (computeSize() < BLOCK_SIZE)
@@ -194,13 +194,13 @@ class block;
         PAD;
         long debugFreed;
         int sizeInBlocks;
-        
+
         block<T> *head;
         block<T> *tail;
-        
+
         blockpool<T> * const pool;
         PAD;
-        
+
         void validate() {
             // invariant: head and tail are never NULL
             assert(head);
@@ -217,7 +217,7 @@ class block;
             // invariant: sizeInBlocks is correct
             assert(sizeInBlocks == computeSizeInBlocks());
         }
-        
+
         void debugPrintBag() {
             cout<<"("<<computeSize()<<","<<computeSizeInBlocks()<<") =";
             block<T> * curr = head;
@@ -235,7 +235,7 @@ class block;
             }
             return result;
         }
-        
+
     public:
         blockbag(blockpool<T> * const _pool) : pool(_pool) {
 //            VERBOSE DS_DEBUG cout<<"constructor blockbag"<<endl;
@@ -259,7 +259,11 @@ class block;
             }
 //            VERBOSE DS_DEBUG cout<<" freed "<<debugFreed<<endl;
         }
-        
+
+        int getHeadSize() {
+            return head->computeSize();
+        }
+
         blockbag_iterator<T> begin() {
             return blockbag_iterator<T>(head, 0, this);
         }
@@ -283,7 +287,7 @@ class block;
             DS_DEBUG2 assert(oldsize + 1 == computeSize());
             DS_DEBUG2 validate();
         }
-        
+
         void add(T * const obj, lockfreeblockbag<T> * const sharedBag, const int thresh) {
             DS_DEBUG2 validate();
             int oldsize; DS_DEBUG2 oldsize = computeSize();
@@ -320,7 +324,7 @@ class block;
             if (head->isEmpty()) {
                 // current block cannot be head, since head is empty
                 assert(curr != head);
-                
+
                 // eliminate empty head block, since next block will now be non-full
                 block<T> * const temp = head;
                 head = head->next;
@@ -328,14 +332,14 @@ class block;
                 --sizeInBlocks;
             }
             assert(!head->isEmpty());
-            
+
             // case 1: curr is the new head
             if (curr == head) {
                 // erase from head block
                 head->erase(ix);
                 DS_DEBUG2 validate();
                 return false;
-            
+
             // case 2: curr is not the head
             } else {
                 assert(!head->isEmpty());
@@ -373,8 +377,8 @@ class block;
                 return result;
             }
         }
-        
-        
+
+
         ////////// not anymore // precondition: !isEmpty()
         template <typename Alloc>
         T* remove(const int tid, lockfreeblockbag<T> * const sharedBag, Alloc * const alloc) {
@@ -433,7 +437,7 @@ class block;
                 return result;
             }
         }
-        
+
         // removes and returns a full block if the list contains
         // at least two full blocks. otherwise, this returns NULL;
         block<T>* removeFullBlock() {
@@ -478,7 +482,7 @@ class block;
 //            assert(other);
 //            assert(other->head);
 //            DS_DEBUG2 validate();
-//            
+//
 //            // other consists of one non-full block followed by
 //            // zero or more full blocks.
 //            // we want this list to contain only full blocks,
@@ -520,7 +524,7 @@ class block;
             assert(other->head);
             assert(predecessor);
             DS_DEBUG2 validate();
-            
+
             // other consists of one maybe-full block followed by
             // zero or more full blocks.
             // our goal is to append all blocks in the other bag

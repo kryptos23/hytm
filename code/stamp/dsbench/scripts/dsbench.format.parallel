@@ -13,13 +13,23 @@ source format-script-begin.bash
 
 ## fields to grep from file
 ## (grep $fields[i] must yield one line of the form "abc : ### [...]")
-fields=("total insert succ" "total erase succ" "throughput" "incl. queries" "elapsed milliseconds" "tree      " "footprint after prefilling" "footprint at the end" "footprint peak in prefill" "footprint peak overall")
+fields=()
 
 ## (grep $fields2[i] must yield one line of the form "abc=###")
-fields2=("MILLIS_TO_RUN" "INSERT_FRAC" "DELETE_FRAC" "MAXKEY" "WORK_THREADS" "RECLAIM_TYPE" "ALLOC_TYPE" "POOL_TYPE" "WIDTH_SEQ" "THREAD_BINDING" "PREFILL" "PAPI_L1_DCM" "PAPI_L2_TCM" "PAPI_L3_TCM" "PAPI_TOT_CYC" "PAPI_RES_STL" "PAPI_TOT_INS")
+fields2=( \
+        "THREAD_BINDING" \
+        "MAXKEY" \
+        "INSERT_FRAC" \
+        "ALGO" \
+        "WORK_THREADS" "RQ_THREADS" \
+        "RECLAIM_TYPE" "ALLOC_TYPE" "POOL_TYPE" \
+        "throughput" \
+        "PAPI_L2_TCM" "PAPI_L3_TCM" "PAPI_TOT_CYC" "PAPI_TOT_INS" \
+)
 
 ## (grep $fields3[i] must yield one or more lines of the form "abc : [^\w]+[ [^\w]+]*")
 ## a specific space-delimited subfield will be extracted from each line and summed
-fields3=("allocated~5" "deallocated~2" "recycled~2" "pool~2" "reclaim~2" "total fast htm commit~2" "total fast htm abort~2" "total fallback commit~2" "total fallback abort~2" "seconds global lock is held~2")
+# fields3=( "recycled~2" "pool~2" "reclaim~2" "total fast htm commit~2" "total fast htm abort~2" "total slow htm commit~2" "total slow htm abort~2" "total fallback commit~2" "total fallback abort~2" "seconds global lock is held~2" )
+fields3=()
 
 source scripts/format-script-end.parallel.bash

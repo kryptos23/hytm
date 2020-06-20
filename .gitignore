@@ -28,3 +28,8 @@ run.txt
 temp_plot.png
 out.png
 out.svg
+png/
+*output.*.dsbench*
+summary.txt
+_*.txt
+*.txt
