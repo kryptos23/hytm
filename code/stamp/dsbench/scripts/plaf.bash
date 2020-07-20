@@ -42,7 +42,7 @@ elif [ "$machine" == "zyra" ]; then
     maxthreadcount="142"
     overthreadcount1="142"
     overthreadcount2="142"
-    threadcounts="1 18 36 54 72 90 108 126 142"
+    threadcounts="18 36 72 108 142"
     pin_scatter="ZYRA_SCATTER"
     pin_cluster="ZYRA_CLUSTER"
     pin_none="NONE"
