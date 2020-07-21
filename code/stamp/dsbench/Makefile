@@ -10,8 +10,8 @@ FLAGS += -fno-omit-frame-pointer
 
 #FLAGS += -fsanitize=address
 
-### if you do not want PAPI to be used, invoke make with "has_libpapi=0"
-has_libpapi=$(shell ldconfig -p | grep libpapi | wc -l)
+### if libpapi is installed but you do not want to use it, invoke make with extra argument "has_libpapi=0"
+has_libpapi=$(shell ./_check_lib.sh papi)
 ifneq ($(has_libpapi), 0)
     FLAGS += -DUSE_PAPI
     LDFLAGS += -lpapi
@@ -23,7 +23,7 @@ FLAGS += -std=c++0x
 FLAGS += -O3
 # FLAGS += -fopenmp
 #FLAGS += -DSTM -I$(STM) -I$(LIB)
-FLAGS += -g3
+FLAGS += -g3 #-mx32
 FLAGS += -I./common -I./includes -I../lib
 EXTRAFLAGS := $(EXTRAFLAGS1) $(EXTRAFLAGS2) $(EXTRAFLAGS3) $(EXTRAFLAGS4) $(xargs)
 FLAGS += $(EXTRAFLAGS)

@@ -33,3 +33,8 @@ png/
 summary.txt
 _*.txt
 *.txt
+data
+bin
+bin_*
+__pycache__
+perf.data*
