@@ -1,0 +1,19 @@
+{
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "Run a compilation shell script in a specific directory",
+            "command": "./compile_x64.sh",
+            "args": [
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/code/stamp/dsbench/scripts"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+        },
+    ],
+    "version": "2.0.0"
+}

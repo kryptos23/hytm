@@ -1,0 +1,3 @@
+[submodule "code/stamp/tools"]
+	path = code/stamp/tools
+	url = https://gitlab.com/trbot86/tools.git

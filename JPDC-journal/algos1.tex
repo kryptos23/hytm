@@ -1,5 +1,14 @@
 %!TEX root = htm.tex
 %\vspace{1mm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{prog-fp-sp}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{hybridnorec.tex}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{prog-fp}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{middle}
+
 \subsection{Instrumentation-optimal progressive HyTM}
 We describe a HyTM algorithm that is a tight bound for Theorem~\ref{th:impossibility} and the instrumentation 
 cost on the fast-path transactions established in \cite{hytm14disc}.
@@ -79,13 +88,5 @@ The code for the fast-path and the slow-path is identical to $\mathcal{M}$.
 % Figure~\ref{fig:main} summarizes the complexity costs
 % associated with the HyTM algorithms considered in this paper.
 %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\input{prog-fp-sp}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\input{hybridnorec.tex}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\input{prog-fp}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\input{middle}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \input{appendix-proof.tex}

@@ -1,0 +1,1160 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" width="800" height="2134" onload="init(evt)" viewBox="0 0 800 2134" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<!-- Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples. -->
+<!-- NOTES:  -->
+<defs>
+	<linearGradient id="background" y1="0" y2="1" x1="0" x2="0" >
+		<stop stop-color="#8f8880" offset="5%" />
+		<stop stop-color="#8f8880" offset="95%" />
+	</linearGradient>
+</defs>
+<style type="text/css">
+	text { font-family:Verdana; font-size:12px; fill:rgb(0,0,0); }
+	#search, #ignorecase { opacity:0.1; cursor:pointer; }
+	#search:hover, #search.show, #ignorecase:hover, #ignorecase.show { opacity:1; }
+	#subtitle { text-anchor:middle; font-color:rgb(160,160,160); }
+	#title { text-anchor:middle; font-size:17px}
+	#unzoom { cursor:pointer; }
+	#frames > *:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+	.hide { display:none; }
+	.parent { opacity:0.5; }
+</style>
+<script type="text/ecmascript">
+<![CDATA[
+	"use strict";
+	var details, searchbtn, unzoombtn, matchedtxt, svg, searching, currentSearchTerm, ignorecase, ignorecaseBtn;
+	function init(evt) {
+		details = document.getElementById("details").firstChild;
+		searchbtn = document.getElementById("search");
+		ignorecaseBtn = document.getElementById("ignorecase");
+		unzoombtn = document.getElementById("unzoom");
+		matchedtxt = document.getElementById("matched");
+		svg = document.getElementsByTagName("svg")[0];
+		searching = 0;
+		currentSearchTerm = null;
+	}
+
+	window.addEventListener("click", function(e) {
+		var target = find_group(e.target);
+		if (target) {
+			if (target.nodeName == "a") {
+				if (e.ctrlKey === false) return;
+				e.preventDefault();
+			}
+			if (target.classList.contains("parent")) unzoom();
+			zoom(target);
+		}
+		else if (e.target.id == "unzoom") unzoom();
+		else if (e.target.id == "search") search_prompt();
+		else if (e.target.id == "ignorecase") toggle_ignorecase();
+	}, false)
+
+	// mouse-over for info
+	// show
+	window.addEventListener("mouseover", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = "Function: " + g_to_text(target);
+	}, false)
+
+	// clear
+	window.addEventListener("mouseout", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = ' ';
+	}, false)
+
+	// ctrl-F for search
+	window.addEventListener("keydown",function (e) {
+		if (e.keyCode === 114 || (e.ctrlKey && e.keyCode === 70)) {
+			e.preventDefault();
+			search_prompt();
+		}
+	}, false)
+
+	// ctrl-I to toggle case-sensitive search
+	window.addEventListener("keydown",function (e) {
+		if (e.ctrlKey && e.keyCode === 73) {
+			e.preventDefault();
+			toggle_ignorecase();
+		}
+	}, false)
+
+	// functions
+	function find_child(node, selector) {
+		var children = node.querySelectorAll(selector);
+		if (children.length) return children[0];
+		return;
+	}
+	function find_group(node) {
+		var parent = node.parentElement;
+		if (!parent) return;
+		if (parent.id == "frames") return node;
+		return find_group(parent);
+	}
+	function orig_save(e, attr, val) {
+		if (e.attributes["_orig_" + attr] != undefined) return;
+		if (e.attributes[attr] == undefined) return;
+		if (val == undefined) val = e.attributes[attr].value;
+		e.setAttribute("_orig_" + attr, val);
+	}
+	function orig_load(e, attr) {
+		if (e.attributes["_orig_"+attr] == undefined) return;
+		e.attributes[attr].value = e.attributes["_orig_" + attr].value;
+		e.removeAttribute("_orig_"+attr);
+	}
+	function g_to_text(e) {
+		var text = find_child(e, "title").firstChild.nodeValue;
+		return (text)
+	}
+	function g_to_func(e) {
+		var func = g_to_text(e);
+		// if there's any manipulation we want to do to the function
+		// name before it's searched, do it here before returning.
+		return (func);
+	}
+	function update_text(e) {
+		var r = find_child(e, "rect");
+		var t = find_child(e, "text");
+		var w = parseFloat(r.attributes.width.value) -3;
+		var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+		t.attributes.x.value = parseFloat(r.attributes.x.value) + 3;
+
+		// Smaller than this size won't fit anything
+		if (w < 2 * 12 * 0.59) {
+			t.textContent = "";
+			return;
+		}
+
+		t.textContent = txt;
+		// Fit in full text width
+		if (/^ *$/.test(txt) || t.getSubStringLength(0, txt.length) < w)
+			return;
+
+		for (var x = txt.length - 2; x > 0; x--) {
+			if (t.getSubStringLength(0, x + 2) <= w) {
+				t.textContent = txt.substring(0, x) + "..";
+				return;
+			}
+		}
+		t.textContent = "";
+	}
+
+	// zoom
+	function zoom_reset(e) {
+		if (e.attributes != undefined) {
+			orig_load(e, "x");
+			orig_load(e, "width");
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_reset(c[i]);
+		}
+	}
+	function zoom_child(e, x, ratio) {
+		if (e.attributes != undefined) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = (parseFloat(e.attributes.x.value) - x - 10) * ratio + 10;
+				if (e.tagName == "text")
+					e.attributes.x.value = find_child(e.parentNode, "rect[x]").attributes.x.value + 3;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseFloat(e.attributes.width.value) * ratio;
+			}
+		}
+
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_child(c[i], x - 10, ratio);
+		}
+	}
+	function zoom_parent(e) {
+		if (e.attributes) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = 10;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseInt(svg.width.baseVal.value) - (10 * 2);
+			}
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_parent(c[i]);
+		}
+	}
+	function zoom(node) {
+		var attr = find_child(node, "rect").attributes;
+		var width = parseFloat(attr.width.value);
+		var xmin = parseFloat(attr.x.value);
+		var xmax = parseFloat(xmin + width);
+		var ymin = parseFloat(attr.y.value);
+		var ratio = (svg.width.baseVal.value - 2 * 10) / width;
+
+		// XXX: Workaround for JavaScript float issues (fix me)
+		var fudge = 0.0001;
+
+		unzoombtn.classList.remove("hide");
+
+		var el = document.getElementById("frames").children;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var a = find_child(e, "rect").attributes;
+			var ex = parseFloat(a.x.value);
+			var ew = parseFloat(a.width.value);
+			var upstack;
+			// Is it an ancestor
+			if (1 == 0) {
+				upstack = parseFloat(a.y.value) > ymin;
+			} else {
+				upstack = parseFloat(a.y.value) < ymin;
+			}
+			if (upstack) {
+				// Direct ancestor
+				if (ex <= xmin && (ex+ew+fudge) >= xmax) {
+					e.classList.add("parent");
+					zoom_parent(e);
+					update_text(e);
+				}
+				// not in current path
+				else
+					e.classList.add("hide");
+			}
+			// Children maybe
+			else {
+				// no common path
+				if (ex < xmin || ex + fudge >= xmax) {
+					e.classList.add("hide");
+				}
+				else {
+					zoom_child(e, xmin, ratio);
+					update_text(e);
+				}
+			}
+		}
+		search();
+	}
+	function unzoom() {
+		unzoombtn.classList.add("hide");
+		var el = document.getElementById("frames").children;
+		for(var i = 0; i < el.length; i++) {
+			el[i].classList.remove("parent");
+			el[i].classList.remove("hide");
+			zoom_reset(el[i]);
+			update_text(el[i]);
+		}
+		search();
+	}
+
+	// search
+	function toggle_ignorecase() {
+		ignorecase = !ignorecase;
+		if (ignorecase) {
+			ignorecaseBtn.classList.add("show");
+		} else {
+			ignorecaseBtn.classList.remove("show");
+		}
+		reset_search();
+		search();
+	}
+	function reset_search() {
+		var el = document.querySelectorAll("#frames rect");
+		for (var i = 0; i < el.length; i++) {
+			orig_load(el[i], "fill")
+		}
+	}
+	function search_prompt() {
+		if (!searching) {
+			var term = prompt("Enter a search term (regexp " +
+			    "allowed, eg: ^ext4_)"
+			    + (ignorecase ? ", ignoring case" : "")
+			    + "\nPress Ctrl-i to toggle case sensitivity", "");
+			if (term != null) {
+				currentSearchTerm = term;
+				search();
+			}
+		} else {
+			reset_search();
+			searching = 0;
+			currentSearchTerm = null;
+			searchbtn.classList.remove("show");
+			searchbtn.firstChild.nodeValue = "Search"
+			matchedtxt.classList.add("hide");
+			matchedtxt.firstChild.nodeValue = ""
+		}
+	}
+	function search(term) {
+		if (currentSearchTerm === null) return;
+		var term = currentSearchTerm;
+
+		var re = new RegExp(term, ignorecase ? 'i' : '');
+		var el = document.getElementById("frames").children;
+		var matches = new Object();
+		var maxwidth = 0;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var func = g_to_func(e);
+			var rect = find_child(e, "rect");
+			if (func == null || rect == null)
+				continue;
+
+			// Save max width. Only works as we have a root frame
+			var w = parseFloat(rect.attributes.width.value);
+			if (w > maxwidth)
+				maxwidth = w;
+
+			if (func.match(re)) {
+				// highlight
+				var x = parseFloat(rect.attributes.x.value);
+				orig_save(rect, "fill");
+				rect.attributes.fill.value = "rgb(230,0,230)";
+
+				// remember matches
+				if (matches[x] == undefined) {
+					matches[x] = w;
+				} else {
+					if (w > matches[x]) {
+						// overwrite with parent
+						matches[x] = w;
+					}
+				}
+				searching = 1;
+			}
+		}
+		if (!searching)
+			return;
+
+		searchbtn.classList.add("show");
+		searchbtn.firstChild.nodeValue = "Reset Search";
+
+		// calculate percent matched, excluding vertical overlap
+		var count = 0;
+		var lastx = -1;
+		var lastw = 0;
+		var keys = Array();
+		for (k in matches) {
+			if (matches.hasOwnProperty(k))
+				keys.push(k);
+		}
+		// sort the matched frames by their x location
+		// ascending, then width descending
+		keys.sort(function(a, b){
+			return a - b;
+		});
+		// Step through frames saving only the biggest bottom-up frames
+		// thanks to the sort order. This relies on the tree property
+		// where children are always smaller than their parents.
+		var fudge = 0.0001;	// JavaScript floating point
+		for (var k in keys) {
+			var x = parseFloat(keys[k]);
+			var w = matches[keys[k]];
+			if (x >= lastx + lastw - fudge) {
+				count += w;
+				lastx = x;
+				lastw = w;
+			}
+		}
+		// display matched percent
+		matchedtxt.classList.remove("hide");
+		var pct = 100 * count / maxwidth;
+		if (pct != 100) pct = pct.toFixed(1)
+		matchedtxt.firstChild.nodeValue = "Matched: " + pct + "%";
+	}
+]]>
+</script>
+<rect x="0.0" y="0" width="800.0" height="2134.0" fill="url(#background)"  />
+<text id="title" x="400.00" y="24" >bad faults run</text>
+<text id="details" x="10.00" y="2117" > </text>
+<text id="unzoom" x="10.00" y="24" class="hide">Reset Zoom</text>
+<text id="search" x="690.00" y="24" >Search</text>
+<text id="ignorecase" x="774.00" y="24" >ic</text>
+<text id="matched" x="690.00" y="2117" > </text>
+<g id="frames">
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1828" width="11.7" height="15.0" fill="rgb(219,15,45)" rx="2" ry="2" />
+<text  x="13.02" y="1838.5" ></text>
+</g>
+<g >
+<title>threadWait (40,508 samples, 90.24%)</title><rect x="86.1" y="84" width="703.9" height="15.0" fill="rgb(213,48,9)" rx="2" ry="2" />
+<text  x="89.13" y="94.5" >threadWait</text>
+</g>
+<g >
+<title>__memmove_avx_unaligned_erms (22 samples, 0.05%)</title><rect x="39.5" y="68" width="0.4" height="15.0" fill="rgb(230,194,32)" rx="2" ry="2" />
+<text  x="42.52" y="78.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="404" width="11.7" height="15.0" fill="rgb(221,190,20)" rx="2" ry="2" />
+<text  x="13.02" y="414.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="868" width="11.7" height="15.0" fill="rgb(230,101,42)" rx="2" ry="2" />
+<text  x="13.02" y="878.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1124" width="11.7" height="15.0" fill="rgb(218,39,18)" rx="2" ry="2" />
+<text  x="13.02" y="1134.5" ></text>
+</g>
+<g >
+<title>[unknown] (1,626 samples, 3.62%)</title><rect x="10.0" y="68" width="28.3" height="15.0" fill="rgb(224,16,16)" rx="2" ry="2" />
+<text  x="13.02" y="78.5" >[..</text>
+</g>
+<g >
+<title>__memset_avx2_erms (13,052 samples, 29.08%)</title><rect x="563.2" y="132" width="226.8" height="15.0" fill="rgb(228,152,19)" rx="2" ry="2" />
+<text  x="566.17" y="142.5" >__memset_avx2_erms</text>
+</g>
+<g >
+<title>__memset_avx2_erms (9,798 samples, 21.83%)</title><rect x="171.7" y="132" width="170.3" height="15.0" fill="rgb(244,11,35)" rx="2" ry="2" />
+<text  x="174.70" y="142.5" >__memset_avx2_erms</text>
+</g>
+<g >
+<title>bst&lt;long, long, std::less&lt;long&gt;, record_manager&lt;reclaimer_debra&lt;long, pool_interface&lt;long, allocator_interface&lt;long&gt; &gt; &gt;, allocator_new&lt;long&gt;, pool_none&lt;long, allocator_interface&lt;long&gt; &gt;, Node&lt;long, long&gt;&gt; &gt;::insert_stm (13,455 samples, 29.97%)</title><rect x="556.2" y="116" width="233.8" height="15.0" fill="rgb(224,171,32)" rx="2" ry="2" />
+<text  x="559.20" y="126.5" >bst&lt;long, long, std::less&lt;long&gt;..</text>
+</g>
+<g >
+<title>__clone (6 samples, 0.01%)</title><rect x="23.7" y="180" width="0.1" height="15.0" fill="rgb(250,205,14)" rx="2" ry="2" />
+<text  x="26.73" y="190.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="692" width="11.7" height="15.0" fill="rgb(253,228,25)" rx="2" ry="2" />
+<text  x="13.02" y="702.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="660" width="11.7" height="15.0" fill="rgb(246,98,40)" rx="2" ry="2" />
+<text  x="13.02" y="670.5" ></text>
+</g>
+<g >
+<title>__memset_avx2_erms (1,881 samples, 4.19%)</title><rect x="122.2" y="132" width="32.7" height="15.0" fill="rgb(252,183,38)" rx="2" ry="2" />
+<text  x="125.23" y="142.5" >__..</text>
+</g>
+<g >
+<title>Thread::Thread (115 samples, 0.26%)</title><rect x="86.2" y="132" width="2.0" height="15.0" fill="rgb(251,13,7)" rx="2" ry="2" />
+<text  x="89.16" y="142.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="948" width="11.7" height="15.0" fill="rgb(232,211,41)" rx="2" ry="2" />
+<text  x="13.02" y="958.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="756" width="11.7" height="15.0" fill="rgb(236,107,33)" rx="2" ry="2" />
+<text  x="13.02" y="766.5" ></text>
+</g>
+<g >
+<title>bst&lt;long, long, std::less&lt;long&gt;, record_manager&lt;reclaimer_debra&lt;long, pool_interface&lt;long, allocator_interface&lt;long&gt; &gt; &gt;, allocator_new&lt;long&gt;, pool_none&lt;long, allocator_interface&lt;long&gt; &gt;, Node&lt;long, long&gt;&gt; &gt;::erase_stm (1,890 samples, 4.21%)</title><rect x="88.2" y="116" width="32.8" height="15.0" fill="rgb(218,46,31)" rx="2" ry="2" />
+<text  x="91.16" y="126.5" >bs..</text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="180" width="11.7" height="15.0" fill="rgb(205,168,39)" rx="2" ry="2" />
+<text  x="13.02" y="190.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="2052" width="11.7" height="15.0" fill="rgb(245,82,26)" rx="2" ry="2" />
+<text  x="13.02" y="2062.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1380" width="11.7" height="15.0" fill="rgb(220,52,7)" rx="2" ry="2" />
+<text  x="13.02" y="1390.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1540" width="11.7" height="15.0" fill="rgb(206,29,34)" rx="2" ry="2" />
+<text  x="13.02" y="1550.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1044" width="11.7" height="15.0" fill="rgb(234,21,35)" rx="2" ry="2" />
+<text  x="13.02" y="1054.5" ></text>
+</g>
+<g >
+<title>all (44,889 samples, 100%)</title><rect x="10.0" y="36" width="780.0" height="15.0" fill="rgb(232,51,1)" rx="2" ry="2" />
+<text  x="13.00" y="46.5" ></text>
+</g>
+<g >
+<title>__pthread_mutex_init (20 samples, 0.04%)</title><rect x="35.3" y="84" width="0.3" height="15.0" fill="rgb(227,53,27)" rx="2" ry="2" />
+<text  x="38.26" y="94.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="900" width="11.7" height="15.0" fill="rgb(254,63,18)" rx="2" ry="2" />
+<text  x="13.02" y="910.5" ></text>
+</g>
+<g >
+<title>__memset_avx2_erms (8 samples, 0.02%)</title><rect x="24.0" y="196" width="0.1" height="15.0" fill="rgb(234,221,15)" rx="2" ry="2" />
+<text  x="26.95" y="206.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1636" width="11.7" height="15.0" fill="rgb(253,83,22)" rx="2" ry="2" />
+<text  x="13.02" y="1646.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="436" width="11.7" height="15.0" fill="rgb(244,112,20)" rx="2" ry="2" />
+<text  x="13.02" y="446.5" ></text>
+</g>
+<g >
+<title>TxInitThread (117 samples, 0.26%)</title><rect x="86.1" y="116" width="2.1" height="15.0" fill="rgb(235,144,1)" rx="2" ry="2" />
+<text  x="89.13" y="126.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1588" width="11.7" height="15.0" fill="rgb(241,162,39)" rx="2" ry="2" />
+<text  x="13.02" y="1598.5" ></text>
+</g>
+<g >
+<title>je_arena_tcache_fill_small (838 samples, 1.87%)</title><rect x="67.1" y="68" width="14.5" height="15.0" fill="rgb(248,197,4)" rx="2" ry="2" />
+<text  x="70.06" y="78.5" ></text>
+</g>
+<g >
+<title>arena_chunk_alloc (24 samples, 0.05%)</title><rect x="35.7" y="100" width="0.4" height="15.0" fill="rgb(244,195,30)" rx="2" ry="2" />
+<text  x="38.68" y="110.5" ></text>
+</g>
+<g >
+<title>__libc_start_main (313 samples, 0.70%)</title><rect x="22.5" y="84" width="5.5" height="15.0" fill="rgb(211,3,43)" rx="2" ry="2" />
+<text  x="25.55" y="94.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1236" width="11.7" height="15.0" fill="rgb(210,50,28)" rx="2" ry="2" />
+<text  x="13.02" y="1246.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1620" width="11.7" height="15.0" fill="rgb(247,151,23)" rx="2" ry="2" />
+<text  x="13.02" y="1630.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1524" width="11.7" height="15.0" fill="rgb(249,8,42)" rx="2" ry="2" />
+<text  x="13.02" y="1534.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="724" width="11.7" height="15.0" fill="rgb(219,55,50)" rx="2" ry="2" />
+<text  x="13.02" y="734.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1204" width="11.7" height="15.0" fill="rgb(227,3,39)" rx="2" ry="2" />
+<text  x="13.02" y="1214.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1140" width="11.7" height="15.0" fill="rgb(226,95,45)" rx="2" ry="2" />
+<text  x="13.02" y="1150.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="644" width="11.7" height="15.0" fill="rgb(253,129,9)" rx="2" ry="2" />
+<text  x="13.02" y="654.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1892" width="11.7" height="15.0" fill="rgb(231,83,9)" rx="2" ry="2" />
+<text  x="13.02" y="1902.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1092" width="11.7" height="15.0" fill="rgb(241,131,42)" rx="2" ry="2" />
+<text  x="13.02" y="1102.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="228" width="11.7" height="15.0" fill="rgb(241,34,27)" rx="2" ry="2" />
+<text  x="13.02" y="238.5" ></text>
+</g>
+<g >
+<title>Thread::Thread (829 samples, 1.85%)</title><rect x="155.5" y="116" width="14.4" height="15.0" fill="rgb(252,143,15)" rx="2" ry="2" />
+<text  x="158.54" y="126.5" ></text>
+</g>
+<g >
+<title>countersInit (15 samples, 0.03%)</title><rect x="23.0" y="148" width="0.2" height="15.0" fill="rgb(221,22,50)" rx="2" ry="2" />
+<text  x="25.96" y="158.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="820" width="11.7" height="15.0" fill="rgb(250,184,50)" rx="2" ry="2" />
+<text  x="13.02" y="830.5" ></text>
+</g>
+<g >
+<title>bst&lt;long, long, std::less&lt;long&gt;, record_manager&lt;reclaimer_debra&lt;long, pool_interface&lt;long, allocator_interface&lt;long&gt; &gt; &gt;, allocator_new&lt;long&gt;, pool_none&lt;long, allocator_interface&lt;long&gt; &gt;, Node&lt;long, long&gt;&gt; &gt;::insert_stm (182 samples, 0.41%)</title><rect x="24.4" y="180" width="3.2" height="15.0" fill="rgb(210,154,24)" rx="2" ry="2" />
+<text  x="27.44" y="190.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="932" width="11.7" height="15.0" fill="rgb(218,49,1)" rx="2" ry="2" />
+<text  x="13.02" y="942.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="740" width="11.7" height="15.0" fill="rgb(233,62,47)" rx="2" ry="2" />
+<text  x="13.02" y="750.5" ></text>
+</g>
+<g >
+<title>_pe_read (6 samples, 0.01%)</title><rect x="21.6" y="2084" width="0.1" height="15.0" fill="rgb(211,172,21)" rx="2" ry="2" />
+<text  x="24.61" y="2094.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1396" width="11.7" height="15.0" fill="rgb(216,14,12)" rx="2" ry="2" />
+<text  x="13.02" y="1406.5" ></text>
+</g>
+<g >
+<title>__memset_avx2_erms (193 samples, 0.43%)</title><rect x="28.0" y="84" width="3.3" height="15.0" fill="rgb(247,224,42)" rx="2" ry="2" />
+<text  x="30.98" y="94.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1860" width="11.7" height="15.0" fill="rgb(232,190,52)" rx="2" ry="2" />
+<text  x="13.02" y="1870.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1108" width="11.7" height="15.0" fill="rgb(216,45,21)" rx="2" ry="2" />
+<text  x="13.02" y="1118.5" ></text>
+</g>
+<g >
+<title>pthread_create@@GLIBC_2.2.5 (7 samples, 0.02%)</title><rect x="27.9" y="164" width="0.1" height="15.0" fill="rgb(218,56,7)" rx="2" ry="2" />
+<text  x="30.86" y="174.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1508" width="11.7" height="15.0" fill="rgb(231,91,19)" rx="2" ry="2" />
+<text  x="13.02" y="1518.5" ></text>
+</g>
+<g >
+<title>je_huge_palloc (8 samples, 0.02%)</title><rect x="81.7" y="68" width="0.1" height="15.0" fill="rgb(237,9,8)" rx="2" ry="2" />
+<text  x="84.68" y="78.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="852" width="11.7" height="15.0" fill="rgb(222,55,51)" rx="2" ry="2" />
+<text  x="13.02" y="862.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1252" width="11.7" height="15.0" fill="rgb(249,138,50)" rx="2" ry="2" />
+<text  x="13.02" y="1262.5" ></text>
+</g>
+<g >
+<title>thread_startup (22 samples, 0.05%)</title><rect x="27.6" y="148" width="0.4" height="15.0" fill="rgb(237,155,49)" rx="2" ry="2" />
+<text  x="30.60" y="158.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="772" width="11.7" height="15.0" fill="rgb(240,9,4)" rx="2" ry="2" />
+<text  x="13.02" y="782.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="356" width="11.7" height="15.0" fill="rgb(243,166,32)" rx="2" ry="2" />
+<text  x="13.02" y="366.5" ></text>
+</g>
+<g >
+<title>__memset_avx2_erms (471 samples, 1.05%)</title><rect x="39.9" y="68" width="8.2" height="15.0" fill="rgb(238,44,25)" rx="2" ry="2" />
+<text  x="42.90" y="78.5" ></text>
+</g>
+<g >
+<title>bst&lt;long, long, std::less&lt;long&gt;, record_manager&lt;reclaimer_debra&lt;long, pool_interface&lt;long, allocator_interface&lt;long&gt; &gt; &gt;, allocator_new&lt;long&gt;, pool_none&lt;long, allocator_interface&lt;long&gt; &gt;, Node&lt;long, long&gt;&gt; &gt;::erase_stm (8 samples, 0.02%)</title><rect x="24.0" y="180" width="0.1" height="15.0" fill="rgb(212,84,35)" rx="2" ry="2" />
+<text  x="26.95" y="190.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="196" width="11.7" height="15.0" fill="rgb(233,169,29)" rx="2" ry="2" />
+<text  x="13.02" y="206.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1956" width="11.7" height="15.0" fill="rgb(221,19,5)" rx="2" ry="2" />
+<text  x="13.02" y="1966.5" ></text>
+</g>
+<g >
+<title>trial&lt;record_manager&lt;reclaimer_debra&lt;long, pool_interface&lt;long, allocator_interface&lt;long&gt; &gt; &gt;, allocator_new&lt;long&gt;, pool_none&lt;long, allocator_interface&lt;long&gt; &gt;, Node&lt;long, long&gt;&gt; &gt; (313 samples, 0.70%)</title><rect x="22.5" y="132" width="5.5" height="15.0" fill="rgb(216,172,24)" rx="2" ry="2" />
+<text  x="25.55" y="142.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="580" width="11.7" height="15.0" fill="rgb(218,178,8)" rx="2" ry="2" />
+<text  x="13.02" y="590.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1876" width="11.7" height="15.0" fill="rgb(208,100,45)" rx="2" ry="2" />
+<text  x="13.02" y="1886.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="836" width="11.7" height="15.0" fill="rgb(254,72,15)" rx="2" ry="2" />
+<text  x="13.02" y="846.5" ></text>
+</g>
+<g >
+<title>_pe_read (14 samples, 0.03%)</title><rect x="55.7" y="68" width="0.2" height="15.0" fill="rgb(220,207,9)" rx="2" ry="2" />
+<text  x="58.68" y="78.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="340" width="11.7" height="15.0" fill="rgb(214,44,17)" rx="2" ry="2" />
+<text  x="13.02" y="350.5" ></text>
+</g>
+<g >
+<title>jax.dsbench_hyt (44,889 samples, 100.00%)</title><rect x="10.0" y="52" width="780.0" height="15.0" fill="rgb(206,59,7)" rx="2" ry="2" />
+<text  x="13.00" y="62.5" >jax.dsbench_hyt</text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1652" width="11.7" height="15.0" fill="rgb(254,147,33)" rx="2" ry="2" />
+<text  x="13.02" y="1662.5" ></text>
+</g>
+<g >
+<title>_papi_hwi_assign_eventset (315 samples, 0.70%)</title><rect x="48.2" y="68" width="5.4" height="15.0" fill="rgb(248,214,38)" rx="2" ry="2" />
+<text  x="51.18" y="78.5" ></text>
+</g>
+<g >
+<title>bst&lt;long, long, std::less&lt;long&gt;, record_manager&lt;reclaimer_debra&lt;long, pool_interface&lt;long, allocator_interface&lt;long&gt; &gt; &gt;, allocator_new&lt;long&gt;, pool_none&lt;long, allocator_interface&lt;long&gt; &gt;, Node&lt;long, long&gt;&gt; &gt;::find_stm (12,330 samples, 27.47%)</title><rect x="342.0" y="116" width="214.2" height="15.0" fill="rgb(251,218,24)" rx="2" ry="2" />
+<text  x="344.95" y="126.5" >bst&lt;long, long, std::less&lt;lo..</text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1668" width="11.7" height="15.0" fill="rgb(225,195,15)" rx="2" ry="2" />
+<text  x="13.02" y="1678.5" ></text>
+</g>
+<g >
+<title>__libc_csu_init (72 samples, 0.16%)</title><rect x="38.3" y="68" width="1.2" height="15.0" fill="rgb(218,224,44)" rx="2" ry="2" />
+<text  x="41.27" y="78.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="164" width="11.7" height="15.0" fill="rgb(252,156,16)" rx="2" ry="2" />
+<text  x="13.02" y="174.5" ></text>
+</g>
+<g >
+<title>je_tcache_create (248 samples, 0.55%)</title><rect x="81.8" y="68" width="4.3" height="15.0" fill="rgb(240,176,46)" rx="2" ry="2" />
+<text  x="84.82" y="78.5" ></text>
+</g>
+<g >
+<title>je_extent_tree_ad_new (12 samples, 0.03%)</title><rect x="37.9" y="84" width="0.2" height="15.0" fill="rgb(229,188,29)" rx="2" ry="2" />
+<text  x="40.85" y="94.5" ></text>
+</g>
+<g >
+<title>__memset_avx2_erms (20 samples, 0.04%)</title><rect x="24.1" y="196" width="0.3" height="15.0" fill="rgb(221,69,22)" rx="2" ry="2" />
+<text  x="27.09" y="206.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1940" width="11.7" height="15.0" fill="rgb(241,9,28)" rx="2" ry="2" />
+<text  x="13.02" y="1950.5" ></text>
+</g>
+<g >
+<title>__memset_avx2_erms (1,890 samples, 4.21%)</title><rect x="88.2" y="132" width="32.8" height="15.0" fill="rgb(234,192,37)" rx="2" ry="2" />
+<text  x="91.16" y="142.5" >__..</text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="212" width="11.7" height="15.0" fill="rgb(242,112,41)" rx="2" ry="2" />
+<text  x="13.02" y="222.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1764" width="11.7" height="15.0" fill="rgb(219,155,28)" rx="2" ry="2" />
+<text  x="13.02" y="1774.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="676" width="11.7" height="15.0" fill="rgb(238,103,19)" rx="2" ry="2" />
+<text  x="13.02" y="686.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="708" width="11.7" height="15.0" fill="rgb(210,216,41)" rx="2" ry="2" />
+<text  x="13.02" y="718.5" ></text>
+</g>
+<g >
+<title>__memset_avx2_erms (182 samples, 0.41%)</title><rect x="24.4" y="196" width="3.2" height="15.0" fill="rgb(219,152,53)" rx="2" ry="2" />
+<text  x="27.44" y="206.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1028" width="11.7" height="15.0" fill="rgb(207,140,16)" rx="2" ry="2" />
+<text  x="13.02" y="1038.5" ></text>
+</g>
+<g >
+<title>arena_avail_tree_remove (192 samples, 0.43%)</title><rect x="60.5" y="68" width="3.3" height="15.0" fill="rgb(218,10,29)" rx="2" ry="2" />
+<text  x="63.46" y="78.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="980" width="11.7" height="15.0" fill="rgb(252,134,20)" rx="2" ry="2" />
+<text  x="13.02" y="990.5" ></text>
+</g>
+<g >
+<title>je_arena_new (185 samples, 0.41%)</title><rect x="63.8" y="68" width="3.3" height="15.0" fill="rgb(221,171,45)" rx="2" ry="2" />
+<text  x="66.85" y="78.5" ></text>
+</g>
+<g >
+<title>bst&lt;long, long, std::less&lt;long&gt;, record_manager&lt;reclaimer_debra&lt;long, pool_interface&lt;long, allocator_interface&lt;long&gt; &gt; &gt;, allocator_new&lt;long&gt;, pool_none&lt;long, allocator_interface&lt;long&gt; &gt;, Node&lt;long, long&gt;&gt; &gt;::insert_stm (1,952 samples, 4.35%)</title><rect x="121.0" y="116" width="33.9" height="15.0" fill="rgb(253,209,39)" rx="2" ry="2" />
+<text  x="124.00" y="126.5" >bs..</text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="996" width="11.7" height="15.0" fill="rgb(237,113,12)" rx="2" ry="2" />
+<text  x="13.02" y="1006.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="292" width="11.7" height="15.0" fill="rgb(214,119,53)" rx="2" ry="2" />
+<text  x="13.02" y="302.5" ></text>
+</g>
+<g >
+<title>thread_timed&lt;record_manager&lt;reclaimer_debra&lt;long, pool_interface&lt;long, allocator_interface&lt;long&gt; &gt; &gt;, allocator_new&lt;long&gt;, pool_none&lt;long, allocator_interface&lt;long&gt; &gt;, Node&lt;long, long&gt;&gt; &gt; (36,549 samples, 81.42%)</title><rect x="154.9" y="100" width="635.1" height="15.0" fill="rgb(230,54,9)" rx="2" ry="2" />
+<text  x="157.92" y="110.5" >thread_timed&lt;record_manager&lt;reclaimer_debra&lt;long, pool_interface&lt;long, allocator_interf..</text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1748" width="11.7" height="15.0" fill="rgb(206,170,47)" rx="2" ry="2" />
+<text  x="13.02" y="1758.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1908" width="11.7" height="15.0" fill="rgb(228,0,24)" rx="2" ry="2" />
+<text  x="13.02" y="1918.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="596" width="11.7" height="15.0" fill="rgb(223,167,44)" rx="2" ry="2" />
+<text  x="13.02" y="606.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1572" width="11.7" height="15.0" fill="rgb(234,19,46)" rx="2" ry="2" />
+<text  x="13.02" y="1582.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1460" width="11.7" height="15.0" fill="rgb(231,80,25)" rx="2" ry="2" />
+<text  x="13.02" y="1470.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1684" width="11.7" height="15.0" fill="rgb(228,23,0)" rx="2" ry="2" />
+<text  x="13.02" y="1694.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="308" width="11.7" height="15.0" fill="rgb(221,209,8)" rx="2" ry="2" />
+<text  x="13.02" y="318.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="148" width="11.7" height="15.0" fill="rgb(224,23,38)" rx="2" ry="2" />
+<text  x="13.02" y="158.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1972" width="11.7" height="15.0" fill="rgb(245,193,41)" rx="2" ry="2" />
+<text  x="13.02" y="1982.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="628" width="11.7" height="15.0" fill="rgb(247,122,15)" rx="2" ry="2" />
+<text  x="13.02" y="638.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1700" width="11.7" height="15.0" fill="rgb(236,134,4)" rx="2" ry="2" />
+<text  x="13.02" y="1710.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="884" width="11.7" height="15.0" fill="rgb(223,183,52)" rx="2" ry="2" />
+<text  x="13.02" y="894.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="116" width="11.7" height="15.0" fill="rgb(210,152,12)" rx="2" ry="2" />
+<text  x="13.02" y="126.5" ></text>
+</g>
+<g >
+<title>__memset_avx2_erms (12,330 samples, 27.47%)</title><rect x="342.0" y="132" width="214.2" height="15.0" fill="rgb(254,10,16)" rx="2" ry="2" />
+<text  x="344.95" y="142.5" >__memset_avx2_erms</text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="788" width="11.7" height="15.0" fill="rgb(238,54,19)" rx="2" ry="2" />
+<text  x="13.02" y="798.5" ></text>
+</g>
+<g >
+<title>bst&lt;long, long, std::less&lt;long&gt;, record_manager&lt;reclaimer_debra&lt;long, pool_interface&lt;long, allocator_interface&lt;long&gt; &gt; &gt;, allocator_new&lt;long&gt;, pool_none&lt;long, allocator_interface&lt;long&gt; &gt;, Node&lt;long, long&gt;&gt; &gt;::erase_stm (15 samples, 0.03%)</title><rect x="23.3" y="196" width="0.3" height="15.0" fill="rgb(212,147,53)" rx="2" ry="2" />
+<text  x="26.29" y="206.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1428" width="11.7" height="15.0" fill="rgb(247,28,4)" rx="2" ry="2" />
+<text  x="13.02" y="1438.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1332" width="11.7" height="15.0" fill="rgb(219,74,30)" rx="2" ry="2" />
+<text  x="13.02" y="1342.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="916" width="11.7" height="15.0" fill="rgb(223,159,46)" rx="2" ry="2" />
+<text  x="13.02" y="926.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1716" width="11.7" height="15.0" fill="rgb(222,170,50)" rx="2" ry="2" />
+<text  x="13.02" y="1726.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1780" width="11.7" height="15.0" fill="rgb(251,151,38)" rx="2" ry="2" />
+<text  x="13.02" y="1790.5" ></text>
+</g>
+<g >
+<title>__memset_avx2_unaligned_erms (226 samples, 0.50%)</title><rect x="31.3" y="84" width="4.0" height="15.0" fill="rgb(224,106,30)" rx="2" ry="2" />
+<text  x="34.34" y="94.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="2068" width="11.7" height="15.0" fill="rgb(243,21,42)" rx="2" ry="2" />
+<text  x="13.02" y="2078.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1012" width="11.7" height="15.0" fill="rgb(234,185,0)" rx="2" ry="2" />
+<text  x="13.02" y="1022.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1220" width="11.7" height="15.0" fill="rgb(220,10,33)" rx="2" ry="2" />
+<text  x="13.02" y="1230.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1188" width="11.7" height="15.0" fill="rgb(240,217,26)" rx="2" ry="2" />
+<text  x="13.02" y="1198.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1812" width="11.7" height="15.0" fill="rgb(252,105,46)" rx="2" ry="2" />
+<text  x="13.02" y="1822.5" ></text>
+</g>
+<g >
+<title>je_extent_tree_szad_new (12 samples, 0.03%)</title><rect x="38.1" y="84" width="0.2" height="15.0" fill="rgb(241,146,12)" rx="2" ry="2" />
+<text  x="41.06" y="94.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="468" width="11.7" height="15.0" fill="rgb(223,88,51)" rx="2" ry="2" />
+<text  x="13.02" y="478.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="260" width="11.7" height="15.0" fill="rgb(229,121,32)" rx="2" ry="2" />
+<text  x="13.02" y="270.5" ></text>
+</g>
+<g >
+<title>_GLOBAL__sub_I_____padding12381 (72 samples, 0.16%)</title><rect x="38.3" y="84" width="1.2" height="15.0" fill="rgb(232,156,7)" rx="2" ry="2" />
+<text  x="41.27" y="94.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="372" width="11.7" height="15.0" fill="rgb(222,18,13)" rx="2" ry="2" />
+<text  x="13.02" y="382.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="532" width="11.7" height="15.0" fill="rgb(233,69,10)" rx="2" ry="2" />
+<text  x="13.02" y="542.5" ></text>
+</g>
+<g >
+<title>bst&lt;long, long, std::less&lt;long&gt;, record_manager&lt;reclaimer_debra&lt;long, pool_interface&lt;long, allocator_interface&lt;long&gt; &gt; &gt;, allocator_new&lt;long&gt;, pool_none&lt;long, allocator_interface&lt;long&gt; &gt;, Node&lt;long, long&gt;&gt; &gt;::erase_stm (9,899 samples, 22.05%)</title><rect x="169.9" y="116" width="172.1" height="15.0" fill="rgb(247,129,52)" rx="2" ry="2" />
+<text  x="172.95" y="126.5" >bst&lt;long, long, std::l..</text>
+</g>
+<g >
+<title>pthread_create@@GLIBC_2.2.5 (7 samples, 0.02%)</title><rect x="23.8" y="180" width="0.2" height="15.0" fill="rgb(247,192,33)" rx="2" ry="2" />
+<text  x="26.83" y="190.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="2036" width="11.7" height="15.0" fill="rgb(237,22,17)" rx="2" ry="2" />
+<text  x="13.02" y="2046.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1924" width="11.7" height="15.0" fill="rgb(241,183,4)" rx="2" ry="2" />
+<text  x="13.02" y="1934.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1156" width="11.7" height="15.0" fill="rgb(210,113,15)" rx="2" ry="2" />
+<text  x="13.02" y="1166.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1364" width="11.7" height="15.0" fill="rgb(236,190,37)" rx="2" ry="2" />
+<text  x="13.02" y="1374.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="100" width="11.7" height="15.0" fill="rgb(232,55,41)" rx="2" ry="2" />
+<text  x="13.02" y="110.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1988" width="11.7" height="15.0" fill="rgb(235,163,43)" rx="2" ry="2" />
+<text  x="13.02" y="1998.5" ></text>
+</g>
+<g >
+<title>prefill&lt;record_manager&lt;reclaimer_debra&lt;long, pool_interface&lt;long, allocator_interface&lt;long&gt; &gt; &gt;, allocator_new&lt;long&gt;, pool_none&lt;long, allocator_interface&lt;long&gt; &gt;, Node&lt;long, long&gt;&gt; &gt; (42 samples, 0.09%)</title><rect x="23.2" y="148" width="0.8" height="15.0" fill="rgb(236,136,32)" rx="2" ry="2" />
+<text  x="26.22" y="158.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1172" width="11.7" height="15.0" fill="rgb(225,224,33)" rx="2" ry="2" />
+<text  x="13.02" y="1182.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1060" width="11.7" height="15.0" fill="rgb(243,4,0)" rx="2" ry="2" />
+<text  x="13.02" y="1070.5" ></text>
+</g>
+<g >
+<title>__memset_avx2_unaligned_erms (200 samples, 0.45%)</title><rect x="18.1" y="2084" width="3.5" height="15.0" fill="rgb(250,54,33)" rx="2" ry="2" />
+<text  x="21.13" y="2094.5" ></text>
+</g>
+<g >
+<title>performExperiment (313 samples, 0.70%)</title><rect x="22.5" y="116" width="5.5" height="15.0" fill="rgb(230,79,46)" rx="2" ry="2" />
+<text  x="25.55" y="126.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="2004" width="11.7" height="15.0" fill="rgb(236,82,54)" rx="2" ry="2" />
+<text  x="13.02" y="2014.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="804" width="11.7" height="15.0" fill="rgb(207,141,34)" rx="2" ry="2" />
+<text  x="13.02" y="814.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="500" width="11.7" height="15.0" fill="rgb(241,81,13)" rx="2" ry="2" />
+<text  x="13.02" y="510.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1284" width="11.7" height="15.0" fill="rgb(224,32,9)" rx="2" ry="2" />
+<text  x="13.02" y="1294.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="516" width="11.7" height="15.0" fill="rgb(214,6,9)" rx="2" ry="2" />
+<text  x="13.02" y="526.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1492" width="11.7" height="15.0" fill="rgb(225,220,37)" rx="2" ry="2" />
+<text  x="13.02" y="1502.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1348" width="11.7" height="15.0" fill="rgb(243,135,47)" rx="2" ry="2" />
+<text  x="13.02" y="1358.5" ></text>
+</g>
+<g >
+<title>thread_prefill&lt;record_manager&lt;reclaimer_debra&lt;long, pool_interface&lt;long, allocator_interface&lt;long&gt; &gt; &gt;, allocator_new&lt;long&gt;, pool_none&lt;long, allocator_interface&lt;long&gt; &gt;, Node&lt;long, long&gt;&gt; &gt; (29 samples, 0.06%)</title><rect x="23.2" y="180" width="0.5" height="15.0" fill="rgb(223,26,11)" rx="2" ry="2" />
+<text  x="26.22" y="190.5" ></text>
+</g>
+<g >
+<title>start_thread (40,508 samples, 90.24%)</title><rect x="86.1" y="68" width="703.9" height="15.0" fill="rgb(237,118,17)" rx="2" ry="2" />
+<text  x="89.13" y="78.5" >start_thread</text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="324" width="11.7" height="15.0" fill="rgb(231,22,33)" rx="2" ry="2" />
+<text  x="13.02" y="334.5" ></text>
+</g>
+<g >
+<title>chunk_dalloc_default (25 samples, 0.06%)</title><rect x="35.7" y="84" width="0.4" height="15.0" fill="rgb(206,175,51)" rx="2" ry="2" />
+<text  x="38.68" y="94.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1268" width="11.7" height="15.0" fill="rgb(252,97,13)" rx="2" ry="2" />
+<text  x="13.02" y="1278.5" ></text>
+</g>
+<g >
+<title>__memset_avx2_erms (15 samples, 0.03%)</title><rect x="23.3" y="212" width="0.3" height="15.0" fill="rgb(220,122,7)" rx="2" ry="2" />
+<text  x="26.29" y="222.5" ></text>
+</g>
+<g >
+<title>bst&lt;long, long, std::less&lt;long&gt;, record_manager&lt;reclaimer_debra&lt;long, pool_interface&lt;long, allocator_interface&lt;long&gt; &gt; &gt;, allocator_new&lt;long&gt;, pool_none&lt;long, allocator_interface&lt;long&gt; &gt;, Node&lt;long, long&gt;&gt; &gt;::insert_stm (10 samples, 0.02%)</title><rect x="23.6" y="196" width="0.1" height="15.0" fill="rgb(210,154,51)" rx="2" ry="2" />
+<text  x="26.55" y="206.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1796" width="11.7" height="15.0" fill="rgb(251,177,39)" rx="2" ry="2" />
+<text  x="13.02" y="1806.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="388" width="11.7" height="15.0" fill="rgb(241,45,43)" rx="2" ry="2" />
+<text  x="13.02" y="398.5" ></text>
+</g>
+<g >
+<title>je_arena_new (100 samples, 0.22%)</title><rect x="36.1" y="84" width="1.8" height="15.0" fill="rgb(239,127,43)" rx="2" ry="2" />
+<text  x="39.12" y="94.5" ></text>
+</g>
+<g >
+<title>[unknown] (721 samples, 1.61%)</title><rect x="10.0" y="84" width="12.5" height="15.0" fill="rgb(251,126,54)" rx="2" ry="2" />
+<text  x="13.02" y="94.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="612" width="11.7" height="15.0" fill="rgb(236,223,4)" rx="2" ry="2" />
+<text  x="13.02" y="622.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1300" width="11.7" height="15.0" fill="rgb(222,171,13)" rx="2" ry="2" />
+<text  x="13.02" y="1310.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1444" width="11.7" height="15.0" fill="rgb(213,179,27)" rx="2" ry="2" />
+<text  x="13.02" y="1454.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="2020" width="11.7" height="15.0" fill="rgb(235,25,35)" rx="2" ry="2" />
+<text  x="13.02" y="2030.5" ></text>
+</g>
+<g >
+<title>thread_start (210 samples, 0.47%)</title><rect x="24.0" y="148" width="3.6" height="15.0" fill="rgb(225,162,0)" rx="2" ry="2" />
+<text  x="26.95" y="158.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="548" width="11.7" height="15.0" fill="rgb(225,149,43)" rx="2" ry="2" />
+<text  x="13.02" y="558.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1844" width="11.7" height="15.0" fill="rgb(254,76,43)" rx="2" ry="2" />
+<text  x="13.02" y="1854.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="244" width="11.7" height="15.0" fill="rgb(245,211,33)" rx="2" ry="2" />
+<text  x="13.02" y="254.5" ></text>
+</g>
+<g >
+<title>__memset_avx2_erms (467 samples, 1.04%)</title><rect x="10.0" y="2084" width="8.1" height="15.0" fill="rgb(224,177,45)" rx="2" ry="2" />
+<text  x="13.02" y="2094.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="964" width="11.7" height="15.0" fill="rgb(223,154,11)" rx="2" ry="2" />
+<text  x="13.02" y="974.5" ></text>
+</g>
+<g >
+<title>main (313 samples, 0.70%)</title><rect x="22.5" y="100" width="5.5" height="15.0" fill="rgb(243,29,32)" rx="2" ry="2" />
+<text  x="25.55" y="110.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="564" width="11.7" height="15.0" fill="rgb(253,16,43)" rx="2" ry="2" />
+<text  x="13.02" y="574.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1556" width="11.7" height="15.0" fill="rgb(239,137,50)" rx="2" ry="2" />
+<text  x="13.02" y="1566.5" ></text>
+</g>
+<g >
+<title>_papi_hwi_initialize_thread (117 samples, 0.26%)</title><rect x="53.6" y="68" width="2.1" height="15.0" fill="rgb(213,58,7)" rx="2" ry="2" />
+<text  x="56.65" y="78.5" ></text>
+</g>
+<g >
+<title>thread_timed&lt;record_manager&lt;reclaimer_debra&lt;long, pool_interface&lt;long, allocator_interface&lt;long&gt; &gt; &gt;, allocator_new&lt;long&gt;, pool_none&lt;long, allocator_interface&lt;long&gt; &gt;, Node&lt;long, long&gt;&gt; &gt; (210 samples, 0.47%)</title><rect x="24.0" y="164" width="3.6" height="15.0" fill="rgb(239,92,48)" rx="2" ry="2" />
+<text  x="26.95" y="174.5" ></text>
+</g>
+<g >
+<title>bst&lt;long, long, std::less&lt;long&gt;, record_manager&lt;reclaimer_debra&lt;long, pool_interface&lt;long, allocator_interface&lt;long&gt; &gt; &gt;, allocator_new&lt;long&gt;, pool_none&lt;long, allocator_interface&lt;long&gt; &gt;, Node&lt;long, long&gt;&gt; &gt;::find_stm (20 samples, 0.04%)</title><rect x="24.1" y="180" width="0.3" height="15.0" fill="rgb(238,218,20)" rx="2" ry="2" />
+<text  x="27.09" y="190.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1732" width="11.7" height="15.0" fill="rgb(207,94,37)" rx="2" ry="2" />
+<text  x="13.02" y="1742.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="452" width="11.7" height="15.0" fill="rgb(209,9,44)" rx="2" ry="2" />
+<text  x="13.02" y="462.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="276" width="11.7" height="15.0" fill="rgb(230,128,3)" rx="2" ry="2" />
+<text  x="13.02" y="286.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="420" width="11.7" height="15.0" fill="rgb(229,182,2)" rx="2" ry="2" />
+<text  x="13.02" y="430.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1076" width="11.7" height="15.0" fill="rgb(205,193,17)" rx="2" ry="2" />
+<text  x="13.02" y="1086.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="132" width="11.7" height="15.0" fill="rgb(211,138,15)" rx="2" ry="2" />
+<text  x="13.02" y="142.5" ></text>
+</g>
+<g >
+<title>__memset_avx2_erms (9 samples, 0.02%)</title><rect x="23.6" y="212" width="0.1" height="15.0" fill="rgb(213,102,27)" rx="2" ry="2" />
+<text  x="26.57" y="222.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="484" width="11.7" height="15.0" fill="rgb(213,68,16)" rx="2" ry="2" />
+<text  x="13.02" y="494.5" ></text>
+</g>
+<g >
+<title>thread_start (29 samples, 0.06%)</title><rect x="23.2" y="164" width="0.5" height="15.0" fill="rgb(214,106,38)" rx="2" ry="2" />
+<text  x="26.22" y="174.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1604" width="11.7" height="15.0" fill="rgb(215,85,41)" rx="2" ry="2" />
+<text  x="13.02" y="1614.5" ></text>
+</g>
+<g >
+<title>__clone (15 samples, 0.03%)</title><rect x="27.6" y="164" width="0.3" height="15.0" fill="rgb(244,224,47)" rx="2" ry="2" />
+<text  x="30.60" y="174.5" ></text>
+</g>
+<g >
+<title>thread_startup (13 samples, 0.03%)</title><rect x="23.7" y="164" width="0.3" height="15.0" fill="rgb(232,21,11)" rx="2" ry="2" />
+<text  x="26.73" y="174.5" ></text>
+</g>
+<g >
+<title>thread_prefill&lt;record_manager&lt;reclaimer_debra&lt;long, pool_interface&lt;long, allocator_interface&lt;long&gt; &gt; &gt;, allocator_new&lt;long&gt;, pool_none&lt;long, allocator_interface&lt;long&gt; &gt;, Node&lt;long, long&gt;&gt; &gt; (3,959 samples, 8.82%)</title><rect x="86.1" y="100" width="68.8" height="15.0" fill="rgb(244,111,42)" rx="2" ry="2" />
+<text  x="89.13" y="110.5" >thread_..</text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1476" width="11.7" height="15.0" fill="rgb(228,210,8)" rx="2" ry="2" />
+<text  x="13.02" y="1486.5" ></text>
+</g>
+<g >
+<title>__memmove_avx_unaligned_erms (48 samples, 0.11%)</title><rect x="21.7" y="100" width="0.8" height="15.0" fill="rgb(236,2,41)" rx="2" ry="2" />
+<text  x="24.71" y="110.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1316" width="11.7" height="15.0" fill="rgb(209,122,47)" rx="2" ry="2" />
+<text  x="13.02" y="1326.5" ></text>
+</g>
+<g >
+<title>[unknown] (673 samples, 1.50%)</title><rect x="10.0" y="1412" width="11.7" height="15.0" fill="rgb(244,88,46)" rx="2" ry="2" />
+<text  x="13.02" y="1422.5" ></text>
+</g>
+<g >
+<title>arena_avail_tree_insert (260 samples, 0.58%)</title><rect x="55.9" y="68" width="4.6" height="15.0" fill="rgb(248,172,9)" rx="2" ry="2" />
+<text  x="58.94" y="78.5" ></text>
+</g>
+</g>
+</svg>

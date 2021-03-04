@@ -55,7 +55,7 @@ for x in *.data ; do
 		f=`echo $fn | cut -d"~" -f1`
 		n=`echo $fn | cut -d"~" -f2`
 		echo -n , >> $outfile
-		${path}/scripts/add `cat $x | grep -E "${f}[ ]+:" | cut -d":" -f2 | cut -d" " -f$n | tr -d "\r" | tr "\n" " "` >> $outfile
+		${path}/bin/add `cat $x | grep -E "${f}[ ]+:" | cut -d":" -f2 | cut -d" " -f$n | tr -d "\r" | tr "\n" " "` >> $outfile
 		#echo ; echo ; echo "f=$f" ; cat $x | grep -E "${f}[ ]+:" | cut -d":" -f2 | cut -d" " -f$n | tr -d "\r" | tr "\n" " " ; echo ; echo
 	done
 

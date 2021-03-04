@@ -62,9 +62,9 @@ __INLINE__ long ReadSetCoherentPessimistic (Thread*);
 
 
 enum tl2_config {
-    TL2_INIT_WRSET_NUM_ENTRY = 1024,
-    TL2_INIT_RDSET_NUM_ENTRY = 8192,
-    TL2_INIT_LOCAL_NUM_ENTRY = 1024,
+    TL2_INIT_WRSET_NUM_ENTRY = 64,
+    TL2_INIT_RDSET_NUM_ENTRY = 128,
+    TL2_INIT_LOCAL_NUM_ENTRY = 64,
 };
 
 #ifdef TL2_OPTIM_HASHLOG

@@ -39,12 +39,22 @@ elif [ "$machine" == "tapuz40" ]; then
     cmdprefix=""
 elif [ "$machine" == "zyra" ]; then
     xargs1="-mx32"
-    maxthreadcount="144"
-    overthreadcount1="144"
-    overthreadcount2="144"
-    threadcounts="1 18 36 54 72 90 108 126 144"
+    maxthreadcount="142"
+    overthreadcount1="142"
+    overthreadcount2="142"
+    threadcounts="18 36 72 108 142"
     pin_scatter="ZYRA_SCATTER"
     pin_cluster="ZYRA_CLUSTER"
+    pin_none="NONE"
+    cmdprefix="numactl --interleave=all"
+elif [ "$machine" == "jax" ]; then
+    xargs1="-mx32"
+    maxthreadcount="190"
+    overthreadcount1="190"
+    overthreadcount2="190"
+    threadcounts="1 24 48 72 96 120 144 168 190"
+    pin_scatter="JAX_SCATTER"
+    pin_cluster="JAX_CLUSTER"
     pin_none="NONE"
     cmdprefix="numactl --interleave=all"
 elif [ "$machine" == "theoryhtm" ]; then
@@ -59,9 +69,9 @@ elif [ "$machine" == "theoryhtm" ]; then
     cmdprefix=""
 elif [ "$machine" == "cheshire-r07u03" ]; then
     xargs1=""
-    maxthreadcount="192"
-    overthreadcount1="192"
-    overthreadcount2="192"
+    maxthreadcount="190"
+    overthreadcount1="190"
+    overthreadcount2="190"
     threadcounts="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 28 32 36 40 44 48"
     pin_scatter="SOSCIP_SCATTER"
     pin_cluster="SOSCIP_CLUSTER"
@@ -71,5 +81,3 @@ else
     echo "ERROR: unknown machine $machine"
     exit 1
 fi
-
-g++ -O3 add.cpp -o add

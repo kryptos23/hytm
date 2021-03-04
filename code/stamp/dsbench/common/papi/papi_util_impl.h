@@ -56,17 +56,20 @@ char *cpu_counter(int c) {
 
 void papi_init_program(const int numProcesses){
 #ifdef USE_PAPI
-    if (PAPI_library_init(PAPI_VER_CURRENT) != PAPI_VER_CURRENT) {
+    PRINT_ELAPSED_FROM_START();
+    if (PAPI_library_init(PAPI_VER_CURRENT) != PAPI_VER_CURRENT) {  // costs 73 ms
         fprintf(stderr, "Error: Failed to init PAPI\n");
         exit(2);
     }
- 
+
+    PRINT_ELAPSED_FROM_START();
     if (PAPI_thread_init(pthread_self) != PAPI_OK) {
        fprintf(stderr, "PAPI_ERROR: failed papi_thread_init()\n");
        exit(2);
     }
     for (int i=0;i<numProcesses;++i) event_sets[i]=PAPI_NULL;
     for (int i=0;i<nall_cpu_counters;++i) counter_values[i]= 0;
+    PRINT_ELAPSED_FROM_START();
 #endif
 }
 
@@ -79,7 +82,7 @@ void papi_deinit_program() {
 void papi_create_eventset(int id){
 #ifdef USE_PAPI
     int * event_set = &event_sets[id];
-    int result; 
+    int result;
     if ((result = PAPI_create_eventset(event_set)) != PAPI_OK) {
        fprintf(stderr, "PAPI_ERROR: thread %d cannot create event set: %s\n", id, PAPI_strerror(result));
        exit(2);
@@ -106,7 +109,7 @@ void papi_create_eventset(int id){
 void papi_start_counters(int id){
 #ifdef USE_PAPI
     int * event_set = &event_sets[id];
-    int result; 
+    int result;
     if ((result = PAPI_start(*event_set)) != PAPI_OK) {
        fprintf(stderr, "PAPI ERROR: thread %d unable to start counters: %s\n", id, PAPI_strerror(result));
        std::cout<<"relevant event_set is for tid="<<id<<" and has value "<<(*event_set)<<std::endl;
@@ -120,7 +123,7 @@ void papi_stop_counters(int id){
     int * event_set = &event_sets[id];
     long long values[nall_cpu_counters];
     for (int i=0;i<nall_cpu_counters; i++) values[i]=0;
-    
+
     int r;
 
     /* Get cycles from hardware to account for time stolen by co-scheduled threads. */
@@ -128,7 +131,7 @@ void papi_stop_counters(int id){
        fprintf(stderr, "PAPI ERROR: thread %d unable to stop counters: %s\n", id, PAPI_strerror(r));
        exit(2);
     }
-    int j= 0; 
+    int j= 0;
     for (int i = 0; i < nall_cpu_counters; i++) {
         int c = all_cpu_counters[i];
         if (PAPI_query_event(c) != PAPI_OK)

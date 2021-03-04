@@ -29,9 +29,9 @@ task() {
     cnt2=$2
 
 	#echo "task x=$x cnt2=$cnt2"
-    
+
     fout=temp$cnt2.txt
-    
+
 	cmd=`cat $x | head -1`
 
 	## prepend information in filename
@@ -58,7 +58,7 @@ task() {
 		n=`echo $fn | cut -d"~" -f2`
 		echo -n , >> $fout
         cat $x | grep -E "${f}[ ]+:" | tail -1 | cut -d":" -f2 | cut -d" " -f$n | tr -d "\r" | tr "\n" " " >> $fout
-        #${path}/scripts/add `cat $x | grep -E "${f}[ ]+:" | cut -d":" -f2 | cut -d" " -f$n | tr -d "\r" | tr "\n" " "` >> $fout
+        #${path}/bin/add `cat $x | grep -E "${f}[ ]+:" | cut -d":" -f2 | cut -d" " -f$n | tr -d "\r" | tr "\n" " "` >> $fout
 		#echo ; echo ; echo "f=$f" ; cat $x | grep -E "${f}[ ]+:" | cut -d":" -f2 | cut -d" " -f$n | tr -d "\r" | tr "\n" " " ; echo ; echo
 	done
 

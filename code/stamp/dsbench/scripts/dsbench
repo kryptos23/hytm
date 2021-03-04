@@ -9,15 +9,10 @@ seqwidth=48
 algs_reclaimers_pools="dsbench_hytm2_3path~debra~none dsbench_tl2~debra~none dsbench_hytm1~debra~none dsbench_hytm2~debra~none dsbench_hytm3~debra~none dsbench_hybridnorec~debra~none"
 #algs_reclaimers_pools="$algs_reclaimers_pools dsbench_tl2~none~none dsbench_hytm1~none~none dsbench_hytm2~none~none dsbench_hytm3~none~none dsbench_hybridnorec~none~none"
 
-if [ "$machine" == "cheshire-r07u03" ]; then
-    algs_reclaimers_pools="$algs_reclaimers_pools dsbench_hytm2_nonspec~debra~none dsbench_hybridnorec_nonspec~debra~none"
-    #algs_reclaimers_pools="$algs_reclaimers_pools dsbench_hytm2_nonspec~none~none dsbench_hybridnorec_nonspec~none~none"
-fi
-
 keyranges="100000 10000"
 insdel_pcnts="0 5 20"
 
-ntrials=3
+ntrials=5
 t=10000
 timeoutsec=`expr $t / 1000`
 timeoutsec=`expr $timeoutsec + 3`
@@ -28,8 +23,9 @@ pinnings="${pin_cluster} ${pin_scatter}"
 if [ "$#" -ne "0" ]; then
 	echo "RUNNING IN TEST MODE"
 	ntrials=1
-	t=1
+	t=100
 	p=
+    threadcounts="2 ${maxthreadcount}"
 fi
 
 ##########################################################
@@ -40,7 +36,7 @@ cd ..
 
 outdir=output.${machine}.${expname}
 libdir=../lib
-bindir=.
+bindir=./bin/
 scriptsdir=scripts
 logfile=$outdir/log.out
 compilinglogfile=$outdir/compiling.out
@@ -64,6 +60,7 @@ else
     echo "ERROR: could not find jemalloc library"
     exit 1
 fi
+echo "NOTE: using jemalloc by prefixing \"$envcmd\""
 
 echo "-------------------- BEGIN VARIABLES --------------------" >> $logfile
 ( set -o posix ; set ) >> $logfile
@@ -75,14 +72,14 @@ cat $logfile
 
 echo > $compilinglogfile
 
-cnt1=0
-cnt2=0
+cnt1=10000
+cnt2=10000
 for counting in 1 0; do
 for pinning in $pinnings; do
     if [ "$counting" -eq "0" ]; then
         ### COMPILE ALL ALGORITHMS (for this pinning option)
-	cd scripts
-        ./compile_x64.sh "$pinning" | tee -a ../$compilinglogfile || (echo ERROR COMPILING && exit 1)
+	    cd scripts
+        (./compile_x64.sh "pinning=$pinning" || (echo ERROR COMPILING && exit 1)) | tee -a ../$compilinglogfile
         cd ..
     fi
 
@@ -92,11 +89,11 @@ for pinning in $pinnings; do
         alg=`echo $alg_reclaimer_pool | cut -d"~" -f1`
         mr=`echo $alg_reclaimer_pool | cut -d"~" -f2`
         mp=`echo $alg_reclaimer_pool | cut -d"~" -f3`
-            if [ "$counting" -eq "1" ]; then
-                echo "counting trials for pinning $pinning, alg $alg, mr $mr, mp $mp and k $k"
-            fi
+        if [ "$counting" -eq "1" ]; then
+            echo "counting trials for pinning $pinning, alg $alg, mr $mr, mp $mp and k $k"
+        fi
 
-            for insdel_pcnt in $insdel_pcnts; do
+        for insdel_pcnt in $insdel_pcnts; do
             for nthreads in $threadcounts; do
                 if [ "$nthreads" -gt "1" ]; then
                     nminusone=`expr $nthreads - 1`
@@ -113,15 +110,14 @@ for pinning in $pinnings; do
                         continue
                     fi
                     for ((trial=0;trial<$ntrials;++trial)); do
-                        cnt2=`expr $cnt2 + 1`
-                        echo -n "trial $cnt2 / $cnt1: "
+                        cnt2=$((cnt2 + 1))
+                        echo "[$cnt2 / $cnt1] $pinning k=$k $alg u=$((2*i)) n=$nwork,$nrq"
 
                         args="-t $t -mr $mr -ma $ma -mp $mp $p -k $k -i $insdel_pcnt -d $insdel_pcnt -rq 0 -rqsize 256 -nwork $nwork -nrq $nrq"
                         cmd="$machine.$alg $args"
-                        fname=`echo $cmd | tr " " "."`
-                        fname="step$cnt2.${fname}.-seqwidth.$seqwidth.-trial.$trial.-pinning.${pinning}"
-                        fname="$outdir/$fname.data"
-                        echo "$envcmd ${malloc_conf} time timeout $timeoutsec $cmdprefix $bindir/$cmd >> $fname 2>>$stderrfile"
+                        fname="$outdir/step$cnt2.data"
+
+                        #echo "$envcmd ${malloc_conf} time timeout $timeoutsec $cmdprefix $bindir/$cmd"
                         echo "$envcmd ${malloc_conf} time timeout $timeoutsec $cmdprefix $bindir/$cmd >> $fname 2>>$stderrfile" > $fname
                         eval "$envcmd ${malloc_conf} time timeout $timeoutsec $cmdprefix $bindir/$cmd >> $fname 2>>$stderrfile"
                         if [ "$?" -ne "0" ]; then
@@ -130,6 +126,12 @@ for pinning in $pinnings; do
                             #cat $stderrfile
                             #exit
                         fi
+
+                        ## sanity-check: for nonzero throughput or failed validation
+                        tput=$(grep "incl. queries" $fname | cut -d":" -f2 | tr -d " ")
+                        valid=$(grep "Validation" $fname | cut -d" " -f2)
+                        [[ "$valid" == "OK:" ]] || (echo "ERROR: $fname FAILED validation" | tee -a $logfile)
+                        [[ "$tput" -ge "0" ]] || (echo "ERROR: $fname tput=0 or missing" | tee -a $logfile)
                     done
                 done
             done
@@ -138,6 +140,20 @@ for pinning in $pinnings; do
     done
 done
 done
+
+# ######################
+# ## extract csv
+# ######################
+
+# ./dsbench.format.parallel $(hostname)
+# fcsv=../output.$(hostname).dsbench/dsbench.csv
+
+
+
+######################
+## cleanup and warn of any errors
+######################
+
 
 cat $logfile > $f
 cat $compilinglogfile > $logfile
@@ -151,4 +167,9 @@ rm -f $compilinglogfile
 #cd ..
 
 #echo -e $problems
-cat $stderrfile
+cat $stderrfile | grep -vE "maxresident|pagefaults"
+
+if [ -e "$logfile" ]; then
+    grep "ERROR:" $logfile
+fi
+echo "done."

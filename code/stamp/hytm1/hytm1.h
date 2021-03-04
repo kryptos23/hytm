@@ -12,7 +12,7 @@
 #endif
 //#define TXNL_MEM_RECLAMATION
 
-#define MAX_RETRIES 100000
+#define MAX_RETRIES 1000000
 
 //#define DEBUG_PRINT
 #define DEBUG_PRINT_LOCK
@@ -36,7 +36,7 @@
         releaseLock(&globallock); \
     }
 #else
-    #define aout(x) 
+    #define aout(x)
 #endif
 
 #define debug(x) (#x)<<"="<<x

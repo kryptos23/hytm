@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   debugcounter.h
  * Author: trbot
  *
@@ -8,7 +8,7 @@
 #ifndef C_DEBUGCOUNTER_H
 #define	C_DEBUGCOUNTER_H
 
-#include "../../dsbench/recordmgr/machineconstants.h"
+#include "recordmgr/machineconstants.h"
 
 struct c_debugCounter {
     PAD;

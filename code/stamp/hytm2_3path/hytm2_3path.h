@@ -11,8 +11,8 @@
 #endif
 //#define TXNL_MEM_RECLAMATION
 
-#define MAX_RETRIES 100000
-    
+#define MAX_RETRIES 1000000
+
 #include "../hytm1/counters/counters.h"
 
 //#define DEBUG_PRINT
@@ -34,7 +34,7 @@
         releaseLock(&globallock); \
     }
 #else
-    #define aout(x) 
+    #define aout(x)
 #endif
 
 #define debug(x) (#x)<<"="<<x
@@ -57,7 +57,7 @@ extern volatile int fallbackCount;
 
 
 
-    
+
 #include <stdint.h>
 #include "../hytm1/platform.h"
 #include "tmalloc.h"
