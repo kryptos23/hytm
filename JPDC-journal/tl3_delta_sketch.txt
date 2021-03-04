@@ -1,0 +1,31 @@
+[sketch of delta from srivatsan's initial TL3 proposal to what i had in mind]
+
+slow-path read:
+    change the ">" at line 39 to ">=".
+        this way, even if we don't increment V in some writing txns, readers will abort if they MIGHT have observed a concurrently written value.
+        (if you see ver-2 > read-ver, you definitely observed a value written concurrently. if you see ver-2 >= read-ver, you *might* have observed a value written concurrently.)
+    might be able to delete line 36.
+        i think you only need to read rj AFTER vj.
+        if this is true, can delete != comparison in line 39 also.
+
+slow-path commit:
+    change the fetch-and-increment at line 62 into a CAS(read-ver, read-ver+1).
+        no need to retry if the CAS fails. in this case we can simply read V and use the value we see.
+    at line 65, we should only iterate over X_j \in Rset(T_k) \setminus Wset(T_k).
+    change ">" at line 67 to ">="
+
+just BEFORE starting a fast-path transaction:
+    do "read-val := V"
+    -- i think we might want to add a start_k() operation to our TM ADT/API for this purpose...
+
+fast-path write:
+    let's change the sequence numbers only at commit time. (this way we'll be able to delay reading the value of V that we will write, minimizing the contention window on V.)
+    so, fast-path write will change the value, but NOT the sequence number (delete line 19).
+    and we must save the address "&or_j" in a set Sset (or even list) for use at commit time.
+
+fast-path commit:
+    write-val := V
+    for each or_j in Sset
+        or_j = (write_val, false)
+    [once every 100 txns, additionally do "V = V+1" at this line]
+    commit-cache
