@@ -201,6 +201,7 @@ the fallback path in Hybrid NOrec\textsuperscript{$\ast$} than in Hybrid NOrec (
 \label{fig-exp-xeonv3}
 \end{figure}
 
+
 \vspace{1mm}\noindent\textbf{System.}
 The experimental system (\textbf{XeonV3}) is a 2-socket Intel Xeon E7-4830 v3 with 12 cores per socket and 2 hyperthreads (HTs) per core, for a total of 48 threads.
 Each core has a private 32KiB L1 cache and 256KiB L2 cache (shared between HTs on a core).
@@ -291,6 +292,12 @@ This lengthens the transaction's window of contention, making it more likely to 
 \caption{\textbf{XeonS} results for BST benchmark. x-axis: number of threads. y-axis: operations per $\mu$s.}
 \label{fig-exp-xeons}
 \end{figure}
+
+\textbf{[[[EDIT THIS]]]}
+
+having four sockets instead of two made it evident that some of our implementations were not as scalable as they could be. we optimized our implementations to perform better on this new system. we unfortunately could not run our new implementations on the previous systems because we no longer have access to them. we include results from all systems, since we believe they are still instructive, but we consider the following results to be not directly comparable with the results in the previous two subsections.
+
+explain major difference in how tm read/write operations are invoked; there are many other miscellaneous changes that are too numerous to list / explain.
 
 \vspace{1mm}\noindent\textbf{Experimental system.}
 The experimental system (\textbf{XeonS}) is a 4-socket Intel Xeon Scalable Series Platinum 8160 with 24 cores per socket and 2 hyperthreads (HTs) per core, for a total of 192 threads.
