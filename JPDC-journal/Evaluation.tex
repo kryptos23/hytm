@@ -132,7 +132,7 @@ and only two load-store pipelines.
     \vspace{-2mm}
 	\includegraphics[width=\linewidth]{figures/graphs/power8/dsbench3_legend_power.png}
     \vspace{-2mm}
-\caption{\textbf{POWER8} results for BST benchmark. x-axis: number of threads. y-axis: operations per $\mu$s.}
+\caption{\textbf{POWER8} BST benchmark. x-axis: number of threads. y-axis: operations per $\mu$s.}
 \label{fig-exp-power8}
 \end{figure}
 
@@ -197,7 +197,7 @@ the fallback path in Hybrid NOrec\textsuperscript{$\ast$} than in Hybrid NOrec (
     \vspace{-2mm}
 	\includegraphics[width=\linewidth]{figures/graphs/power8/dsbench3_legend_power.png}
     \vspace{-2mm}
-\caption{\textbf{XeonV3} results for BST benchmark. x-axis: number of threads. y-axis: operations per $\mu$s.}
+\caption{\textbf{XeonV3} BST benchmark. x-axis: number of threads. y-axis: operations per $\mu$s.}
 \label{fig-exp-xeonv3}
 \end{figure}
 
@@ -265,32 +265,32 @@ This lengthens the transaction's window of contention, making it more likely to 
 \begin{figure}
     \centering
     \setlength\tabcolsep{0pt}
-%\begin{minipage}{1\linewidth}
-%    \centering
-%    \begin{tabular}{m{0.03\linewidth}m{0.485\linewidth}m{0.485\linewidth}}
-%        &
-%        \fcolorbox{black!50}{black!20}{\parbox{\dimexpr \linewidth-2\fboxsep-2\fboxrule}{\centering {0 threads perform \textit{RangeInc} (W1)}}} &
-%        \fcolorbox{black!50}{black!20}{\parbox{\dimexpr \linewidth-2\fboxsep-2\fboxrule}{\centering {1 thread performs \textit{RangeInc} (W2)}}}
-%        \\
-%        \rotatebox{90}{\large 0\% updates} &
-%        \includegraphics[width=\linewidth]{figures/graphs/0i0d100000k-nrq0.png} &
-%        \includegraphics[width=\linewidth]{figures/graphs/0i0d100000k-nrq1.png}
-%        \\
-%        \vspace{-8mm}\rotatebox{90}{\large 10\% updates} &
-%        \vspace{-8mm}\includegraphics[width=\linewidth]{figures/graphs/5i5d100000k-nrq0.png} &
-%        \vspace{-8mm}\includegraphics[width=\linewidth]{figures/graphs/5i5d100000k-nrq1.png}
-%        \\
-%        \vspace{-8mm}\rotatebox{90}{\large 40\% updates} &
-%        \vspace{-8mm}\includegraphics[width=\linewidth]{figures/graphs/20i20d100000k-nrq0.png} &
-%        \vspace{-8mm}\includegraphics[width=\linewidth]{figures/graphs/20i20d100000k-nrq1.png}
-%        \\
-%    \end{tabular}
-%\end{minipage}
+\begin{minipage}{1\linewidth}
+    \centering
+    \begin{tabular}{m{0.03\linewidth}m{0.485\linewidth}m{0.485\linewidth}}
+        &
+        \fcolorbox{black!50}{black!20}{\parbox{\dimexpr \linewidth-2\fboxsep-2\fboxrule}{\centering {0 threads perform \textit{RangeInc} (W1)}}} &
+        \fcolorbox{black!50}{black!20}{\parbox{\dimexpr \linewidth-2\fboxsep-2\fboxrule}{\centering {1 thread performs \textit{RangeInc} (W2)}}}
+        \\
+        \rotatebox{90}{\large 0\% updates} &
+        \includegraphics[width=\linewidth]{figures/2021jun16/exp1_nonspec_throughput_exp_'0_0_0_0'_100000_rq_0.png} &
+        \includegraphics[width=\linewidth]{figures/2021jun16/exp1_nonspec_throughput_exp_'0_0_0_0'_100000_rq_1.png}
+        \\
+        \vspace{-5mm}\rotatebox{90}{\large 10\% updates} &
+        \vspace{-5mm}\includegraphics[width=\linewidth]{figures/2021jun16/exp1_nonspec_throughput_exp_'5_0_5_0'_100000_rq_0.png} &
+        \vspace{-5mm}\includegraphics[width=\linewidth]{figures/2021jun16/exp1_nonspec_throughput_exp_'5_0_5_0'_100000_rq_1.png}
+        \\
+        \vspace{-5mm}\rotatebox{90}{\large 40\% updates} &
+        \vspace{-5mm}\includegraphics[width=\linewidth]{figures/2021jun16/exp1_nonspec_throughput_exp_'20_0_20_0'_100000_rq_0.png} &
+        \vspace{-5mm}\includegraphics[width=\linewidth]{figures/2021jun16/exp1_nonspec_throughput_exp_'20_0_20_0'_100000_rq_1.png}
+        \\
+    \end{tabular}
+\end{minipage}
 %    \vspace{-2mm}
-%	\includegraphics[width=\linewidth]{figures/graphs/power8/dsbench3_legend_power.png}
+	\includegraphics[width=.75\linewidth]{figures/2021jun16/legend.png}
 %    \vspace{-2mm}
-\caption{\textbf{XeonS} results for BST benchmark. x-axis: number of threads. y-axis: operations per $\mu$s.}
-\label{fig-exp-xeons}
+\caption{\textbf{XeonGold} BST benchmark. x-axis: number of threads. y-axis: operations per $\mu$s.}
+\label{fig-exp-xeongold}
 \end{figure}
 
 \textbf{[[[EDIT THIS]]]}
@@ -300,7 +300,7 @@ having four sockets instead of two made it evident that some of our implementati
 explain major difference in how tm read/write operations are invoked; there are many other miscellaneous changes that are too numerous to list / explain.
 
 \vspace{1mm}\noindent\textbf{Experimental system.}
-The experimental system (\textbf{XeonS}) is a 4-socket Intel Xeon Scalable Series Platinum 8160 with 24 cores per socket and 2 hyperthreads (HTs) per core, for a total of 192 threads.
+The experimental system (\textbf{XeonGold}) is a 4-socket Intel Xeon Scalable Series Platinum 8160 with 24 cores per socket and 2 hyperthreads (HTs) per core, for a total of 192 threads.
 Each core has a private 32KiB L1 cache and 1MiB L2 cache (shared between HTs on a core).
 All cores on a socket share a 33MiB L3 cache.
 This system has a non-uniform memory architecture (NUMA) in which threads have significantly different access costs to different parts of memory depending on which processor they are currently executing on.
@@ -317,4 +317,4 @@ Hyperthreading is engaged on the first socket for thread counts 25-48.
 %\subsection{Experiments on Intel Xeon Scalable Gen.2}
 
 \vspace{1mm}\noindent\textbf{Results.}
-See Figure~\ref{fig-exp-xeons}.
+See Figure~\ref{fig-exp-xeongold}.
