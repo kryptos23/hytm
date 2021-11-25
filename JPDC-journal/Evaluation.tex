@@ -140,7 +140,7 @@ and only two load-store pipelines.
 \label{fig-exp-power8}
 \end{figure}
 
-\vspace{1mm}\noindent\textbf{Results.}
+\vspace{1mm}\noindent\textbf{Discussion of results.}
 See Figure~\ref{fig-exp-power8}.
 %
 Algorithm~\ref{alg:inswrite} performs poorly on POWER8: POWER8 transactions can only load 64 cache lines before they will abort~\cite{nguyen-thesis}. 
@@ -266,11 +266,30 @@ the fallback path in Hybrid NOrec\textsuperscript{$\ast$} than in Hybrid NOrec (
 
 \subsection{Experiments on Intel Xeon Scalable}
 
-\textbf{optimizations to mention (??):}
+\vspace{1mm}\noindent\textbf{Experimental system.}
+The experimental system (\textbf{XeonGold}) is a 4-socket Intel Xeon Scalable Series Platinum 8160 with 24 cores per socket and 2 hyperthreads (HTs) per core, for a total of 192 threads.
+Each core has a private 32KiB L1 cache and 1MiB L2 cache (shared between HTs on a core).
+All cores on a socket share a 33MiB L3 cache.
+This system has a non-uniform memory architecture (NUMA) in which threads have significantly different access costs to different parts of memory depending on which processor they are currently executing on.
+The machine has 392GiB of RAM, and runs Ubuntu 18.04 LTS.
+All code was compiled with the GNU C++ compiler (G++) 10.1 with maximum optimization.
 
-\textbf{- branch and load differently or store differently VS function pointers}
+We pin threads so that the first socket is saturated before we place any threads on the second socket.
+Thus, thread counts 1-48 run on a single socket.
+Hyperthreading is engaged on the first socket for thread counts 25-48.
+%Consequently, our graphs clearly show the effects of NUMA and hyperthreading.
+%Thread support was provided by the POSIX Threads library.
+%We used the default glibc allocator.
 
-\textbf{- sigsetjmp modification 2x's tl2}
+%\subsection{Experiments on Intel Xeon Scalable Gen.2}
+
+
+
+%\textbf{optimizations to mention (??):}
+%
+%\textbf{- branch and load differently or store differently VS function pointers}
+%
+%\textbf{- sigsetjmp modification 2x's tl2}
 
 
 \begin{figure}
@@ -304,28 +323,71 @@ the fallback path in Hybrid NOrec\textsuperscript{$\ast$} than in Hybrid NOrec (
 \label{fig-exp-xeongold}
 \end{figure}
 
-\textbf{[[[EDIT THIS]]]}
+\vspace{1mm}\noindent\textbf{Optimizations for this system.}
+%
+Running on a much larger system with four sockets made it quite evident that some of our implementations were not as scalable as they could be.
+So, we further optimized our implementations, obtaining performance improvements primarily from:
+\begin{itemize}
+\item eliminating several previously undetected instances of false sharing,
+\item changing default read/write set sizes (before any dynamic expansion has taken place) from 8192/1024 to 128/64,
+\item changing the instrumentation of reads and writes to use branching instead of function pointers to determine which transactional code path to run (fast or fallback), and
+\item changing our invocations of \texttt{setjmp} in \textit{TL2} to avoid saving signal masks, which is much more expensive on this large machine.
+\end{itemize}
 
-having four sockets instead of two made it evident that some of our implementations were not as scalable as they could be. we optimized our implementations to perform better on this new system. we unfortunately could not run our new implementations on the previous systems because we no longer have access to them. we include results from all systems, since we believe they are still instructive, but we consider the following results to be not directly comparable with the results in the previous two subsections.
+\vspace{1mm}\noindent\textbf{Attempts to port these optimizations to POWER.}
+We unfortunately could not run our improved implementations on the POWER8 system because we no longer have access to it.
+We attempted to run our code on a newer POWER9 system running FreeBSD, but we discovered that the kernel facilities to expose the necessary HTM capabilities were not implemented on that machine, and although some patches have appeared claiming to add these capabilities, our attempts to apply such patches failed.
+We include results from both systems, since we believe they are still instructive, but the following results are not directly comparable with results in the previous subsection.
 
-explain major difference in how tm read/write operations are invoked; there are many other miscellaneous changes that are too numerous to list / explain.
-
-\vspace{1mm}\noindent\textbf{Experimental system.}
-The experimental system (\textbf{XeonGold}) is a 4-socket Intel Xeon Scalable Series Platinum 8160 with 24 cores per socket and 2 hyperthreads (HTs) per core, for a total of 192 threads.
-Each core has a private 32KiB L1 cache and 1MiB L2 cache (shared between HTs on a core).
-All cores on a socket share a 33MiB L3 cache.
-This system has a non-uniform memory architecture (NUMA) in which threads have significantly different access costs to different parts of memory depending on which processor they are currently executing on.
-The machine has 392GiB of RAM, and runs Ubuntu 18.04 LTS.
-All code was compiled with the GNU C++ compiler (G++) 10.1 with maximum optimization.
-
-We pin threads so that the first socket is saturated before we place any threads on the second socket.
-Thus, thread counts 1-48 run on a single socket.
-Hyperthreading is engaged on the first socket for thread counts 25-48.
-%Consequently, our graphs clearly show the effects of NUMA and hyperthreading.
-%Thread support was provided by the POSIX Threads library.
-%We used the default glibc allocator.
-
-%\subsection{Experiments on Intel Xeon Scalable Gen.2}
-
-\vspace{1mm}\noindent\textbf{Results.}
+\vspace{1mm}\noindent\textbf{Dicussion of results.}
 See Figure~\ref{fig-exp-xeongold}.
+We first discuss the 0\% updates graph for workload type W1.
+In this graph, essentially all operations committed in hardware.
+In fact, in each trial, a small fraction of 1\% of operations ran on the slow-path.
+Thus, any performance differences shown in the graph are essentially differences in the performance of the algorithms' respective fast-paths (with the exception of TL2, which only has one code path).
+Algorithm~\ref{alg:inswrite}, which has instrumentation in its fast-path read operations, has significantly lower performance than Algorithm~\ref{alg:inswrite2}, which does not.
+Since this is a read-only workload, this instrumentation is responsible for the performance difference.
+
+In W1 workloads with updates, Algorithm~\ref{alg:inswrite2} and Algorithm~1+ perform the best, followed by TLE, then Algorithm~\ref{alg:inswrite}, then TL2 and finally HyNoREC.
+In the first three of these algorithms, the fastest code paths have similar amounts of instrumentation: there is no instrumentation for reads or writes, and the transaction itself incurs one or two metadata accesses.
+HyNoREC performs very poorly at high thread counts due to its global bottleneck on updates (which affect performance much more when threads run on multiple sockets because of last level cache invalidations).
+TL2 suffers mainly due to its high overhead for locking, manipulating explicit read/write sets, and validation costs after each read and at commit time.
+Similarly, but to a lesser degree, Algorithm~\ref{alg:inswrite}'s fine-grained instrumentation causes it to lag behind the faster algorithms.
+
+%In the W1 workloads, TLE, Algorithm~\ref{alg:inswrite2} and Hybrid NOrec perform similarly (with a small performance advantage for Hybrid NOrec at high thread counts).
+%This is because the fast paths for these three algorithms have similar amounts of instrumentation: there is no instrumentation for reads or writes, 
+%and the transaction itself incurs one or two metadata accesses.
+In the W2 workloads, the performance of TLE is sometimes spectacularly good (e.g., in W2 with 40\% updates, up to 48 threads), and is other times lackluster (e.g., W2 with 0\% updates, above 48 threads).
+%In contrast, in the W2 workloads, TLE performs quite poorly, compared to the HyTM algorithms.
+In these workloads, transactions must periodically run on the slow-path, and in TLE, 
+this entails acquiring a global lock that restricts progress for all other threads.
+When threads run on multiple sockets, this can significantly impact performance.
+%We only show Its performance decreases as the sizes of the ranges passed to \textit{RangeIncrement} increase.
+%Its performance is also negatively impacted by NUMA effects at thread counts higher than 24.
+(This is because, when a thread $p$ reads the lock and incurs a cache miss, 
+if the lock was last held by another thread on the same socket, 
+then $p$ can fill the cache miss by loading it from the shared L3 cache.
+However, if the lock was last held by a thread on a different socket, 
+then $p$ must read the lock state from main memory, which is significantly more expensive.)
+%On the other hand, in each graph in the W2 workloads, the performance of each HyTM (and TL2) is similar to its performance in the corresponding W1 workload graph.
+Similarly, in Algorithm~\ref{alg:inswrite2}, at high thread counts the global commit lock becomes a bottleneck.
+The other algorithms all exhibit similar behaviour in W2 graphs to their behaviour in the corresponding W1 graphs.
+%
+%Although Algorithm~\ref{alg:inswrite2} is not truly progressive, fast-path transactions will abort only if they are concurrent with the commit procedure of a slow-path transaction.
+%In \textit{RangeIncrement} operations, there is a long read-only prefix (which is exceptionally long because of Algorithm~\ref{alg:inswrite2}'s quadratic validation) followed by a relatively small set of writes.
+%Thus, \textit{RangeIncrement} operations have relatively little impact on the fast-path.
+%The explanation is similar for Hybrid NOrec (except that it performs less validation than Algorithm~\ref{alg:inswrite2}).
+
+%Observe that the performance of Hybrid NOrec decreases slightly, relative to Algorithm~\ref{alg:inswrite2}, after 24 threads.
+%Recall that, in Hybrid NOrec, the global sequence number is a single point of contention on the fast-path.
+%(In Algorithm~\ref{alg:inswrite2}, the global lock is only modified by slow-path transactions, so fast-path transactions do not have a single point of contention.)
+%We believe this is due to NUMA effects, similar to those described in~\cite{BKLL16}.
+%Specifically, whenever a threads on the first socket performs a fast-path transaction that commits and modifies the global lock, it causes cache invalidations for all other threads.
+%Threads on socket two must then load the lock state from main memory, which takes much longer than loading it from the shared L3 cache.
+%This lengthens the transaction's window of contention, making it more likely to abort.
+%(Inn the 0\% updates graph in the W2 workload, we still see this effect, because there is a thread performing \textit{RangeIncrement} operations.)
+
+Interestingly, the addition of a third code path in Algorithm~1+ allows it to avoid most of the instrumentation overhead of Algorithm~\ref{alg:inswrite} in W1 workloads, while maintaining performance that rivals Algorithm~\ref{alg:inswrite} in more challenging W2 workloads.
+In contrast, although Algorithm~\ref{alg:inswrite2} is extremely fast in W1 workloads (and in W2 with 0\% updates), it performs very poorly at high thread counts in W2 with updates.
+This suggests that Algorithm~1+ is a better choice for obtaining consistently good performance over a wider variety of workloads.
+

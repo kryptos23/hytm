@@ -2,7 +2,7 @@
 \section{Related work and discussion}
 \label{sec:rel}
 %
-\paragraph*{HyTM implementations and complexity.}
+\paragraph*{HyTM implementations and complexity}
 Early HyTMs like the ones described in \cite{damronhytm, kumarhytm} provided progressiveness, but
 subsequent HyTM proposals like PhTM~\cite{phasedtm} and HybridNOrec~\cite{hybridnorec} sacrificed progressiveness for lesser instrumentation overheads.
 However, the clear trade-off in terms of concurrency vs. instrumentation for these HyTMs have not been studied in the context of currently available HTM
@@ -15,7 +15,7 @@ Proof of Theorem~\ref{th:impossibility} is based on the analogous proof for step
 Our implementation of Hybrid NOrec follows \cite{hynorecriegel}, which additionally proposed the use of direct accesses
 in fast-path transactions to reduce instrumentation overhead in the AMD Advanced Synchronization Facility (ASF) architecture.
 
-\paragraph*{Other HyTM models.}
+\paragraph*{Other HyTM models}
 %Assuming the hardware transactions do not perform any direct accesses, opacity is immediate~\cite{brownfaster15}.
 
 %\paragraph*{Other approaches.}
@@ -25,7 +25,9 @@ that is optimistically used to avoid running some transactions on the true softw
 Amalgamated lock elision (ALE) was proposed in \cite{ale15} which improves over TLE
 by executing the slow-path as a series of segments, each of which is a dynamic length hardware transaction.
 Invyswell~\cite{Calciu14} is a HyTM design with multiple hardware and software modes of execution that gives flexibility to avoid instrumentation overhead in uncontended executions.
-We remark that such multi-path approaches may be easily applied to each of the Algorithms proposed in this paper. However, 
-in the search for an efficient HyTM, it is important to strike the fine balance between concurrency, hardware instrumentation and software validation cost.
+We remark that such multi-path approaches may be easily applied to each of the Algorithms proposed in this paper.\footnote{That said, we also think it is important to aim for implementations of TM that are as simple as possible, since complex algorithms can be more difficult to verify.
+For example, Invyswell adds many code paths with complex synchronization, and in doing so improves performance significantly over prior approaches.
+However, one of its fastest code paths implements an optimization called \textit{lazy subscription}, which has been shown to cause opacity violations~\cite{dice2014pitfalls}.}
+However, in the search for an efficient HyTM, it is important to strike the fine balance between concurrency, hardware instrumentation and software validation cost.
 Our lower bound, experimental methodology and evaluation of HyTMs provides the first clear characterization of these trade-offs in both Intel and POWER8 architectures. 
 %
